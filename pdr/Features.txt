@@ -1,0 +1,472 @@
+# Feature: Style Hub
+
+**Short Description:**  
+A centralized hub for users to choose and save their preferred combinations of Color, Style, Mood, Occasion, Season, Material, and Brand. Each choice dynamically modifies the website’s UI to reflect the user’s identity and taste. Saved configurations can be stored as a "World" for future reference.
+
+---
+
+## 1️⃣ Color Filter
+- **Choices:** Full palette of colors, each mapped to a pre-defined Theme Palette.  
+- **UI Impact:**  
+  - Changes primary colors (buttons, headers, active elements).  
+  - Changes secondary colors (cards, panels, backgrounds).  
+  - Accent colors update highlights, icons, and hover effects.  
+  - When combined with other Layers, maintains harmonious color coordination.  
+
+---
+
+## 2️⃣ Style Filter
+- **Choices:** Casual, Formal, Street, Sporty, Minimal, Elegant, etc.  
+- **UI Impact:**  
+  - Updates fonts, border styles, shadow effects, and textures.  
+  - Modifies component layouts to match the selected style.  
+  - Works as a layer over the Base Theme and Color Layer for consistency.  
+
+---
+
+## 3️⃣ Mood Filter
+- **Choices:** Confident, Chill, Bold, Minimal, Elegant  
+- **UI Impact:**  
+  - Adjusts tones, background patterns, icons, and subtle motion/animation.  
+  - Enhances emotional feel of the site to match the user’s selected mood.  
+  - Overlays on top of Color + Style Layers to reflect personality.  
+
+---
+
+## 4️⃣ Occasion Filter
+- **Choices:** Date, Work, Wedding, Travel, Gym  
+- **UI Impact:**  
+  - Adds decorative accents and thematic elements to UI components.  
+  - Filters recommended products to match the selected occasion.  
+  - Ensures a practical and aesthetic alignment between design and context.  
+
+---
+
+## 5️⃣ Season Filter
+- **Choices:** Summer, Winter, Spring, Autumn  
+- **UI Impact:**  
+  - Modifies textures, background patterns, and material visuals.  
+  - Adjusts color temperature and lighting feel (warm/cool) of UI.  
+  - Overlays on existing Layers (Color, Style, Mood, Occasion) for harmony.  
+
+---
+
+## 6️⃣ Material / Fabric Filter
+- **Choices:** Cotton, Silk, Leather, Denim, etc.  
+- **UI Impact:**  
+  - Adds texture layers to cards or product backgrounds, reflecting fabric feel.  
+  - Interacts with Style and Mood Layers for cohesive aesthetic.  
+
+---
+
+## 7️⃣ Brand Filter
+- **Choices:** All brands available via affiliate integration  
+- **UI Impact:**  
+  - Updates brand-specific accents, badges, and logos across UI components.  
+  - Filters products strictly by selected brand.  
+
+---
+
+## Workflow and Interaction
+1. **Accessing Style Hub:** A dedicated button next to Wishlist.  
+2. **Filter Selection:** Users choose their preferred filters.  
+3. **Real-time UI Update:** Each filter modifies the website in real-time via layered UI approach:  
+   - Base Theme → Color Layer → Style Layer → Mood Layer → Occasion Layer → Season Layer → Material Layer → Brand Layer  
+4. **Confirm & Save:** Users click "Confirm & Save" to store their configuration as a **World**, preserving:  
+   - Selected filters  
+   - Filtered product set  
+   - Current UI state  
+5. **World Usage:** Saved Worlds can be revisited, modified, or shared, maintaining full identity expression.  
+
+---
+
+**Design Principles:**  
+- Each filter is designed to reflect user personality and style.  
+- Layered approach ensures smooth, non-jarring transitions when multiple filters are applied.  
+- Colors, textures, fonts, and accents are all harmonized to preserve a coherent visual identity.  
+- Performance optimized via lazy loading and pre-cached palettes and textures.  
+
+---
+
+**Outcome:**  
+Users experience a fully personalized, visually coherent interface that expresses their unique identity through color, style, mood, occasion, season, material, and brand preferences. Each interaction feels meaningful, creating an emotional connection with the website.
+
+# Section: Lookbook
+
+**Short Description:**  
+A curated collection of outfit ideas displayed for inspiration. Lookbooks help users discover complete styles based on AI recommendations, user trends, or user-created outfits.
+
+---
+
+## Collection Methods
+
+1. **AI-Based Lookbook**
+   - The system analyzes the entire product catalog.  
+   - It generates outfits based on:
+     - Selected Colors
+     - Styles
+     - Mood
+   - Each Lookbook contains a complete outfit with recommended matching pieces.
+
+2. **User Trend Lookbook**
+   - Aggregates data from purchases and saved Worlds.
+   - Identifies combinations frequently bought or saved together.
+   - Highlights outfits with high user engagement.
+
+3. **User-Created Lookbook**
+   - Allows users to manually create and save their own outfit combinations.
+   - Saved looks can be shared or reused in their Wishlist / Style Hub.
+
+---
+
+## Workflow / Operation
+
+1. **Data Collection**
+   - Pull product metadata: colors, styles, categories, price, brand, and availability.
+   - Collect user interactions: purchases, saved Worlds, user-created outfits.
+
+2. **Lookbook Generation**
+   - AI Engine generates AI-based Lookbooks dynamically.
+   - Trend Engine calculates popular combinations from user data.
+   - User Lookbook is created via a drag & drop or selection interface.
+
+3. **Display**
+   - Lookbooks are displayed in a carousel or grid format.
+   - Each Lookbook item links to individual product pages or allows adding the whole look to Wishlist / Cart.
+
+4. **Maintenance**
+   - Regularly update AI Lookbooks as new products are added.
+   - Trend-based Lookbooks update weekly or daily depending on traffic and purchases.
+   - User-created Lookbooks are persistent and stored in user accounts.
+
+---
+
+**Outcome:**  
+Users can discover outfit inspiration through multiple lenses: AI-generated suggestions, popular combinations, or their own creativity. Lookbooks promote engagement and encourage product exploration.
+
+# Section: Offers / Deals
+
+**Short Description:**  
+A dedicated section for products on discount, special promotions, or limited-time deals. Helps users find value while browsing the catalog.
+
+---
+
+## Collection Methods
+
+1. **Affiliate Offers**
+   - Pull discounted products directly from affiliate APIs (Amazon, Awin, etc.).
+   - Track price changes and promotions in real-time to ensure up-to-date listings.
+
+2. **Internal Promotions**
+   - Any platform-specific discounts or promotions applied to certain products.
+   - Managed via admin dashboard (Strapi/Sanity).
+
+3. **Dynamic Filtering**
+   - Users can filter deals by category, price range, or brand.
+   - Integration with Style Hub filters ensures deals match user preferences if desired.
+
+---
+
+## Workflow / Operation
+
+1. **Data Collection**
+   - Fetch all products with active discounts from affiliate sources.
+   - Track expiry dates, discount percentages, and stock availability.
+   - Store metadata in the database for efficient querying.
+
+2. **Deals Generation**
+   - Sort products by discount percentage, popularity, or newest deals.
+   - Flag “hot deals” for items with high user engagement or limited-time offers.
+
+3. **Display**
+   - Present offers in a carousel, grid, or dedicated deals page.
+   - Include labels such as “20% Off”, “Limited Time”, or “Hot Deal”.
+   - Each product links to its affiliate store for purchase.
+
+4. **Maintenance**
+   - Continuously update deals in real-time based on affiliate API or internal promotions.
+   - Remove expired offers automatically.
+   - Analytics track user clicks and conversions for optimization.
+
+---
+
+**Outcome:**  
+Users can quickly find products with discounts, increasing engagement and purchase likelihood while keeping the catalog fresh with dynamic deals.
+
+# Section: Coupons
+
+**Short Description:**  
+A dedicated section for discount codes and coupons applicable to products on the platform. Helps users save money and encourages engagement.
+
+---
+
+## Collection Methods
+
+1. **Affiliate Coupons**
+   - Pull active coupons from affiliate networks (Amazon, Awin, etc.).
+   - Track coupon validity, discount value, and applicable products.
+
+2. **Internal Coupons**
+   - Platform-generated or partner-specific coupons.
+   - Managed via the admin dashboard (Strapi/Sanity).
+
+3. **Dynamic Association**
+   - Link coupons to products, categories, or Styles.
+   - Optionally, filter coupons based on user’s Style Hub preferences.
+
+---
+
+## Workflow / Operation
+
+1. **Data Collection**
+   - Fetch all available coupons from affiliate APIs and internal sources.
+   - Store metadata: code, discount value, expiration date, applicable products or categories.
+
+2. **Coupons Display**
+   - Each coupon appears as a card with code, description, expiration, and usage conditions.
+   - Users can copy code or apply it directly to selected products.
+
+3. **Filtering & Sorting**
+   - Filter by category, brand, discount value, or expiry date.
+   - Optionally integrate with Style Hub filters to show only relevant coupons.
+
+4. **Maintenance**
+   - Automatically remove expired or invalid coupons.
+   - Update affiliate coupons regularly to reflect new promotions.
+   - Track coupon usage and clicks for analytics and optimization.
+
+---
+
+**Outcome:**  
+Users can access all available coupons in one place, easily apply them to products, and enjoy personalized offers based on Style Hub preferences or product categories.
+
+# Section: AI Styling
+
+**Short Description:**  
+An AI-powered feature where users upload an image of any clothing item, and the system generates complementary outfit suggestions to complete the look.
+
+---
+
+## Collection / Input Methods
+
+1. **User Upload**
+   - Users upload an image of a clothing piece (shirt, jacket, pants, shoes, etc.).
+   - Supported formats: JPG, PNG, WebP.
+   - Optional: Allow multiple images for complex outfits.
+
+2. **AI Analysis**
+   - Computer vision model detects:
+     - Colors
+     - Patterns
+     - Style category (casual, formal, sporty, etc.)
+     - Material/fabric type
+   - Maps detected features to the product catalog.
+
+---
+
+## Outfit Generation Methods
+
+1. **AI-Based Matching**
+   - Suggests complementary pieces to form a complete outfit.
+   - Considers:
+     - Color harmony (using Theme Palette)
+     - Style consistency
+     - Occasion suitability (if user has Style Hub preferences)
+   - Generates multiple options (e.g., 3–5 outfit variations).
+
+2. **User Adjustment**
+   - Drag & drop interface allows users to:
+     - Replace suggested items
+     - Swap colors or styles
+     - Save modified outfit to Wishlist or Lookbook
+
+---
+
+## Workflow / Operation
+
+1. **Image Upload**
+   - User selects “AI Styling” and uploads an image.
+   
+2. **Image Processing**
+   - AI model analyzes image, extracts key features.
+   - Matches features with product catalog.
+
+3. **Outfit Generation**
+   - AI generates a set of matching items from the catalog.
+   - Outfits displayed in a grid or carousel.
+   - Each suggested item links to product page / affiliate store.
+
+4. **User Interaction**
+   - User can:
+     - Accept suggested outfit as-is
+     - Swap items manually
+     - Save outfit to Wishlist or Lookbook
+   - Optional: Share outfit with friends or social media.
+
+5. **Maintenance**
+   - AI model is retrained periodically with new products and styles.
+   - Product catalog updates in real-time to ensure suggestions are current.
+   - Tracks user interactions to improve recommendation accuracy.
+
+---
+
+**Outcome:**  
+Users can instantly complete any outfit by uploading a single piece of clothing. The AI ensures color, style, and material harmony, while giving users control to customize and save their final outfit.
+
+# Section: Wishlist
+
+**Short Description:**  
+A feature that allows users to save products and outfits for future reference or purchase. Divided into single items and complete outfit sets.
+
+---
+
+## Wishlist Types
+
+1. **Single Product Wishlist**
+   - Save individual items from product pages or Lookbooks.
+   - Each item stores:
+     - Product metadata (color, size, brand, style)
+     - Affiliate link for purchase
+   - Items can be organized, removed, or moved to an outfit.
+
+2. **Outfit / World Wishlist**
+   - Save complete outfits (Worlds) created in Style Hub or AI Styling.
+   - Stores:
+     - Filter selections used to generate the outfit
+     - List of all products included in the outfit
+     - Associated Style Hub Layers for reference
+
+---
+
+## Workflow / Operation
+
+1. **Adding Items**
+   - User clicks “Add to Wishlist” on product or outfit.
+   - System saves item or outfit in user account (linked via database).
+
+2. **Managing Wishlist**
+   - Users can sort, filter, or search their wishlist.
+   - Option to convert single items into a complete outfit.
+   - Syncs with Style Hub for consistency.
+
+3. **Usage**
+   - Quickly view saved products and outfits.
+   - Option to “Shop All” items in a World.
+   - Saved Worlds can be reused or modified in Style Hub.
+
+4. **Maintenance**
+   - Data is stored in the database (linked to user accounts).
+   - Periodic updates check product availability and price changes.
+   - Keeps wishlist synchronized with affiliate APIs.
+
+---
+
+**Outcome:**  
+Wishlist allows users to save both individual items and curated outfits, keeping their preferences organized and ready for future use or purchase.
+
+# Section: Recently Viewed
+
+**Short Description:**  
+Displays products and outfits that the user has recently interacted with, helping them easily return to items of interest.
+
+---
+
+## Workflow / Operation
+
+1. **Tracking**
+   - Monitor each user’s activity: products viewed, outfits opened, or AI suggestions explored.
+   - Store data temporarily in session or permanently for logged-in users.
+
+2. **Display**
+   - Show recently viewed products in a carousel or grid.
+   - Include product name, thumbnail, and quick link to purchase.
+
+3. **Filtering**
+   - Optional: Apply Style Hub filters to show recently viewed items relevant to current preferences.
+
+4. **Maintenance**
+   - Limit number of items stored to optimize performance.
+   - Remove expired or unavailable products automatically.
+
+---
+
+**Outcome:**  
+Helps users quickly revisit products or outfits they were interested in, increasing engagement and potential conversions.
+
+# Section: Trending
+
+**Short Description:**  
+Highlights products and outfits that are currently popular or most interacted with by users.
+
+---
+
+## Collection Methods
+
+1. **User Activity**
+   - Track purchases, wishlist saves, and shares.
+   - Calculate popularity scores based on interactions.
+
+2. **Sales Data**
+   - Integrate affiliate sales data to identify high-selling items.
+
+3. **AI Boost**
+   - AI can identify patterns and recommend emerging trends based on catalog and user engagement.
+
+---
+
+## Workflow / Operation
+
+1. **Data Aggregation**
+   - Combine user interaction metrics and sales data.
+   - Rank products/outfits based on popularity score.
+
+2. **Display**
+   - Show trending items in carousel/grid format.
+   - Optionally highlight “Hot Trend” badges.
+
+3. **Maintenance**
+   - Update trending list daily or in real-time depending on traffic.
+   - Remove unavailable products automatically.
+
+---
+
+**Outcome:**  
+Users discover the most popular products and outfits, increasing engagement, sales, and inspiration.
+
+# Section: Standard Categories
+
+**Short Description:**  
+Traditional product categorization to help users browse items by type.
+
+---
+
+## Categories Examples
+
+- T-Shirts
+- Shirts
+- Pants
+- Jackets
+- Shoes
+- Accessories
+- Bags
+
+---
+
+## Workflow / Operation
+
+1. **Category Assignment**
+   - Each product in the catalog is tagged with a category.
+   - Categories are consistent across affiliate sources and internal products.
+
+2. **Browsing**
+   - Users select a category to browse items in grid/list view.
+   - Optional filters (Style Hub) can refine products within the category.
+
+3. **Maintenance**
+   - Update category assignments as new products are added.
+   - Ensure category hierarchy remains logical and scalable.
+
+---
+
+**Outcome:**  
+Users can browse products in familiar groupings, making navigation simple and intuitive.

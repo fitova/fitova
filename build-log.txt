@@ -1,0 +1,19 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ظأب Invalid next.config.js options detected: 
+ ظأب     Unrecognized key(s) in object: 'swcMinify'
+ ظأب See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ظأب Attempted to load @next/swc-win32-x64-msvc, but an error occurred: \\?\C:\Users\seefq\OneDrive\╪│╪╖╪ص ╪د┘┘à┘â╪ز╪ذ\fitova\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid Win32 application.
+\\?\C:\Users\seefq\OneDrive\╪│╪╖╪ص ╪د┘┘à┘â╪ز╪ذ\fitova\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
+   Skipping creating a lockfile at C:\Users\seefq\OneDrive\╪│╪╖╪ص ╪د┘┘à┘â╪ز╪ذ\fitova\.next\lock because we're using WASM bindings
+   ظû▓ Next.js 16.0.4 (Turbopack)
+   - Environments: .env.local
+
+ ظأب The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ظأب Attempted to load @next/swc-win32-x64-msvc, but an error occurred: \\?\C:\Users\seefq\OneDrive\╪│╪╖╪ص ╪د┘┘à┘â╪ز╪ذ\fitova\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node is not a valid Win32 application.
+\\?\C:\Users\seefq\OneDrive\╪│╪╖╪ص ╪د┘┘à┘â╪ز╪ذ\fitova\node_modules\@next\swc-win32-x64-msvc\next-swc.win32-x64-msvc.node
+
+> Build error occurred
+Error: `turbo.createProject` is not supported by the wasm bindings.
+    at ignore-listed frames

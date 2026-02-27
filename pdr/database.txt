@@ -1,0 +1,159 @@
+# Users Database Schema – Fitova (Updated)
+
+## 1️⃣ Users Table – بيانات الحساب الأساسية
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف فريد للمستخدم |
+| email | VARCHAR | البريد الإلكتروني |
+| password_hash | VARCHAR | كلمة السر المشفرة |
+| first_name | VARCHAR | اسم المستخدم |
+| last_name | VARCHAR | اسم العائلة |
+| date_of_birth | DATE | تاريخ الميلاد (اختياري) |
+| gender | ENUM('Male','Female','Other') | جنس المستخدم |
+| created_at | TIMESTAMP | تاريخ إنشاء الحساب |
+| updated_at | TIMESTAMP | آخر تحديث |
+
+## 2️⃣ User Profile – التفضيلات الأساسية
+> JSON fields علشان نقدر ندخل اختيارات متعددة بدون تعقيد جداول كثيرة
+
+| Field | Type | Description |
+|-------|------|-------------|
+| user_id | FK → Users.id | معرف المستخدم |
+| preferred_moods | JSON | Array of moods (e.g., ["Confident","Chill"]) |
+| preferred_styles | JSON | Array of styles (e.g., ["Casual","Formal"]) |
+| preferred_colors | JSON | Array of color codes (e.g., ["#000000","#FFFFFF"]) |
+| preferred_occasions | JSON | Array of occasions (e.g., ["Work","Wedding"]) |
+| preferred_brands | JSON | Array of brands |
+| preferred_materials | JSON | Array of materials |
+| style_score | JSON | Calculated scores for AI recommendations |
+
+## 3️⃣ User Interactions – سلوك المستخدم
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INT / PK | معرف الفعل |
+| user_id | FK → Users.id | معرف المستخدم |
+| entity_type | VARCHAR | نوع العنصر (product, outfit, coupon) |
+| entity_id | VARCHAR | معرف المنتج/الطقم اللي اتفاعل معاه |
+| action | VARCHAR | نوع الفعل (view, click, save, purchase) |
+| timestamp | TIMESTAMP | توقيت الحدث |
+
+## 4️⃣ Saved Worlds – Style Hub Configurations
+| Field | Type | Description |
+|-------|------|-------------|
+| id | PK | معرف World |
+| user_id | FK → Users.id | معرف المستخدم |
+| name | VARCHAR | اسم الـ World |
+| filters | JSON | كل الفلاتر المحددة (Mood, Style, Color, Occasion, Season, Brand, Material) |
+| created_at | TIMESTAMP | وقت الحفظ |
+
+> ✅ ملاحظة: الـ World الآن يحفظ فقط الفلاتر، والمنتجات يتم حسابها ديناميكيًا عند العرض.
+
+## 5️⃣ Extras / Optional Tables
+| Table | Description |
+|-------|-------------|
+| User_Devices | لتخزين أجهزة متعددة لكل مستخدم (Multi-login support) |
+| User_Settings | إعدادات إضافية مثل notifications, language preference |
+| User_Notifications | سجل التنبيهات وAlerts |
+
+💡 **مميزات النسخة المحدثة:**
+- Saved Worlds مرنة بالكامل ولا تحتاج تحديث عند تغيير المنتجات  
+- المنتجات تظهر ديناميكيًا طبقًا للفلاتر الحالية  
+- JSON fields تجعل تحليل الـ AI أسهل وأكثر دقة  
+- جاهزة مباشرة للـ AI agent و Dev لاستخدامها في Lookbooks وOutfits وRecommendations
+
+# Fitova Database Schema – Products & Features Complete
+
+## 1️⃣ Products Table – المنتجات + تفاصيلها
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف المنتج |
+| name | VARCHAR | اسم المنتج |
+| description | TEXT | وصف المنتج |
+| images | JSON | صور المنتج |
+| price | DECIMAL | السعر |
+| colors | JSON | ألوان متاحة (codes) |
+| styles | JSON | Styles / Categories |
+| material | VARCHAR | خامة المنتج |
+| brand | VARCHAR | الماركة |
+| season | ENUM('Spring','Summer','Autumn','Winter') | الموسم |
+| mood | JSON | Array of moods applicable (e.g., ["Confident","Chill"]) |
+| piece_type | ENUM('T-Shirt','Pants','Jacket','Shoes','Accessories',…) | نوع القطعة |
+| size | JSON | Array of available sizes (e.g., ["S","M","L","XL"]) |
+| stock_status | ENUM('In stock','Out of stock') | حالة المنتج |
+| quantity | INT | كمية متاحة (optional) |
+| affiliate_link | VARCHAR | رابط الأفلييت للشراء |
+| tags | JSON | كلمات مفتاحية للفلترة والبحث |
+| created_at | TIMESTAMP | وقت الإضافة |
+| updated_at | TIMESTAMP | آخر تحديث |
+| commission | DECIMAL | نسبة العمولة من الأفلييت |
+| merchant_id | VARCHAR | معرف التاجر في الأفلييت |
+| affiliate_program | VARCHAR | اسم برنامج الأفلييت |
+
+---
+
+## 2️⃣ Collections / Lookbooks / Outfits – الطقم أو Lookbook
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف الطقم |
+| name | VARCHAR | اسم الطقم / Lookbook |
+| product_ids | JSON | كل المنتجات المكونة للطقم |
+| created_by | FK → Users.id | لو المستخدم عمل الطقم |
+| generated_by_ai | BOOLEAN | لو الطقم اتعمل بالـ AI |
+| created_at | TIMESTAMP | وقت الإضافة |
+
+---
+
+## 3️⃣ Categories Table – الأقسام الرئيسية
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف القسم |
+| name | VARCHAR | اسم القسم (T-Shirts, Pants, Jackets …) |
+| parent_id | FK → Categories.id | لو فيه Sub-category |
+| created_at | TIMESTAMP | وقت الإضافة |
+| updated_at | TIMESTAMP | آخر تحديث |
+
+---
+
+## 4️⃣ Offers / Coupons Table – العروض والكوبونات
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف العرض / الكوبون |
+| code | VARCHAR | كود الخصم لو موجود |
+| description | TEXT | وصف العرض |
+| discount_type | ENUM('Percentage','Fixed') | نوع الخصم |
+| discount_value | DECIMAL | قيمة الخصم |
+| valid_from | DATE | بداية العرض |
+| valid_to | DATE | نهاية العرض |
+| applicable_products | JSON | المنتجات المطبقة عليها الخصم |
+| created_at | TIMESTAMP | وقت الإضافة |
+
+---
+
+## 5️⃣ Recent & Trending Table – آخر المشاهدات والترند
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف السجل |
+| type | ENUM('Recent','Trending') | نوع القائمة |
+| product_ids | JSON | المنتجات اللي ظهرت |
+| updated_at | TIMESTAMP | آخر تحديث ديناميكي |
+
+---
+
+## 6️⃣ Wishlist Table – الويش ليست
+| Field | Type | Description |
+|-------|------|-------------|
+| id | UUID / PK | معرف السجل |
+| user_id | FK → Users.id | معرف المستخدم |
+| type | ENUM('Single','Collection') | فردية / طقم كامل |
+| item_id | UUID | product_id أو collection_id حسب النوع |
+| created_at | TIMESTAMP | وقت الإضافة |
+
+---
+
+💡 **ملاحظات مهمة:**
+- جميع المنتجات مرتبطة بالـ Affiliate APIs لتحديث تلقائي.  
+- Mood, Style, Piece Type, Size تستخدم في **Style Hub & Mood-based Browsing**.  
+- Saved Worlds تحفظ فقط الفلاتر، المنتجات تحسب ديناميكيًا.  
+- Wishlist تقسم لفردية وكولكشن لتسهيل إدارة الطقم أو المنتجات المنفصلة.  
+- Collections / Lookbooks يمكن أن تكون **AI-generated أو user-made**.  
+- Recent & Trending ديناميكي ويعتمد على التفاعل العام.

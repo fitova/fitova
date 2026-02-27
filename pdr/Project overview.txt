@@ -1,0 +1,24 @@
+# Project Overview: Fitova
+
+**Tagline:** Your smart fashion hub
+
+## Project Idea
+Fitova is an advanced affiliate fashion platform that aggregates products from multiple brands while offering a unique, intelligent shopping experience. Users can quickly find everything they want, filter products dynamically, and enjoy a stylish, modern interface.
+
+## Target Audience
+All ages, both men and women, interested in fashion and smart shopping.
+
+## Core Features
+- **Dynamic UI:** The website interface changes based on the filters and style choices selected by the user. Layered UI allows combining multiple contexts, e.g., Winter + Casual, Winter + Another Style, etc.
+- **Save Worlds:** Users can save full outfits or filter sets, not just individual products.
+- **AI Styling:** Suggest complete outfits based on uploaded images or user preferences.
+- **Collections / Lookbooks:** Complete outfits grouped for easy browsing.
+- **Offers & Coupons:** Centralized management of discounts and promotions.
+- **Dashboard:** Full control over products, filters, collections, offers, and user interactions.
+- **Affiliate Integration:** Connect with external affiliate APIs (SHEIN, Amazon, etc.) to pull products automatically.
+
+## Goals
+1. Launch a fully functional website first, with all core features integrated.
+2. Expand to a mobile app later, reusing website data and AI functionalities.
+3. Provide a seamless, enjoyable shopping experience with intuitive filters and layered UI styling.
+4. Make administration and content management simple via a centralized dashboard.

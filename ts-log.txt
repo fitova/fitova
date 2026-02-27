@@ -1,0 +1,2 @@
+src/components/BlogGridWithSidebar/index.tsx(182,16): error TS2304: Cannot find name 'loadingProducts'.
+src/components/BlogGridWithSidebar/index.tsx(185,43): error TS2304: Cannot find name 'productData'.
