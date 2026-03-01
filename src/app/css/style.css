@@ -18,6 +18,18 @@
     overflow-x: hidden;
   }
 
+  main {
+    /* Prevent any child component (3D canvas, marquee, etc.) from
+       causing horizontal scroll on mobile. "clip" is stricter than
+       "hidden" — it also prevents scroll chaining. */
+    overflow-x: clip;
+    max-width: 100vw;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
   h1,
   h2,
   h3,
@@ -246,8 +258,13 @@ input[type='search']::-webkit-search-results-decoration {
 
 /* ── Brand Marquee animation ─────────────────────────────────────────── */
 @keyframes scrollRTL {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .brand-track {

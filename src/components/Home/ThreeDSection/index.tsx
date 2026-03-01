@@ -135,19 +135,19 @@ function Camera({ progress }: { progress: number }) {
 }
 
 /* ─── 3D Canvas scene ─────────────────────────────────────── */
-function Scene({ progress, modelScale }: { progress: number; modelScale: number }) {
+function Scene({ progress, modelScale, isMobile }: { progress: number; modelScale: number; isMobile: boolean }) {
     return (
         <Canvas
-            gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-            dpr={[1, 1.5]}
+            gl={{ antialias: !isMobile, alpha: true, powerPreference: "high-performance" }}
+            dpr={isMobile ? [1, 1] : [1, 1.5]}
             style={{ background: "transparent", width: "100%", height: "100%" }}
-            frameloop="always"
+            frameloop={isMobile ? "demand" : "always"}
         >
             <Camera progress={progress} />
             <ambientLight intensity={1.0} />
             <directionalLight position={[3, 8, 4]} intensity={1.8} />
             <directionalLight position={[-4, 3, -2]} intensity={0.6} />
-            <pointLight position={[0, 5, 0]} intensity={0.8} />
+            {!isMobile && <pointLight position={[0, 5, 0]} intensity={0.8} />}
 
             <Suspense fallback={null}>
                 <Environment preset="studio" />
@@ -167,12 +167,15 @@ function Scene({ progress, modelScale }: { progress: number; modelScale: number 
                     startRotation={-Math.PI}      // starts with back to viewer
                 />
 
-                <ContactShadows
-                    position={[0, -modelScale * 2.2, 0]}
-                    opacity={0.2}
-                    scale={modelScale * 8}
-                    blur={3}
-                />
+                {/* Skip expensive blur shadow pass on mobile */}
+                {!isMobile && (
+                    <ContactShadows
+                        position={[0, -modelScale * 2.2, 0]}
+                        opacity={0.2}
+                        scale={modelScale * 8}
+                        blur={3}
+                    />
+                )}
             </Suspense>
         </Canvas>
     );
@@ -183,20 +186,19 @@ const ThreeDSection = () => {
     const sectionRef = useRef<HTMLDivElement>(null);
     const progress = useScrollProgress(sectionRef);
 
-    // Responsive model scale
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🎚️ MODEL SCALE — change numbers below to resize models
-    //  mobile  (< 640px):  first  number  → currently 0.65
-    //  tablet  (< 1024px): second number  → currently 0.90
-    //  desktop (≥ 1024px): third  number  → currently 1.25
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Responsive model scale + isMobile detection
     const [modelScale, setModelScale] = useState(1.25);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
+
     useEffect(() => {
         const update = () => {
             const w = window.innerWidth;
-            if (w < 640) setModelScale(0.65);  // 📱 mobile
-            else if (w < 1024) setModelScale(0.90);  // 📟 tablet
-            else setModelScale(1.25);  // 🖥️ desktop
+            setIsMobile(w < 768);
+            setIsTablet(w >= 768 && w < 1024);
+            if (w < 640) setModelScale(0.65);
+            else if (w < 1024) setModelScale(0.90);
+            else setModelScale(1.25);
         };
         update();
         window.addEventListener("resize", update);
@@ -210,17 +212,20 @@ const ThreeDSection = () => {
             ref={sectionRef}
             className="relative overflow-hidden"
             style={{
-                background: "linear-gradient(to right, #0A0A0A 0%, #1A1A1A 28%, #888880 42%, #F0EDE8 52%, #FFFFFF 100%)",
-                minHeight: "100vh",
-                height: "100vh",
+                background: isMobile
+                    ? "linear-gradient(to bottom, #0A0A0A 0%, #1A1A1A 40%, #888880 70%, #F0EDE8 100%)"
+                    : "linear-gradient(to right, #0A0A0A 0%, #1A1A1A 28%, #888880 42%, #F0EDE8 52%, #FFFFFF 100%)",
+                // On mobile: auto height to prevent overflow. On desktop: 100vh.
+                minHeight: isMobile ? "auto" : "100vh",
+                height: isMobile ? "auto" : "100vh",
             }}
         >
-            {/* Responsive layout: row on large screens, col on smaller */}
+            {/* Responsive layout: row on large screens, col on mobile */}
             <div className="w-full flex flex-col lg:flex-row items-stretch lg:h-full">
                 {/* ── Text + CTA ── */}
                 <div
-                    className="w-full lg:w-[42%] flex flex-col justify-center py-20 lg:py-0 z-10"
-                    style={{ padding: "0 clamp(24px, 5vw, 80px) 0 clamp(16px, 4vw, 60px)" }}
+                    className="w-full lg:w-[42%] flex flex-col justify-center py-14 lg:py-0 z-10 px-5 sm:px-10 lg:px-0"
+                    style={{ padding: isMobile ? "56px 24px 32px" : `0 clamp(24px, 5vw, 80px) 0 clamp(16px, 4vw, 60px)` }}
                 >
                     {/* Eyebrow */}
                     <span
@@ -232,7 +237,7 @@ const ThreeDSection = () => {
 
                     {/* Typing headline */}
                     <h2
-                        className="font-playfair text-4xl md:text-5xl xl:text-6xl leading-tight mb-6 whitespace-pre-line"
+                        className="font-playfair text-3xl sm:text-4xl md:text-5xl xl:text-6xl leading-tight mb-6 whitespace-pre-line"
                         style={{ color: "#F6F5F2", letterSpacing: "-0.02em" }}
                     >
                         {headline}
@@ -307,12 +312,18 @@ const ThreeDSection = () => {
                     </div>
                 </div>
 
-                {/* ── 3D Canvas Container ── */}
-                <div
-                    className="w-full lg:w-[58%] relative flex-1 min-h-[55vh] lg:min-h-screen"
-                >
-                    <Scene progress={progress} modelScale={modelScale} />
-                </div>
+            </div>
+
+            {/* ── 3D Canvas Container — always shown, height varies by breakpoint ── */}
+            <div
+                className="w-full lg:w-[58%] relative flex-1"
+                style={{
+                    // Mobile: 320px, Tablet: up to 480px, Desktop: fills 100vh via flex
+                    height: isMobile ? "320px" : isTablet ? "480px" : "100%",
+                    minHeight: isMobile ? "320px" : isTablet ? "480px" : undefined,
+                }}
+            >
+                <Scene progress={progress} modelScale={modelScale} isMobile={isMobile} />
             </div>
 
             {/* CSS for blink cursor */}
