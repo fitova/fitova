@@ -312,27 +312,26 @@ const ThreeDSection = () => {
                     </div>
                 </div>
 
-            </div>
+                {/* ── 3D Canvas Container ── */}
+                <div
+                    className="w-full lg:w-[58%] relative flex-1"
+                    style={{
+                        height: isMobile ? "320px" : isTablet ? "480px" : "100%",
+                        minHeight: isMobile ? "320px" : isTablet ? "480px" : undefined,
+                    }}
+                >
+                    <Scene progress={progress} modelScale={modelScale} isMobile={isMobile} />
+                </div>
 
-            {/* ── 3D Canvas Container — always shown, height varies by breakpoint ── */}
-            <div
-                className="w-full lg:w-[58%] relative flex-1"
-                style={{
-                    // Mobile: 320px, Tablet: up to 480px, Desktop: fills 100vh via flex
-                    height: isMobile ? "320px" : isTablet ? "480px" : "100%",
-                    minHeight: isMobile ? "320px" : isTablet ? "480px" : undefined,
-                }}
-            >
-                <Scene progress={progress} modelScale={modelScale} isMobile={isMobile} />
-            </div>
+            </div>{/* closes flex row */}
 
             {/* CSS for blink cursor */}
             <style jsx>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
+            @keyframes blink {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0; }
+            }
+        `}</style>
         </section>
     );
 };
