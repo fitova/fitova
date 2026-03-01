@@ -1,0 +1,89 @@
+-- ============================================================
+-- Fitova - V3 Upgrade Schema Updates
+-- Run this file in: Supabase > SQL Editor > New query
+-- ============================================================
+
+-- ============================================================
+-- 1. Updates to "products" Table
+-- ============================================================
+ALTER TABLE public.products
+ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS is_trending BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS is_bestseller BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS is_new_arrival BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_products_is_hidden ON public.products (is_hidden) WHERE is_hidden = false;
+CREATE INDEX IF NOT EXISTS idx_products_is_trending ON public.products (is_trending) WHERE is_trending = true;
+CREATE INDEX IF NOT EXISTS idx_products_is_bestseller ON public.products (is_bestseller) WHERE is_bestseller = true;
+
+-- ============================================================
+-- 2. Updates to "wishlist" Table
+-- ============================================================
+-- Allow tracking of collections, colors, and styles.
+-- Drop the existing unique constraint because we are adding new unique conditions
+ALTER TABLE public.wishlist
+DROP CONSTRAINT IF EXISTS wishlist_user_id_product_id_key;
+
+-- We need to make product_id nullable since a wishlist item can now be just a collection
+ALTER TABLE public.wishlist
+ALTER COLUMN product_id DROP NOT NULL;
+
+-- Add new columns
+ALTER TABLE public.wishlist
+ADD COLUMN IF NOT EXISTS collection_id UUID REFERENCES public.collections(id) ON DELETE CASCADE,
+ADD COLUMN IF NOT EXISTS color TEXT,
+ADD COLUMN IF NOT EXISTS style TEXT;
+
+-- Create constraint to ensure either a product or a collection is provided
+ALTER TABLE public.wishlist
+ADD CONSTRAINT chk_wishlist_item_type CHECK (
+    (product_id IS NOT NULL AND collection_id IS NULL) OR
+    (product_id IS NULL AND collection_id IS NOT NULL)
+);
+
+-- Note: We do not add a unique constraint here dynamically because a user might 
+-- wishlist the same product twice but with different colors/styles.
+-- Rely on frontend / RPC logic to prevent exact duplicates if necessary.
+
+-- ============================================================
+-- 3. Create "homepage_sections" Table
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.homepage_sections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  section_identifier TEXT NOT NULL UNIQUE,
+  title TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  content JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS) FOR NEW TABLE
+-- ============================================================
+ALTER TABLE public.homepage_sections ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "homepage_sections: public read"  
+ON public.homepage_sections FOR SELECT USING (true);
+
+CREATE POLICY "homepage_sections: admin write"  
+ON public.homepage_sections FOR ALL USING (public.is_admin());
+
+-- ============================================================
+-- SEED DATA for homepage_sections
+-- ============================================================
+INSERT INTO public.homepage_sections (section_identifier, title, sort_order, is_active)
+VALUES 
+  ('hero_carousel', 'Main Hero Carousel', 10, true),
+  ('category_cards', 'Category Cards', 20, true),
+  ('affiliate_promo', 'Affiliate Promo Banner', 30, true),
+  ('new_arrivals', 'New Arrivals', 40, true),
+  ('best_sellers', 'Best Sellers', 50, false), -- Requirement: limit visibility
+  ('trending', 'Trending Now', 60, false), -- Requirement: hidden but not deleted
+  ('this_week', 'Ourview This Week', 70, true),
+  ('3d_section', '3D AI Model Showcase', 80, true),
+  ('lookbook_preview', 'Lookbook Preview', 90, true)
+ON CONFLICT (section_identifier) DO NOTHING;
+
+-- Done!
