@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
@@ -38,6 +39,7 @@ type StyleHubContextType = {
     setFilter: (key: keyof StyleHubFilters, value: string) => void;
     resetFilters: () => void;
     applyWorld: (world: SavedWorld) => void;
+    applyToShop: () => void;
     savedWorlds: SavedWorld[];
     saveWorld: (name: string, imageUrl?: string) => Promise<void>;
     deleteWorld: (id: string) => Promise<void>;
@@ -77,6 +79,7 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
     const { user } = useAuth();
     const supabase = createClient();
+    const router = useRouter();
 
     const [isOpen, setIsOpen] = useState(false);
     const [filters, setFilters] = useState<StyleHubFilters>(defaultFilters);
@@ -138,6 +141,21 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
         toast.success(`Applied "${world.name}" world filters!`);
     };
 
+    const applyToShop = () => {
+        // Persist StyleHub filters to localStorage so ShopWithSidebar can pick them up
+        const shopFilters = {
+            style: filters.style || "",
+            season: filters.season || "",
+            brand: filters.brand || "",
+            material: filters.material || "",
+            colors: filters.color || [],
+        };
+        localStorage.setItem("fitova_shop_filters", JSON.stringify(shopFilters));
+        closeStyleHub();
+        router.push("/shop-with-sidebar");
+        toast.success("Filters applied! Showing matching products.");
+    };
+
     const saveWorld = async (name: string, imageUrl?: string) => {
         if (!user) {
             toast.error("You must be logged in to save a style world.");
@@ -190,6 +208,7 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
                 setFilter,
                 resetFilters,
                 applyWorld,
+                applyToShop,
                 savedWorlds,
                 saveWorld,
                 deleteWorld,

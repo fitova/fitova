@@ -38,7 +38,7 @@ FITOVA is a multi-page fashion affiliate platform with an AI styling feature, lo
 | Hero images are local static AI-generated images | `HeroCarousel.tsx` | 🟡 Medium |
 | Products `imgs` field missing in Supabase `Product` type (uses `product_images[]` join) | `lib/queries/products.ts` | 🟡 Medium |
 | AddressModal, MyAccount forms use hardcoded placeholder values | `AddressModal.tsx` | 🟡 Medium |
-| Admin layout does not use Supabase to verify is_admin (uses dummy user) | `app/admin/layout.tsx` | 🟡 Medium |
+| ✅ Admin layout now uses Supabase to verify is_admin | `app/admin/layout.tsx` | 🟡 Medium |
 | No coupons section (merged with offers) | `app/admin/offers/` | 🟡 Medium |
 | No homepage control section in admin | `app/admin/` | 🟡 Medium |
 | No analytics/charts in admin overview | `app/admin/page.tsx` | 🟡 Medium |
@@ -272,6 +272,8 @@ FITOVA is a multi-page fashion affiliate platform with an AI styling feature, lo
 | ✅ Add `affiliate_link` to Redux CartItem and all dispatchers | `cart-slice.ts` + 6 components |
 | ✅ Rename "Process to Checkout" → "Buy All Items" with affiliate link opener | `Cart/OrderSummary.tsx` |
 | ✅ Connect Admin overview stats to live Supabase count queries | `app/admin/page.tsx` |
+| ✅ Connect Admin Products list to Supabase (currently returns hardcoded empty array) | `app/admin/products/page.tsx` |
+| ✅ Connect Admin Product Form save/load to Supabase | `app/admin/products/[id]/page.tsx` |
 
 ### Phase 2 — Feature Completion (Week 2) 🟡
 | Task | File |
@@ -283,14 +285,14 @@ FITOVA is a multi-page fashion affiliate platform with an AI styling feature, lo
 | ✅ Create Lookbook user creation flow (modal + Supabase insert) | `Lookbook/index.tsx` + new modal |
 | ✅ Connect Lookbook display to Supabase `collections` + `user_lookbooks` | `Lookbook/index.tsx` |
 | ✅ Connect MyAccount profile form to Supabase `profiles` | `MyAccount/index.tsx` |
-| Connect AddressModal to Supabase `user_addresses` CRUD | `AddressModal.tsx` |
+| ✅ Connect AddressModal to Supabase `user_addresses` CRUD | `AddressModal.tsx` |
 | ✅ **[BUG FIX]** Fix Lookbook creation error — unique slug + RLS policy fix + SQL migration | `CreateLookbookModal.tsx` + `docs/sql/phase2_fixes.sql` |
 | ✅ **[BUG FIX]** Restore Lookbook card UI to original design with real Supabase data | `Lookbook/index.tsx` |
 | ✅ **[BUG FIX]** Fix navbar z-index covering Lookbook — filter bar now `top-[72px]` below nav | `Lookbook/index.tsx` |
 | ✅ **[FEATURE]** Replace StyleHub "Save World" with modal popup (name + image + Save/Cancel) | `SaveWorldModal.tsx` + `StyleHub/index.tsx` |
 | ✅ **[FEATURE]** Add `image_url` to `saved_style_worlds` + upload to Supabase Storage `world-images` | `SaveWorldModal.tsx` + `phase2_fixes.sql` |
 | ✅ **[FEATURE]** Display saved worlds in StyleHub panel with thumbnails; clicking applies filters | `StyleHub/index.tsx` + `StyleHubContext.tsx` |
-| **[FEATURE]** Connect StyleHub filter state to Shop page product listing | `StyleHubContext.tsx` + `ShopWithSidebar` |
+| ⚠️ **[FEATURE]** Connect StyleHub filter state to Shop page product listing | `StyleHubContext.tsx` + `ShopWithSidebar` |
 | ✅ **[FEATURE]** Admin StyleHub control page `/admin/style-hub` with world list + delete | `app/admin/style-hub/page.tsx` + `AdminSidebar.tsx` |
 | ✅ **[BUG FIX]** Fix images not showing — added Supabase Storage domain to `next.config.js` remotePatterns | `next.config.js` |
 | ✅ **[BUG FIX]** Fix strange numbers under worlds — now shows "3 filters" text instead of raw count | `StyleHub/index.tsx` |
@@ -666,66 +668,66 @@ Structure:
 > ✅ Complete each step in order. Each step builds on the previous.
 
 #### Step 1 — Database Setup
-- [ ] Create `product_views` table with all columns and indexes (SQL from §9D)
-- [ ] Create `cart_events` table with indexes
-- [ ] Add `is_best_seller_pinned` column to `products` table
-- [ ] Add `affiliate_link_clicks` column to `products` table
-- [ ] Create `get_trending_products()` RPC function in Supabase SQL editor
-- [ ] Set RLS on `product_views`: allow anonymous INSERT, user can only SELECT own rows
-- [ ] Set RLS on `cart_events`: allow authenticated INSERT only
-- [ ] Test RPC function returns correct results in Supabase dashboard
+- [x] Create `product_views` table with all columns and indexes (SQL from §9D)
+- [x] Create `cart_events` table with indexes
+- [x] Add `is_best_seller_pinned` column to `products` table
+- [x] Add `affiliate_link_clicks` column to `products` table
+- [x] Create `get_trending_products()` RPC function in Supabase SQL editor
+- [x] Set RLS on `product_views`: allow anonymous INSERT, user can only SELECT own rows
+- [x] Set RLS on `cart_events`: allow authenticated INSERT only
+- [x] Test RPC function returns correct results in Supabase dashboard
 
 #### Step 2 — Query Layer
-- [ ] Create `src/lib/queries/trending.ts` with `getTrendingProducts(limit)`
-- [ ] Create `src/lib/queries/bestSellers.ts` with `getBestSellers(limit)`
-- [ ] Create `src/lib/queries/recentlyViewed.ts` with `getRecentlyViewed(userId, limit)`
-- [ ] Create `src/lib/queries/tracking.ts` with `trackProductView()`, `trackCartEvent()`, `trackAffiliateClick()`
-- [ ] Test each function in isolation (console.log results)
+- [x] Create `src/lib/queries/trending.ts` with `getTrendingProducts(limit)`
+- [x] Create `src/lib/queries/bestSellers.ts` with `getBestSellers(limit)`
+- [x] Create `src/lib/queries/recentlyViewed.ts` with `getRecentlyViewed(userId, limit)`
+- [x] Create `src/lib/queries/tracking.ts` with `trackProductView()`, `trackCartEvent()`, `trackAffiliateClick()`
+- [x] Test each function in isolation (console.log results)
 
 #### Step 3 — Tracking Integration
-- [ ] In product detail page component: call `trackProductView(productId, userId)` on mount (fire-and-forget)
-- [ ] Implement 30-min debounce check before inserting into `product_views`
-- [ ] For anonymous users: save product ID + timestamp to `localStorage['fitova_rv']`
-- [ ] On user login: merge `localStorage` history into `product_views` table (one-time sync in `AuthContext`)
-- [ ] In cart `addItemToCart` dispatchers: call `trackCartEvent(productId, userId)` (fire-and-forget)
-- [ ] In cart Buy button handler: call `trackAffiliateClick(productId)` for each item before opening affiliate link
+- [x] In product detail page component: call `trackProductView(productId, userId)` on mount (fire-and-forget)
+- [x] Implement 30-min debounce check before inserting into `product_views`
+- [x] For anonymous users: save product ID + timestamp to `localStorage['fitova_rv']`
+- [x] On user login: merge `localStorage` history into `product_views` table (one-time sync in `AuthContext`)
+- [x] In cart `addItemToCart` dispatchers: call `trackCartEvent(productId, userId)` (fire-and-forget)
+- [x] In cart Buy button handler: call `trackAffiliateClick(productId)` for each item before opening affiliate link
 
 #### Step 4 — "This Week" Component
-- [ ] Create `src/components/Home/ThisWeek/index.tsx` with 3 tabs
-- [ ] Add tab state: `useState<'trending' | 'bestsellers' | 'recently_viewed'>('trending')`
-- [ ] "Trending" tab: call `getTrendingProducts(10)` and render `ProductGrid`
-- [ ] "Best Sellers" tab: call `getBestSellers(10)` and render `ProductGrid`
-- [ ] "Recently Viewed" tab: conditionally show if user is logged in, call `getRecentlyViewed(userId, 10)`
-- [ ] For anonymous users: hide "Recently Viewed" tab OR show localStorage-based fallback
-- [ ] Add `Swiper` carousel for mobile (1.2 peek on mobile, grid on tablet/desktop)
-- [ ] Add loading skeleton placeholders for each tab
+- [x] Create `src/components/Home/ThisWeek/index.tsx` with 3 tabs
+- [x] Add tab state: `useState<'trending' | 'bestsellers' | 'recently_viewed'>('trending')`
+- [x] "Trending" tab: call `getTrendingProducts(10)` and render `ProductGrid`
+- [x] "Best Sellers" tab: call `getBestSellers(10)` and render `ProductGrid`
+- [x] "Recently Viewed" tab: conditionally show if user is logged in, call `getRecentlyViewed(userId, 10)`
+- [x] For anonymous users: hide "Recently Viewed" tab OR show localStorage-based fallback
+- [x] Add `Swiper` carousel for mobile (1.2 peek on mobile, grid on tablet/desktop)
+- [x] Add loading skeleton placeholders for each tab
 
 #### Step 5 — Homepage Integration
-- [ ] Add `<ThisWeek />` component to `src/components/Home/index.tsx`
-- [ ] Verify `TrendingSection` on homepage calls same `getTrendingProducts()` — not a separate query
-- [ ] Verify `BestSeller` section on homepage calls same `getBestSellers()` — not a separate query
-- [ ] Remove any duplicate trending/bestseller logic if found
+- [x] Add `<ThisWeek />` component to `src/components/Home/index.tsx`
+- [x] Verify `TrendingSection` on homepage calls same `getTrendingProducts()` — not a separate query
+- [x] Verify `BestSeller` section on homepage calls same `getBestSellers()` — not a separate query
+- [x] Remove any duplicate trending/bestseller logic if found
 
 #### Step 6 — Admin Dashboard
-- [ ] In `app/admin/page.tsx`: add Trending Products table (Rank, Score, Views, Saves)
-- [ ] Add "Pin as Best Seller" toggle per product row
-- [ ] Add Best Seller override panel with drag-to-reorder (or simple sort_order input)
-- [ ] Add line chart for daily views (last 14 days) using `recharts`
-- [ ] Add bar chart for top 10 trending products using `recharts`
-- [ ] Connect `StatsCard` for "Views This Week" to live `product_views` count
+- [x] In `app/admin/page.tsx`: add Trending Products table (Rank, Score, Views, Saves)
+- [x] Add "Pin as Best Seller" toggle per product row
+- [x] Add Best Seller override panel with drag-to-reorder (or simple sort_order input)
+- [x] Add line chart for daily views (last 14 days) using `recharts`
+- [x] Add bar chart for top 10 trending products using `recharts`
+- [x] Connect `StatsCard` for "Views This Week" to live `product_views` count
 
 #### Step 7 — Testing & Validation
-- [ ] Browse product pages as logged-in user → verify rows appear in `product_views` table
-- [ ] Browse as anonymous → verify `localStorage['fitova_rv']` is populated
-- [ ] Log in after anonymous browsing → verify merge happens correctly
-- [ ] Refresh product page immediately → verify debounce prevents duplicate row
-- [ ] Add item to cart → verify row appears in `cart_events`
-- [ ] Click Buy → verify `affiliate_link_clicks` increments in `products` table
-- [ ] View "This Week" section → verify Trending tab shows correct products with scores
-- [ ] View "This Week" section → verify Best Sellers tab shows admin-pinned products first
-- [ ] View "This Week" section as logged-in user → verify Recently Viewed matches actual browsing
-- [ ] Admin dashboard → verify Trending Products table shows real data
-- [ ] Test on mobile (375px): verify swipeable carousel works correctly
-- [ ] Test on tablet (768px): verify 2-column grid layout
-- [ ] Test on desktop (1280px): verify 4-column grid layout
+- [x] Browse product pages as logged-in user → verify rows appear in `product_views` table
+- [x] Browse as anonymous → verify `localStorage['fitova_rv']` is populated
+- [x] Log in after anonymous browsing → verify merge happens correctly
+- [x] Refresh product page immediately → verify debounce prevents duplicate row
+- [x] Add item to cart → verify row appears in `cart_events`
+- [x] Click Buy → verify `affiliate_link_clicks` increments in `products` table
+- [x] View "This Week" section → verify Trending tab shows correct products with scores
+- [x] View "This Week" section → verify Best Sellers tab shows admin-pinned products first
+- [x] View "This Week" section as logged-in user → verify Recently Viewed matches actual browsing
+- [x] Admin dashboard → verify Trending Products table shows real data
+- [x] Test on mobile (375px): verify swipeable carousel works correctly
+- [x] Test on tablet (768px): verify 2-column grid layout
+- [x] Test on desktop (1280px): verify 4-column grid layout
 

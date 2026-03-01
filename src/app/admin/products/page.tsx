@@ -1,39 +1,31 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-// ⚠ DATABASE CONFIGURATION REQUIRED HERE
-// يجب وضع بيانات قاعدة البيانات الجديدة هنا
-
-interface Product {
-    id: string;
-    name: string;
-    brand: string;
-    price: number;
-    stock_status: string;
-    affiliate_link: string;
-    piece_type: string;
-    created_at: string;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminService } from "@/services/admin.service";
+import toast from "react-hot-toast";
 
 export default function AdminProductsPage() {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
-    const fetchProducts = useCallback(async () => {
-        setLoading(true);
-        // ⚠ DATABASE CONFIGURATION REQUIRED HERE
-        // يجب وضع بيانات قاعدة البيانات الجديدة هنا
-        setProducts([]);
-        setLoading(false);
-    }, [search]);
 
-    useEffect(() => { fetchProducts(); }, [fetchProducts]);
+    const { data: products = [], isLoading } = useQuery({
+        queryKey: ["admin-products", search],
+        queryFn: () => adminService.getProducts(search || undefined),
+    });
 
-    const handleDelete = async (id: string) => {
+    const mutationDelete = useMutation({
+        mutationFn: adminService.deleteProduct,
+        onSuccess: () => {
+            toast.success("Product deleted.");
+            queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+        },
+        onError: (err: any) => toast.error(err.message || "Failed to delete product"),
+    });
+
+    const handleDelete = (id: string) => {
         if (!confirm("Are you sure you want to delete this product?")) return;
-        // ⚠ DATABASE CONFIGURATION REQUIRED HERE
-        // يجب وضع بيانات قاعدة البيانات الجديدة هنا
-        fetchProducts();
+        mutationDelete.mutate(id);
     };
 
     return (
@@ -79,12 +71,12 @@ export default function AdminProductsPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {loading ? (
+                        {isLoading ? (
                             <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">Loading...</td></tr>
                         ) : products.length === 0 ? (
-                            <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">No products found.</td></tr>
+                            <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">No products found. <Link href="/admin/products/new" className="underline text-[#8B7355]">Add your first product →</Link></td></tr>
                         ) : (
-                            products.map((p) => (
+                            products.map((p: any) => (
                                 <tr key={p.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAFAF9] ease-out duration-150">
                                     <td className="px-5 py-4">
                                         <div>

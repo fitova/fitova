@@ -30,32 +30,67 @@ export type Product = {
     updated_at: string;
 };
 
-// Fetch all products (optional filtering by category or featured)
+// Fetch all products (optional filtering)
 export async function getProducts({
     categoryId,
     isFeatured,
     isDeal,
     limit = 20,
+    style,
+    season,
+    brand,
+    material,
+    colors,
+    size,
+    minPrice,
+    maxPrice,
+    sortBy,
+    search,
 }: {
     categoryId?: string;
     isFeatured?: boolean;
     isDeal?: boolean;
     limit?: number;
+    style?: string;
+    season?: string;
+    brand?: string;
+    material?: string;
+    colors?: string[];
+    size?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: string; // '0' = newest, '1' = best selling, '2' = oldest, 'price_asc', 'price_desc'
+    search?: string;
 } = {}) {
     const supabase = createClient();
     let query = supabase.from("products").select("*, product_images(url, type, sort_order)");
 
-    if (categoryId) {
-        query = query.eq("category_id", categoryId);
-    }
-    if (isFeatured !== undefined) {
-        query = query.eq("is_featured", isFeatured);
-    }
-    if (isDeal !== undefined) {
-        query = query.eq("is_deal", isDeal);
+    if (categoryId) query = query.eq("category_id", categoryId);
+    if (isFeatured !== undefined) query = query.eq("is_featured", isFeatured);
+    if (isDeal !== undefined) query = query.eq("is_deal", isDeal);
+    if (season) query = query.ilike("season", season);
+    if (brand) query = query.ilike("brand", `%${brand}%`);
+    if (material) query = query.ilike("material", `%${material}%`);
+    if (style) query = query.contains("styles", [style]);
+    if (colors && colors.length > 0) query = query.overlaps("colors", colors);
+    if (size) query = query.contains("size", [size]);
+    if (minPrice !== undefined) query = query.gte("price", minPrice);
+    if (maxPrice !== undefined) query = query.lte("price", maxPrice);
+    if (search) query = query.ilike("name", `%${search}%`);
+
+    if (sortBy === "1") {
+        query = query.order("views_count", { ascending: false });
+    } else if (sortBy === "2") {
+        query = query.order("created_at", { ascending: true });
+    } else if (sortBy === "price_asc") {
+        query = query.order("price", { ascending: true });
+    } else if (sortBy === "price_desc") {
+        query = query.order("price", { ascending: false });
+    } else {
+        query = query.order("created_at", { ascending: false });
     }
 
-    query = query.order("created_at", { ascending: false }).limit(limit);
+    query = query.limit(limit);
 
     const { data, error } = await query;
     if (error) throw error;

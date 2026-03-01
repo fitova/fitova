@@ -106,4 +106,35 @@ export const adminService = {
         const response = await axios.delete<ApiResponse<void>>(`${API_BASE}/categories/${id}`);
         if (!response.data.success) throw new Error(response.data.error);
     },
+
+    // --- Products ---
+    async getProducts(search?: string): Promise<any[]> {
+        const url = search ? `${API_BASE}/products?search=${encodeURIComponent(search)}` : `${API_BASE}/products`;
+        const response = await axios.get<ApiResponse<any[]>>(url);
+        if (!response.data.success) throw new Error(response.data.error);
+        return response.data.data || [];
+    },
+
+    async getProduct(id: string): Promise<any> {
+        const response = await axios.get<ApiResponse<any>>(`${API_BASE}/products/${id}`);
+        if (!response.data.success) throw new Error(response.data.error);
+        return response.data.data;
+    },
+
+    async createProduct(payload: Record<string, any>): Promise<any> {
+        const response = await axios.post<ApiResponse<any>>(`${API_BASE}/products`, payload);
+        if (!response.data.success) throw new Error(response.data.error);
+        return response.data.data;
+    },
+
+    async updateProduct(id: string, payload: Record<string, any>): Promise<any> {
+        const response = await axios.put<ApiResponse<any>>(`${API_BASE}/products/${id}`, payload);
+        if (!response.data.success) throw new Error(response.data.error);
+        return response.data.data;
+    },
+
+    async deleteProduct(id: string): Promise<void> {
+        const response = await axios.delete<ApiResponse<void>>(`${API_BASE}/products/${id}`);
+        if (!response.data.success) throw new Error(response.data.error);
+    },
 };

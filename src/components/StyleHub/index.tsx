@@ -8,7 +8,7 @@ const StyleHubModal = () => {
     const {
         isOpen, closeStyleHub,
         filters, setFilter, resetFilters,
-        saveWorld, savedWorlds, applyWorld, deleteWorld,
+        saveWorld, savedWorlds, applyWorld, applyToShop, deleteWorld,
         filterOptions,
     } = useStyleHub();
 
@@ -355,6 +355,20 @@ const StyleHubModal = () => {
                                     <polyline points="7 3 7 8 15 8" stroke="currentColor" strokeWidth="1.5" />
                                 </svg>
                                 Save World
+                            </button>
+                            <button
+                                onClick={applyToShop}
+                                className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 flex items-center justify-center gap-2"
+                                style={{ background: "#8B7355", color: "#F6F5F2" }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#7A6347"; }}
+                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#8B7355"; }}
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" strokeWidth="1.5" />
+                                    <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.5" />
+                                    <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" strokeWidth="1.5" />
+                                </svg>
+                                Shop Now
                             </button>
                         </div>
                     </>

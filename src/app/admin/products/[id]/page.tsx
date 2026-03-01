@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AestheticColorWheel from "@/components/Admin/AestheticColorWheel";
-// ⚠ DATABASE CONFIGURATION REQUIRED HERE
-// يجب وضع بيانات قاعدة البيانات الجديدة هنا
+import { adminService } from "@/services/admin.service";
 import toast from "react-hot-toast";
 
 const EMPTY = {
@@ -13,41 +13,93 @@ const EMPTY = {
     tags: "", colors: "", styles: "", size: "", material: "",
 };
 
+function toFormValue(product: any) {
+    return {
+        name: product.name || "",
+        description: product.description || "",
+        price: product.price?.toString() || "",
+        brand: product.brand || "",
+        piece_type: product.piece_type || "",
+        season: product.season || "",
+        stock_status: product.stock_status || "In stock",
+        affiliate_link: product.affiliate_link || "",
+        commission: product.commission?.toString() || "",
+        affiliate_program: product.affiliate_program || "",
+        merchant_id: product.merchant_id || "",
+        quantity: product.quantity?.toString() || "0",
+        tags: Array.isArray(product.tags) ? product.tags.join(", ") : (product.tags || ""),
+        colors: Array.isArray(product.colors) ? product.colors.join(", ") : (product.colors || ""),
+        styles: Array.isArray(product.styles) ? product.styles.join(", ") : (product.styles || ""),
+        size: Array.isArray(product.size) ? product.size.join(", ") : (product.size || ""),
+        material: product.material || "",
+    };
+}
+
 export default function ProductFormPage() {
     const params = useParams();
     const isNew = params?.id === "new";
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [form, setForm] = useState(EMPTY);
-    const [loading, setLoading] = useState(false);
+
+    // Load existing product if editing
+    const { data: existingProduct, isLoading: isLoadingProduct } = useQuery({
+        queryKey: ["admin-product", params?.id],
+        queryFn: () => adminService.getProduct(params!.id as string),
+        enabled: !isNew && !!params?.id,
+    });
 
     useEffect(() => {
-        if (!isNew && params?.id) {
-            // ⚠ DATABASE CONFIGURATION REQUIRED HERE
-            // يجب وضع بيانات قاعدة البيانات الجديدة هنا
-            setForm(EMPTY); // dummy data
+        if (existingProduct) {
+            setForm(toFormValue(existingProduct));
         }
-    }, [isNew, params?.id]);
+    }, [existingProduct]);
 
     const parseList = (s: string) =>
         s ? s.split(",").map((x) => x.trim()).filter(Boolean) : [];
 
+    const mutationCreate = useMutation({
+        mutationFn: adminService.createProduct,
+        onSuccess: () => {
+            toast.success("Product created!");
+            queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+            router.push("/admin/products");
+        },
+        onError: (err: any) => toast.error(err.message || "Failed to create product"),
+    });
+
+    const mutationUpdate = useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: any }) => adminService.updateProduct(id, payload),
+        onSuccess: () => {
+            toast.success("Product updated!");
+            queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-product", params?.id] });
+            router.push("/admin/products");
+        },
+        onError: (err: any) => toast.error(err.message || "Failed to update product"),
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.name || !form.price) { toast.error("Name and price are required."); return; }
-        setLoading(true);
 
-        // ⚠ DATABASE CONFIGURATION REQUIRED HERE
-        // يجب وضع بيانات قاعدة البيانات الجديدة هنا
+        const payload = { ...form };
 
-        setTimeout(() => {
-            setLoading(false);
-            toast.success(isNew ? "Product created!" : "Product updated!");
-            router.push("/admin/products");
-        }, 500);
+        if (isNew) {
+            mutationCreate.mutate(payload);
+        } else {
+            mutationUpdate.mutate({ id: params!.id as string, payload });
+        }
     };
+
+    const loading = mutationCreate.isPending || mutationUpdate.isPending;
 
     const inputCls = "w-full border border-[#E8E4DF] bg-white px-4 py-2.5 text-sm font-light outline-none focus:border-[#0A0A0A] ease-out duration-200";
     const labelCls = "block text-xs font-light tracking-[0.15em] uppercase text-[#4A4A4A] mb-1.5";
+
+    if (!isNew && isLoadingProduct) {
+        return <div className="text-sm text-[#8A8A8A] py-10 text-center">Loading product...</div>;
+    }
 
     return (
         <div className="max-w-3xl">
