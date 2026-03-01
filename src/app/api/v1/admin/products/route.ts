@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
         let query = supabase
             .from("products")
-            .select("id, name, brand, price, stock_status, affiliate_link, piece_type, created_at")
+            .select("id, name, brand, price, stock_status, affiliate_link, piece_type, created_at, product_images(url, type, sort_order)")
             .order("created_at", { ascending: false });
 
         if (search) {

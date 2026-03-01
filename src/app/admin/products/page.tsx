@@ -62,6 +62,7 @@ export default function AdminProductsPage() {
                 <table className="w-full text-sm font-light">
                     <thead>
                         <tr className="border-b border-[#E8E4DF] bg-[#FAFAF9]">
+                            <th className="text-left px-3 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A] w-12">Img</th>
                             <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Product</th>
                             <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Type</th>
                             <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Price</th>
@@ -76,38 +77,50 @@ export default function AdminProductsPage() {
                         ) : products.length === 0 ? (
                             <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">No products found. <Link href="/admin/products/new" className="underline text-[#8B7355]">Add your first product →</Link></td></tr>
                         ) : (
-                            products.map((p: any) => (
-                                <tr key={p.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAFAF9] ease-out duration-150">
-                                    <td className="px-5 py-4">
-                                        <div>
-                                            <p className="text-[#0A0A0A] font-normal">{p.name}</p>
-                                            <p className="text-[#8A8A8A] text-xs">{p.brand}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 text-[#4A4A4A]">{p.piece_type ?? "—"}</td>
-                                    <td className="px-5 py-4 text-[#0A0A0A]">${p.price}</td>
-                                    <td className="px-5 py-4">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-light tracking-wider uppercase ${p.stock_status === "In stock" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
-                                            {p.stock_status}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                        {p.affiliate_link ? (
-                                            <a href={p.affiliate_link} target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:underline text-xs truncate max-w-[160px] block">
-                                                Link ↗
-                                            </a>
-                                        ) : (
-                                            <span className="text-[#C8C4BF] text-xs">No link</span>
-                                        )}
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-3">
-                                            <Link href={`/admin/products/${p.id}`} className="text-xs text-[#4A4A4A] hover:text-[#0A0A0A] ease-out duration-200">Edit</Link>
-                                            <button onClick={() => handleDelete(p.id)} className="text-xs text-red-500 hover:text-red-700 ease-out duration-200">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                            products.map((p: any) => {
+                                const thumbnail = (p.product_images || []).find((img: any) => img.type === 'thumbnail') || (p.product_images || [])[0];
+                                return (
+                                    <tr key={p.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAFAF9] ease-out duration-150">
+                                        <td className="px-3 py-4">
+                                            {thumbnail ? (
+                                                <img src={thumbnail.url} alt={p.name} className="w-10 h-10 object-cover object-center rounded-sm border border-[#E8E4DF]" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-sm border border-[#E8E4DF] bg-[#F6F5F2] flex items-center justify-center">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#C8C4BF" strokeWidth="1.5" /><circle cx="8.5" cy="8.5" r="1.5" fill="#C8C4BF" /><path d="M21 15l-5-5L5 21" stroke="#C8C4BF" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div>
+                                                <p className="text-[#0A0A0A] font-normal">{p.name}</p>
+                                                <p className="text-[#8A8A8A] text-xs">{p.brand}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-[#4A4A4A]">{p.piece_type ?? "—"}</td>
+                                        <td className="px-5 py-4 text-[#0A0A0A]">${p.price}</td>
+                                        <td className="px-5 py-4">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-light tracking-wider uppercase ${p.stock_status === "In stock" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                                                {p.stock_status}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            {p.affiliate_link ? (
+                                                <a href={p.affiliate_link} target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:underline text-xs truncate max-w-[160px] block">
+                                                    Link ↗
+                                                </a>
+                                            ) : (
+                                                <span className="text-[#C8C4BF] text-xs">No link</span>
+                                            )}
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <Link href={`/admin/products/${p.id}`} className="text-xs text-[#4A4A4A] hover:text-[#0A0A0A] ease-out duration-200">Edit</Link>
+                                                <button onClick={() => handleDelete(p.id)} className="text-xs text-red-500 hover:text-red-700 ease-out duration-200">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

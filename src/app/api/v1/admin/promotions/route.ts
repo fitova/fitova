@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error("POST /api/v1/admin/promotions Error:", error);
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ success: false, error: error.errors[0].message }, { status: 400 });
+            return NextResponse.json({ success: false, error: error.issues[0].message }, { status: 400 });
         }
         return NextResponse.json({ success: false, error: error.message || "Failed to create promotion" }, { status: 500 });
     }

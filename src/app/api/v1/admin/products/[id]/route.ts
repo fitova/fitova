@@ -14,8 +14,9 @@ const parseList = (s: string) =>
     s ? s.split(",").map((x: string) => x.trim()).filter(Boolean) : [];
 
 // GET /api/v1/admin/products/[id]
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const supabase = await createClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -23,7 +24,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
         const { data, error } = await supabase
             .from("products")
             .select("*")
-            .eq("id", params.id)
+            .eq("id", id)
             .single();
 
         if (error) throw error;
@@ -34,8 +35,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 }
 
 // PUT /api/v1/admin/products/[id]
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const supabase = await createClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -66,7 +68,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         const { data, error } = await supabase
             .from("products")
             .update(payload)
-            .eq("id", params.id)
+            .eq("id", id)
             .select()
             .single();
 
@@ -78,8 +80,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/v1/admin/products/[id]
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const supabase = await createClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -88,7 +91,7 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
         const { error } = await supabase
             .from("products")
             .delete()
-            .eq("id", params.id);
+            .eq("id", id);
 
         if (error) throw error;
         return NextResponse.json({ success: true, data: null });

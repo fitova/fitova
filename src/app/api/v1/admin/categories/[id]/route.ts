@@ -39,7 +39,7 @@ export async function PUT(
     } catch (error: any) {
         console.error("PUT /api/v1/admin/categories/[id] Error:", error);
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ success: false, error: error.errors[0].message }, { status: 400 });
+            return NextResponse.json({ success: false, error: error.issues[0].message }, { status: 400 });
         }
         if (error.code === '23505') {
             return NextResponse.json({ success: false, error: "Category slug must be unique" }, { status: 400 });
