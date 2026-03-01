@@ -1,0 +1,237 @@
+19:44:32.588 Running build in Washington, D.C., USA (East) – iad1
+19:44:32.589 Build machine configuration: 2 cores, 8 GB
+19:44:32.717 Cloning github.com/fitova/fitova (Branch: main, Commit: be1fea3)
+19:44:36.140 Cloning completed: 3.422s
+19:44:36.313 Restored build cache from previous deployment (BfG75pp9T6H5EcCeA4ehzNdGQzT8)
+19:44:36.644 Running "vercel build"
+19:44:37.241 Vercel CLI 50.23.2
+19:44:37.591 Installing dependencies...
+19:44:39.403 npm warn ERESOLVE overriding peer dependency
+19:44:39.404 npm warn While resolving: @sanity/visual-editing@4.0.2
+19:44:39.405 npm warn Found: @sanity/client@6.29.1
+19:44:39.405 npm warn node_modules/@sanity/visual-editing/node_modules/@sanity/client
+19:44:39.405 npm warn   @sanity/client@"^6.22.4" from @sanity/mutate@0.11.0-canary.4
+19:44:39.405 npm warn   node_modules/@sanity/visual-editing/node_modules/@sanity/mutate
+19:44:39.405 npm warn     @sanity/mutate@"0.11.0-canary.4" from @sanity/visual-editing@4.0.2
+19:44:39.405 npm warn     node_modules/@sanity/visual-editing
+19:44:39.406 npm warn
+19:44:39.406 npm warn Could not resolve dependency:
+19:44:39.406 npm warn peerOptional @sanity/client@"^7.12.0" from @sanity/visual-editing@4.0.2
+19:44:39.406 npm warn node_modules/@sanity/visual-editing
+19:44:39.406 npm warn   @sanity/visual-editing@"^4.0.2" from next-sanity@11.6.9
+19:44:39.406 npm warn   node_modules/next-sanity
+19:44:39.704 npm warn ERESOLVE overriding peer dependency
+19:44:39.706 npm warn While resolving: vite@7.2.4
+19:44:39.707 npm warn Found: @types/node@20.6.2
+19:44:39.707 npm warn node_modules/@types/node
+19:44:39.707 npm warn   dev @types/node@"20.6.2" from the root project
+19:44:39.708 npm warn   18 more (@inquirer/checkbox, @inquirer/confirm, @inquirer/core, ...)
+19:44:39.708 npm warn
+19:44:39.708 npm warn Could not resolve dependency:
+19:44:39.708 npm warn peerOptional @types/node@"^20.19.0 || >=22.12.0" from vite@7.2.4
+19:44:39.709 npm warn node_modules/vite
+19:44:39.709 npm warn   vite@"^7.1.12" from @sanity/runtime-cli@11.1.4
+19:44:39.709 npm warn   node_modules/@sanity/runtime-cli
+19:44:39.710 npm warn   3 more (@vitejs/plugin-react, sanity, vite-tsconfig-paths)
+19:44:39.710 npm warn
+19:44:39.710 npm warn Conflicting peer dependency: @types/node@25.3.3
+19:44:39.710 npm warn node_modules/@types/node
+19:44:39.711 npm warn   peerOptional @types/node@"^20.19.0 || >=22.12.0" from vite@7.2.4
+19:44:39.711 npm warn   node_modules/vite
+19:44:39.712 npm warn     vite@"^7.1.12" from @sanity/runtime-cli@11.1.4
+19:44:39.712 npm warn     node_modules/@sanity/runtime-cli
+19:44:39.712 npm warn     3 more (@vitejs/plugin-react, sanity, vite-tsconfig-paths)
+19:44:39.713 npm warn ERESOLVE overriding peer dependency
+19:44:39.713 npm warn While resolving: @sanity/preview-url-secret@3.0.0
+19:44:39.714 npm warn Found: @sanity/client@6.29.1
+19:44:39.714 npm warn node_modules/@sanity/visual-editing/node_modules/@sanity/client
+19:44:39.715 npm warn   @sanity/client@"^6.22.4" from @sanity/mutate@0.11.0-canary.4
+19:44:39.715 npm warn   node_modules/@sanity/visual-editing/node_modules/@sanity/mutate
+19:44:39.717 npm warn     @sanity/mutate@"0.11.0-canary.4" from @sanity/visual-editing@4.0.2
+19:44:39.717 npm warn     node_modules/@sanity/visual-editing
+19:44:39.718 npm warn
+19:44:39.718 npm warn Could not resolve dependency:
+19:44:39.718 npm warn peer @sanity/client@"^7.12.0" from @sanity/preview-url-secret@3.0.0
+19:44:39.719 npm warn node_modules/@sanity/visual-editing/node_modules/@sanity/preview-url-secret
+19:44:39.719 npm warn   @sanity/preview-url-secret@"^3.0.0" from @sanity/visual-editing@4.0.2
+19:44:39.719 npm warn   node_modules/@sanity/visual-editing
+19:44:39.867 npm warn ERESOLVE overriding peer dependency
+19:44:39.868 npm warn While resolving: @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.869 npm warn Found: eslint@8.49.0
+19:44:39.869 npm warn node_modules/eslint
+19:44:39.870 npm warn   dev eslint@"8.49.0" from the root project
+19:44:39.870 npm warn   7 more (@eslint-community/eslint-utils, eslint-config-next, ...)
+19:44:39.871 npm warn
+19:44:39.873 npm warn Could not resolve dependency:
+19:44:39.874 npm warn peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.874 npm warn node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.876 npm warn   @typescript-eslint/eslint-plugin@"^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0" from eslint-config-next@15.2.3
+19:44:39.877 npm warn   node_modules/eslint-config-next
+19:44:39.877 npm warn
+19:44:39.877 npm warn Conflicting peer dependency: eslint@9.39.3
+19:44:39.878 npm warn node_modules/eslint
+19:44:39.878 npm warn   peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.878 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.883 npm warn     @typescript-eslint/eslint-plugin@"^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0" from eslint-config-next@15.2.3
+19:44:39.883 npm warn     node_modules/eslint-config-next
+19:44:39.886 npm warn ERESOLVE overriding peer dependency
+19:44:39.886 npm warn While resolving: @typescript-eslint/parser@8.27.0
+19:44:39.888 npm warn Found: eslint@8.49.0
+19:44:39.888 npm warn node_modules/eslint
+19:44:39.888 npm warn   dev eslint@"8.49.0" from the root project
+19:44:39.888 npm warn   7 more (@eslint-community/eslint-utils, eslint-config-next, ...)
+19:44:39.889 npm warn
+19:44:39.889 npm warn Could not resolve dependency:
+19:44:39.889 npm warn peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/parser@8.27.0
+19:44:39.890 npm warn node_modules/eslint-config-next/node_modules/@typescript-eslint/parser
+19:44:39.890 npm warn   @typescript-eslint/parser@"^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0" from eslint-config-next@15.2.3
+19:44:39.890 npm warn   node_modules/eslint-config-next
+19:44:39.890 npm warn   1 more (@typescript-eslint/eslint-plugin)
+19:44:39.890 npm warn
+19:44:39.891 npm warn Conflicting peer dependency: eslint@9.39.3
+19:44:39.891 npm warn node_modules/eslint
+19:44:39.891 npm warn   peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/parser@8.27.0
+19:44:39.891 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/parser
+19:44:39.892 npm warn     @typescript-eslint/parser@"^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0" from eslint-config-next@15.2.3
+19:44:39.892 npm warn     node_modules/eslint-config-next
+19:44:39.892 npm warn     1 more (@typescript-eslint/eslint-plugin)
+19:44:39.892 npm warn ERESOLVE overriding peer dependency
+19:44:39.893 npm warn While resolving: @typescript-eslint/type-utils@8.27.0
+19:44:39.893 npm warn Found: eslint@8.49.0
+19:44:39.893 npm warn node_modules/eslint
+19:44:39.893 npm warn   dev eslint@"8.49.0" from the root project
+19:44:39.893 npm warn   7 more (@eslint-community/eslint-utils, eslint-config-next, ...)
+19:44:39.894 npm warn
+19:44:39.894 npm warn Could not resolve dependency:
+19:44:39.894 npm warn peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/type-utils@8.27.0
+19:44:39.895 npm warn node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/type-utils
+19:44:39.895 npm warn   @typescript-eslint/type-utils@"8.27.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.895 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.895 npm warn
+19:44:39.895 npm warn Conflicting peer dependency: eslint@9.39.3
+19:44:39.896 npm warn node_modules/eslint
+19:44:39.896 npm warn   peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/type-utils@8.27.0
+19:44:39.896 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/type-utils
+19:44:39.896 npm warn     @typescript-eslint/type-utils@"8.27.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.897 npm warn     node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.899 npm warn ERESOLVE overriding peer dependency
+19:44:39.900 npm warn While resolving: @typescript-eslint/utils@8.27.0
+19:44:39.900 npm warn Found: eslint@8.49.0
+19:44:39.901 npm warn node_modules/eslint
+19:44:39.901 npm warn   dev eslint@"8.49.0" from the root project
+19:44:39.902 npm warn   7 more (@eslint-community/eslint-utils, eslint-config-next, ...)
+19:44:39.902 npm warn
+19:44:39.902 npm warn Could not resolve dependency:
+19:44:39.902 npm warn peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/utils@8.27.0
+19:44:39.903 npm warn node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/utils
+19:44:39.903 npm warn   @typescript-eslint/utils@"8.27.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.903 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.903 npm warn   1 more (@typescript-eslint/type-utils)
+19:44:39.904 npm warn
+19:44:39.904 npm warn Conflicting peer dependency: eslint@9.39.3
+19:44:39.904 npm warn node_modules/eslint
+19:44:39.904 npm warn   peer eslint@"^8.57.0 || ^9.0.0" from @typescript-eslint/utils@8.27.0
+19:44:39.904 npm warn   node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/utils
+19:44:39.905 npm warn     @typescript-eslint/utils@"8.27.0" from @typescript-eslint/eslint-plugin@8.27.0
+19:44:39.905 npm warn     node_modules/eslint-config-next/node_modules/@typescript-eslint/eslint-plugin
+19:44:39.905 npm warn     1 more (@typescript-eslint/type-utils)
+19:44:40.417 
+19:44:40.419 up to date in 3s
+19:44:40.419 
+19:44:40.419 291 packages are looking for funding
+19:44:40.420   run `npm fund` for details
+19:44:40.469 Detected Next.js version: 16.1.6
+19:44:40.476 Running "npm run build"
+19:44:40.570 
+19:44:40.571 > next-commerce-community@0.1.0 build
+19:44:40.571 > next build --webpack
+19:44:40.572 
+19:44:40.833 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+19:44:41.240 ⚠ Invalid next.config.js options detected: 
+19:44:41.241 ⚠     Unrecognized key(s) in object: 'swcMinify'
+19:44:41.241 ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+19:44:41.304 ▲ Next.js 16.1.6 (webpack)
+19:44:41.304 
+19:44:41.312 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+19:44:41.345   Creating an optimized production build ...
+19:44:41.535 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+19:44:47.512 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+19:44:49.318 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+19:44:53.803 ✓ Compiled successfully in 9.7s
+19:44:53.806   Running TypeScript ...
+19:44:57.577   Collecting page data using 1 worker ...
+19:44:57.704 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+19:45:00.520   Generating static pages using 1 worker (0/45) ...
+19:45:01.118   Generating static pages using 1 worker (11/45) 
+19:45:01.278   Generating static pages using 1 worker (22/45) 
+19:45:01.442   Generating static pages using 1 worker (33/45) 
+19:45:01.494 ✓ Generating static pages using 1 worker (45/45) in 973.8ms
+19:45:02.364   Finalizing page optimization ...
+19:45:02.367   Collecting build traces ...
+19:45:07.845 
+19:45:07.848 Route (app)
+19:45:07.849 ┌ ○ /
+19:45:07.849 ├ ○ /_not-found
+19:45:07.849 ├ ƒ /admin
+19:45:07.849 ├ ƒ /admin/affiliate
+19:45:07.850 ├ ƒ /admin/analytics
+19:45:07.850 ├ ƒ /admin/categories
+19:45:07.850 ├ ƒ /admin/collections
+19:45:07.850 ├ ƒ /admin/coupons
+19:45:07.850 ├ ƒ /admin/homepage
+19:45:07.850 ├ ƒ /admin/offers
+19:45:07.850 ├ ƒ /admin/products
+19:45:07.850 ├ ƒ /admin/products/[id]
+19:45:07.851 ├ ƒ /admin/products/new
+19:45:07.851 ├ ƒ /admin/style-hub
+19:45:07.851 ├ ƒ /admin/users
+19:45:07.851 ├ ○ /ai-styling
+19:45:07.851 ├ ƒ /api/v1/admin/analytics
+19:45:07.851 ├ ƒ /api/v1/admin/categories
+19:45:07.852 ├ ƒ /api/v1/admin/categories/[id]
+19:45:07.852 ├ ƒ /api/v1/admin/detailed-analytics
+19:45:07.852 ├ ƒ /api/v1/admin/homepage-slides
+19:45:07.852 ├ ƒ /api/v1/admin/homepage-slides/[id]
+19:45:07.852 ├ ƒ /api/v1/admin/promotions
+19:45:07.852 ├ ƒ /api/v1/admin/promotions/[id]
+19:45:07.853 ├ ƒ /auth/callback
+19:45:07.853 ├ ○ /blogs/blog-details
+19:45:07.853 ├ ○ /blogs/blog-details-with-sidebar
+19:45:07.853 ├ ○ /blogs/blog-grid
+19:45:07.853 ├ ○ /blogs/blog-grid-with-sidebar
+19:45:07.853 ├ ○ /cart
+19:45:07.854 ├ ○ /checkout
+19:45:07.854 ├ ○ /contact
+19:45:07.854 ├ ○ /coupons
+19:45:07.854 ├ ○ /deals
+19:45:07.854 ├ ○ /error
+19:45:07.854 ├ ○ /lookbook
+19:45:07.854 ├ ƒ /lookbook/[slug]
+19:45:07.855 ├ ○ /mail-success
+19:45:07.855 ├ ○ /my-account
+19:45:07.855 ├ ○ /shop-details
+19:45:07.855 ├ ○ /shop-with-sidebar
+19:45:07.855 ├ ○ /shop-without-sidebar
+19:45:07.855 ├ ○ /signin
+19:45:07.855 ├ ○ /signup
+19:45:07.856 ├ ○ /this-week/best-sellers
+19:45:07.856 ├ ○ /this-week/recently-viewed
+19:45:07.856 ├ ○ /this-week/trending
+19:45:07.856 └ ○ /wishlist
+19:45:07.856 
+19:45:07.856 
+19:45:07.857 ƒ Proxy (Middleware)
+19:45:07.857 
+19:45:07.857 ○  (Static)   prerendered as static content
+19:45:07.858 ƒ  (Dynamic)  server-rendered on demand
+19:45:07.858 
+19:45:08.143 Traced Next.js server files in: 71.412ms
+19:45:08.336 Created all serverless functions in: 192.256ms
+19:45:08.446 Collected static files (public/, static/, .next/static): 29.019ms
+19:45:08.998 Build Completed in /vercel/output [31s]
+19:45:09.389 Deploying outputs...
+19:45:18.481 Deployment completed
+19:45:19.523 Creating build cache...
+19:45:52.684 Created build cache: 33s
+19:45:52.684 Uploading build cache [317.38 MB]
+19:45:58.738 Build cache uploaded: 6.050s
