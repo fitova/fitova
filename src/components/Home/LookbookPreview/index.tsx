@@ -1,36 +1,42 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import Image from "next/image";
+import { getCollections, Collection } from "@/lib/queries/collections";
 
-const looks = [
-    { id: 1, title: "Urban Minimal", tag: "AI", bg: "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)" },
-    { id: 2, title: "Golden Hour", tag: "Trending", bg: "linear-gradient(135deg, #2C1810 0%, #7A4028 100%)" },
-    { id: 3, title: "Power Office", tag: "AI", bg: "linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%)" },
-    { id: 4, title: "Weekend Edit", tag: "Trending", bg: "linear-gradient(135deg, #1A1A1A 0%, #404040 100%)" },
+const FALLBACK_GRADIENTS = [
+    "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)",
+    "linear-gradient(135deg, #2C1810 0%, #7A4028 100%)",
+    "linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%)",
+    "linear-gradient(135deg, #1A1A1A 0%, #404040 100%)",
 ];
 
 const LookbookPreview = () => {
-    const head = useScrollReveal();
-    const grid = useScrollReveal(0.05);
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        getCollections(4)
+            .then((data) => setCollections(data))
+            .catch(() => setCollections([]))
+            .finally(() => setLoaded(true));
+    }, []);
+
+    // Don't render until data is ready — avoid scroll observer timing issue
+    if (!loaded) return null;
+    if (collections.length === 0) return null;
 
     return (
-        <section className="py-20">
-            <div
-                className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0 pb-15"
-                style={{ borderBottom: "1px solid #E8E4DF" }}
-            >
+        <section className="py-20" style={{ borderBottom: "1px solid #E8E4DF" }}>
+            <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
+
                 {/* Section header */}
-                <div
-                    ref={head.ref as React.RefObject<HTMLDivElement>}
-                    className={`mb-10 flex items-center justify-between ${head.baseClass} ${head.revealClass}`}
-                >
+                <div className="mb-10 flex items-center justify-between">
                     <div>
                         <span
                             className="flex items-center gap-2.5 text-xs font-light tracking-[0.25em] uppercase mb-3"
                             style={{ color: "#8A8A8A" }}
                         >
-                            {/* Thin-stroke grid icon */}
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <rect x="3" y="3" width="7" height="7" stroke="#8A8A8A" strokeWidth="1.5" />
                                 <rect x="14" y="3" width="7" height="7" stroke="#8A8A8A" strokeWidth="1.5" />
@@ -57,50 +63,57 @@ const LookbookPreview = () => {
                     </Link>
                 </div>
 
-                {/* Preview grid */}
-                <div
-                    ref={grid.ref as React.RefObject<HTMLDivElement>}
-                    className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${grid.baseClass} ${grid.revealClass}`}
-                >
-                    {looks.map((look, i) => (
+                {/* Collections grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {collections.map((col, i) => (
                         <Link
-                            key={look.id}
+                            key={col.id}
                             href="/lookbook"
                             className="group relative overflow-hidden block"
-                            style={{ transitionDelay: `${i * 80}ms` }}
                         >
-                            {/* Dark editorial panel */}
+                            {/* Image or gradient */}
                             <div
-                                className="h-72 w-full ease-out duration-500 group-hover:scale-[1.03]"
-                                style={{ background: look.bg }}
-                            />
-
-                            {/* Bottom overlay */}
-                            <div
-                                className="absolute inset-0 flex flex-col justify-end p-5"
+                                className="h-72 w-full relative overflow-hidden"
                                 style={{
-                                    background:
-                                        "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)",
+                                    background: col.cover_image
+                                        ? undefined
+                                        : FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length],
+                                    backgroundColor: col.cover_image ? "#1A1A1A" : undefined,
                                 }}
                             >
-                                <span
-                                    className="block text-[9px] font-light tracking-[0.25em] uppercase mb-1.5"
-                                    style={{ color: "rgba(246,245,242,0.55)" }}
-                                >
-                                    {look.tag}
-                                </span>
+                                {col.cover_image && (
+                                    <Image
+                                        src={col.cover_image}
+                                        alt={col.name}
+                                        fill
+                                        className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Text overlay */}
+                            <div
+                                className="absolute inset-0 flex flex-col justify-end p-5"
+                                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" }}
+                            >
+                                {col.tag && (
+                                    <span
+                                        className="block text-[9px] font-light tracking-[0.25em] uppercase mb-1.5"
+                                        style={{ color: "rgba(246,245,242,0.55)" }}
+                                    >
+                                        {col.generated_by_ai ? "AI Curated" : col.tag}
+                                    </span>
+                                )}
                                 <h3
-                                    className="font-playfair text-base font-normal ease-out duration-200 group-hover:opacity-80"
+                                    className="font-playfair text-base font-normal group-hover:opacity-80 transition-opacity duration-200"
                                     style={{ color: "#F6F5F2" }}
                                 >
-                                    {look.title}
+                                    {col.name}
                                 </h3>
                             </div>
 
-                            {/* Thin border reveal on hover */}
-                            <div
-                                className="absolute inset-0 border border-white/0 ease-out duration-300 group-hover:border-white/20"
-                            />
+                            {/* Border hover */}
+                            <div className="absolute inset-0 border border-white/0 ease-out duration-300 group-hover:border-white/20" />
                         </Link>
                     ))}
                 </div>

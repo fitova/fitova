@@ -11,6 +11,8 @@ export type Collection = {
     styles: string[] | null;
     colors: string[] | null;
     generated_by_ai: boolean;
+    is_featured: boolean;
+    display_order: number;
     created_at: string;
 };
 
@@ -50,3 +52,18 @@ export async function getCollectionBySlug(slug: string) {
 
     return { collection: collection as Collection, products };
 }
+
+// Fetch featured collections for homepage lookbook preview (max 4)
+export async function getFeaturedCollections(limit = 4) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("collections")
+        .select("id, name, slug, tag, cover_image, display_order, is_featured, generated_by_ai")
+        .eq("is_featured", true)
+        .order("display_order", { ascending: true })
+        .limit(limit);
+
+    if (error) throw error;
+    return data as Collection[];
+}
+

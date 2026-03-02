@@ -11,7 +11,7 @@ export type Product = {
     piece_type: string | null;
     season: string | null;
     stock_status: string;
-    affiliate_link: string;
+    affiliate_link: string | null;
     commission: number | null;
     affiliate_program: string | null;
     merchant_id: string | null;
@@ -22,9 +22,14 @@ export type Product = {
     size: string[] | null;
     material: string | null;
     category_id: string | null;
+    gender: 'men' | 'women' | 'kids' | 'unisex' | null;
     is_featured: boolean;
     is_deal: boolean;
     deal_tag: string | null;
+    is_new_arrival: boolean;
+    is_trending: boolean;
+    is_bestseller: boolean;
+    is_hidden: boolean;
     views_count: number;
     created_at: string;
     updated_at: string;
@@ -115,4 +120,45 @@ export async function incrementProductViews(id: string) {
     const supabase = createClient();
     const { error } = await supabase.rpc("increment_views", { product_id: id });
     if (error) console.error("Error incrementing views:", error);
+}
+
+// Fetch new arrivals (is_new_arrival = true)
+export async function getNewArrivals(limit = 12) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*, product_images(url, type, sort_order)")
+        .eq("is_new_arrival", true)
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+    if (error) throw error;
+    return data as (Product & { product_images: { url: string; type: string; sort_order: number }[] })[];
+}
+
+// Fetch related products (same category, exclude current product)
+export async function getRelatedProducts(categoryId: string, excludeId: string, limit = 6) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*, product_images(url, type, sort_order)")
+        .eq("category_id", categoryId)
+        .neq("id", excludeId)
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+    if (error) throw error;
+    return data as (Product & { product_images: { url: string; type: string; sort_order: number }[] })[];
+}
+
+// Fetch a single product by ID
+export async function getProductById(id: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*, product_images(*), product_reviews(*), categories(id, name, slug)")
+        .eq("id", id)
+        .single();
+    if (error) throw error;
+    return data;
 }
