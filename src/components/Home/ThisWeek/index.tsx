@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Product } from "@/types/product";
 import { getTrendingProducts } from "@/lib/queries/trending";
 import { getBestSellers } from "@/lib/queries/bestSellers";
@@ -55,8 +56,8 @@ const ThisWeek = () => {
                         <button
                             onClick={() => setActiveTab("trending")}
                             className={`font-medium text-sm tracking-wide pb-2 border-b-2 transition-colors duration-300 ${activeTab === "trending"
-                                    ? "border-dark text-dark"
-                                    : "border-transparent text-dark-4 hover:text-dark"
+                                ? "border-dark text-dark"
+                                : "border-transparent text-dark-4 hover:text-dark"
                                 }`}
                         >
                             Trending (7 Days)
@@ -64,8 +65,8 @@ const ThisWeek = () => {
                         <button
                             onClick={() => setActiveTab("best_sellers")}
                             className={`font-medium text-sm tracking-wide pb-2 border-b-2 transition-colors duration-300 ${activeTab === "best_sellers"
-                                    ? "border-dark text-dark"
-                                    : "border-transparent text-dark-4 hover:text-dark"
+                                ? "border-dark text-dark"
+                                : "border-transparent text-dark-4 hover:text-dark"
                                 }`}
                         >
                             Best Sellers
@@ -73,13 +74,24 @@ const ThisWeek = () => {
                         <button
                             onClick={() => setActiveTab("recently_viewed")}
                             className={`font-medium text-sm tracking-wide pb-2 border-b-2 transition-colors duration-300 ${activeTab === "recently_viewed"
-                                    ? "border-dark text-dark"
-                                    : "border-transparent text-dark-4 hover:text-dark"
+                                ? "border-dark text-dark"
+                                : "border-transparent text-dark-4 hover:text-dark"
                                 }`}
                         >
                             Recently Viewed
                         </button>
                     </div>
+
+                    {/* View All button */}
+                    <Link
+                        href="/shop-with-sidebar"
+                        className="hidden sm:inline-flex items-center gap-2 font-light text-xs tracking-[0.15em] uppercase border border-dark text-dark px-5 py-2 ease-out duration-300 hover:bg-dark hover:text-white"
+                    >
+                        View All
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </Link>
                 </div>
 
                 <div className="min-h-[400px]">

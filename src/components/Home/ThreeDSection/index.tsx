@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useEffect, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
+import { useGLTF, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
 
@@ -144,30 +144,33 @@ function Scene({ progress, modelScale, isMobile }: { progress: number; modelScal
             frameloop={isMobile ? "demand" : "always"}
         >
             <Camera progress={progress} />
-            <ambientLight intensity={1.0} />
-            <directionalLight position={[3, 8, 4]} intensity={1.8} />
-            <directionalLight position={[-4, 3, -2]} intensity={0.6} />
-            {!isMobile && <pointLight position={[0, 5, 0]} intensity={0.8} />}
+
+            {/* Studio-equivalent manual lighting — no CDN dependency */}
+            <ambientLight intensity={2.0} />
+            <hemisphereLight args={["#ffffff", "#cccccc", 3.5]} />
+            <directionalLight position={[3, 8, 4]} intensity={3.5} castShadow />
+            <directionalLight position={[-4, 3, -2]} intensity={2.0} />
+            <directionalLight position={[0, -4, 4]} intensity={1.2} />
+            {!isMobile && <pointLight position={[0, 6, 2]} intensity={2.5} />}
+            {!isMobile && <pointLight position={[2, 2, -3]} intensity={1.2} color="#fff5ee" />}
+            {!isMobile && <pointLight position={[-3, 4, 2]} intensity={1.5} />}
 
             <Suspense fallback={null}>
-                <Environment preset="studio" />
-
                 <Model
                     url="/models/suit.glb"
                     progress={progress}
                     xOffset={-modelScale * 0.6}
                     modelScale={modelScale}
-                    startRotation={Math.PI / 2}   // starts sideways
+                    startRotation={Math.PI / 2}
                 />
                 <Model
                     url="/models/coat.glb"
                     progress={progress}
                     xOffset={modelScale * 0.6}
                     modelScale={modelScale}
-                    startRotation={-Math.PI}      // starts with back to viewer
+                    startRotation={-Math.PI}
                 />
 
-                {/* Skip expensive blur shadow pass on mobile */}
                 {!isMobile && (
                     <ContactShadows
                         position={[0, -modelScale * 2.2, 0]}
@@ -186,10 +189,21 @@ const ThreeDSection = () => {
     const sectionRef = useRef<HTMLDivElement>(null);
     const progress = useScrollProgress(sectionRef);
 
-    // Responsive model scale + isMobile detection
     const [modelScale, setModelScale] = useState(1.25);
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
+    const [webglOk, setWebglOk] = useState<boolean | null>(null); // null = not checked yet
+
+    // Check WebGL availability
+    useEffect(() => {
+        try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+            setWebglOk(!!ctx);
+        } catch {
+            setWebglOk(false);
+        }
+    }, []);
 
     useEffect(() => {
         const update = () => {
@@ -206,6 +220,42 @@ const ThreeDSection = () => {
     }, []);
 
     const headline = useTypingAnimation("Dress Smarter.\nNot Harder.", 55, 400);
+
+    // WebGL not available — show text-only fallback section
+    if (webglOk === false) {
+        return (
+            <section
+                className="relative overflow-hidden flex items-center justify-center"
+                style={{
+                    background: isMobile
+                        ? "linear-gradient(to bottom, #0A0A0A 0%, #1A1A1A 60%, #F0EDE8 100%)"
+                        : "linear-gradient(to right, #0A0A0A 0%, #1A1A1A 40%, #F0EDE8 100%)",
+                    minHeight: "50vh",
+                }}
+            >
+                <div className="max-w-xl text-center px-8 py-20">
+                    <span className="block text-xs font-light tracking-[0.35em] uppercase mb-6" style={{ color: "#8A8A8A" }}>
+                        AI-Powered Fashion
+                    </span>
+                    <h2 className="font-playfair text-4xl xl:text-5xl mb-6" style={{ color: "#F6F5F2", letterSpacing: "-0.02em" }}>
+                        Dress Smarter.<br />Not Harder.
+                    </h2>
+                    <p className="text-sm font-light leading-relaxed mb-10" style={{ color: "#8A8A8A" }}>
+                        Upload any clothing item and let our AI build you a complete look.
+                    </p>
+                    <Link
+                        href="/ai-styling"
+                        className="inline-flex items-center gap-3 text-sm font-light tracking-[0.12em] uppercase px-8 py-4 border border-[#F6F5F2] text-[#F6F5F2] hover:bg-[#F6F5F2] hover:text-[#0A0A0A] transition-all duration-300"
+                    >
+                        Start AI Styling
+                    </Link>
+                </div>
+            </section>
+        );
+    }
+
+    // Still checking — render nothing for a moment
+    if (webglOk === null) return null;
 
     return (
         <section

@@ -2,66 +2,41 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductItem from "@/components/Common/ProductItem";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { getProducts, Product } from "@/lib/queries/products";
+import { getNewArrivals, getProducts, Product } from "@/lib/queries/products";
+import { mapProductFromDB } from "@/types/product";
 
 const NewArrival = () => {
-  const head = useScrollReveal();
-  const grid = useScrollReveal(0.05);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadProducts() {
-      try {
-        const data = await getProducts({ limit: 8 });
-        setProducts(data);
-      } catch (error) {
-        console.error("Error loading new arrivals:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadProducts();
+    // Try new arrivals first, fallback to latest products
+    getNewArrivals(8)
+      .then((data) => {
+        if (data.length > 0) return data;
+        return getProducts({ limit: 8 });
+      })
+      .then((data) => setProducts(data))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <section className="overflow-hidden pt-20">
       <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-        {/* Section title */}
-        <div
-          ref={head.ref as React.RefObject<HTMLDivElement>}
-          className={`mb-10 flex items-center justify-between ${head.baseClass} ${head.revealClass}`}
-        >
+
+        {/* Section header */}
+        <div className="mb-10 flex items-center justify-between">
           <div>
             <span
               className="flex items-center gap-2 text-xs font-light tracking-[0.25em] uppercase mb-3"
               style={{ color: "#8A8A8A" }}
             >
-              {/* Thin-stroke bag icon */}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"
-                  stroke="#8A8A8A"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <line
-                  x1="3"
-                  y1="6"
-                  x2="21"
-                  y2="6"
-                  stroke="#8A8A8A"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M16 10a4 4 0 01-8 0"
-                  stroke="#8A8A8A"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
+                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
+                  stroke="#8A8A8A" strokeWidth="1.5" strokeLinejoin="round" />
               </svg>
-              This Week
+              Just In
             </span>
             <h2
               className="font-playfair font-normal text-3xl xl:text-4xl text-dark"
@@ -72,34 +47,49 @@ const NewArrival = () => {
           </div>
 
           <Link
-            href="/shop-with-sidebar"
+            href="/new-arrivals"
             className="hidden sm:inline-flex items-center gap-2 font-light text-xs tracking-[0.15em] uppercase border border-dark text-dark px-6 py-2.5 ease-out duration-300 hover:bg-dark hover:text-white"
           >
             View All
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 12h14M12 5l7 7-7 7"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
         </div>
 
-        <div
-          ref={grid.ref as React.RefObject<HTMLDivElement>}
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9 ${grid.baseClass} ${grid.revealClass}`}
-        >
-          {loading ? (
-            <p>Loading arrivals...</p>
-          ) : (
-            products.map((item, key) => (
-              <ProductItem item={item as any} key={key} />
-            ))
-          )}
-        </div>
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="w-full aspect-[3/4] bg-[#E8E4DF] mb-3" />
+                <div className="h-3 w-2/3 bg-[#E8E4DF] rounded mb-2" />
+                <div className="h-3 w-1/2 bg-[#E8E4DF] rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Products grid */}
+        {!loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+            {products.map((item, key) => (
+              <ProductItem item={mapProductFromDB(item) as any} key={key} />
+            ))}
+          </div>
+        )}
+
+        {/* Mobile view all */}
+        {!loading && products.length > 0 && (
+          <div className="text-center mt-10 sm:hidden">
+            <Link
+              href="/new-arrivals"
+              className="inline-flex items-center gap-2 font-light text-xs tracking-[0.15em] uppercase border border-dark text-dark px-8 py-3 ease-out duration-300 hover:bg-dark hover:text-white"
+            >
+              View All New Arrivals
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

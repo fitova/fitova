@@ -3,14 +3,32 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { useCallback, useRef, useEffect } from "react";
 import data from "./categoryData";
 import Image from "next/image";
+import Link from "next/link";
 
 // Import Swiper styles
 import "swiper/css/navigation";
 import "swiper/css";
-import SingleItem from "./SingleItem";
+
+const SingleItem = ({ item }: { item: { id: number; title: string; img: string } }) => {
+  return (
+    <Link
+      href={`/shop-with-sidebar?category=${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+      className="group flex flex-col items-center"
+    >
+      <div className="max-w-[130px] w-full bg-[#F2F3F8] h-32.5 rounded-full flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-[#E8E4DF]">
+        <Image src={item.img} alt={item.title} width={82} height={62} />
+      </div>
+      <div className="flex justify-center">
+        <h3 className="inline-block font-medium text-center text-dark text-sm tracking-wide group-hover:opacity-60 transition-opacity duration-200">
+          {item.title}
+        </h3>
+      </div>
+    </Link>
+  );
+};
 
 const Categories = () => {
-  const sliderRef = useRef(null);
+  const sliderRef = useRef<any>(null);
 
   const handlePrev = useCallback(() => {
     if (!sliderRef.current) return;
@@ -32,7 +50,7 @@ const Categories = () => {
     <section className="overflow-hidden pt-17.5">
       <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0 pb-15 border-b border-gray-3">
         <div className="swiper categories-carousel common-carousel">
-          {/* <!-- section title --> */}
+          {/* Section title */}
           <div className="mb-10 flex items-center justify-between">
             <div>
               <span
@@ -45,7 +63,10 @@ const Categories = () => {
                 </svg>
                 Categories
               </span>
-              <h2 className="font-playfair font-normal text-3xl xl:text-4xl text-dark" style={{ letterSpacing: "-0.02em" }}>
+              <h2
+                className="font-playfair font-normal text-3xl xl:text-4xl text-dark"
+                style={{ letterSpacing: "-0.02em" }}
+              >
                 Browse by Category
               </h2>
             </div>
@@ -74,18 +95,9 @@ const Categories = () => {
             ref={sliderRef}
             slidesPerView={6}
             breakpoints={{
-              // when window width is >= 640px
-              0: {
-                slidesPerView: 2,
-              },
-              1000: {
-                slidesPerView: 4,
-                // spaceBetween: 4,
-              },
-              // when window width is >= 768px
-              1200: {
-                slidesPerView: 6,
-              },
+              0: { slidesPerView: 2 },
+              1000: { slidesPerView: 4 },
+              1200: { slidesPerView: 6 },
             }}
           >
             {data.map((item, key) => (

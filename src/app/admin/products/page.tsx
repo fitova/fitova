@@ -1,130 +1,162 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminService } from "@/services/admin.service";
+import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
-export default function AdminProductsPage() {
-    const queryClient = useQueryClient();
+type Product = {
+    id: string;
+    name: string;
+    price: number;
+    is_new_arrival: boolean;
+    is_trending: boolean;
+    is_bestseller: boolean;
+    is_hidden: boolean;
+};
+
+const TAG_CONFIG = [
+    { key: "is_new_arrival", label: "New Arrival", color: "bg-blue-50 text-blue-700" },
+    { key: "is_trending", label: "Trending", color: "bg-orange-50 text-orange-700" },
+    { key: "is_bestseller", label: "Best Seller", color: "bg-green-50 text-green-700" },
+    { key: "is_hidden", label: "Hidden", color: "bg-red-50 text-red-700" },
+] as const;
+
+export default function ProductsAdmin() {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [saving, setSaving] = useState<string | null>(null);
 
-    const { data: products = [], isLoading } = useQuery({
-        queryKey: ["admin-products", search],
-        queryFn: () => adminService.getProducts(search || undefined),
-    });
+    useEffect(() => {
+        const supabase = createClient();
+        supabase
+            .from("products")
+            .select("id, name, price, is_new_arrival, is_trending, is_bestseller, is_hidden")
+            .order("created_at", { ascending: false })
+            .limit(100)
+            .then(({ data }) => {
+                setProducts(data ?? []);
+                setLoading(false);
+            });
+    }, []);
 
-    const mutationDelete = useMutation({
-        mutationFn: adminService.deleteProduct,
-        onSuccess: () => {
-            toast.success("Product deleted.");
-            queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-        },
-        onError: (err: any) => toast.error(err.message || "Failed to delete product"),
-    });
+    const toggleTag = async (
+        productId: string,
+        tag: keyof Pick<Product, "is_new_arrival" | "is_trending" | "is_bestseller" | "is_hidden">,
+        current: boolean
+    ) => {
+        const key = `${productId}-${tag}`;
+        setSaving(key);
+        const supabase = createClient();
+        const { error } = await supabase
+            .from("products")
+            .update({ [tag]: !current })
+            .eq("id", productId);
 
-    const handleDelete = (id: string) => {
-        if (!confirm("Are you sure you want to delete this product?")) return;
-        mutationDelete.mutate(id);
+        if (error) {
+            toast.error("Failed to update tag");
+        } else {
+            setProducts((prev) =>
+                prev.map((p) => (p.id === productId ? { ...p, [tag]: !current } : p))
+            );
+            toast.success("Updated!");
+        }
+        setSaving(null);
     };
 
+    const filtered = products.filter((p) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const inputCls = "border border-[#E8E4DF] bg-white px-4 py-2.5 text-sm font-light outline-none focus:border-[#0A0A0A] ease-out duration-200";
+
     return (
-        <div>
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <span className="text-xs font-light tracking-[0.3em] uppercase text-[#8A8A8A]">Catalog</span>
+                    <span className="text-xs font-light tracking-[0.3em] uppercase text-[#8A8A8A]">Admin</span>
                     <h2 className="font-playfair font-normal text-3xl text-[#0A0A0A] mt-1" style={{ letterSpacing: "-0.02em" }}>
-                        Products
+                        Products &amp; Tagging
                     </h2>
                 </div>
-                <Link
-                    href="/admin/products/new"
-                    className="inline-flex items-center gap-2 text-xs font-light tracking-[0.15em] uppercase border border-[#0A0A0A] bg-[#0A0A0A] text-white px-5 py-2.5 hover:bg-transparent hover:text-[#0A0A0A] ease-out duration-200"
-                >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                    Add Product
-                </Link>
-            </div>
-
-            {/* Search */}
-            <div className="mb-5">
                 <input
                     type="search"
                     placeholder="Search products..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full sm:w-80 border border-[#E8E4DF] bg-white px-4 py-2.5 text-sm font-light outline-none focus:border-[#0A0A0A] ease-out duration-200"
+                    className={`${inputCls} min-w-[240px]`}
                 />
             </div>
 
-            {/* Table */}
-            <div className="bg-white border border-[#E8E4DF] overflow-x-auto">
-                <table className="w-full text-sm font-light">
-                    <thead>
-                        <tr className="border-b border-[#E8E4DF] bg-[#FAFAF9]">
-                            <th className="text-left px-3 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A] w-12">Img</th>
-                            <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Product</th>
-                            <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Type</th>
-                            <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Price</th>
-                            <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Status</th>
-                            <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Affiliate</th>
-                            <th className="text-right px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading ? (
-                            <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">Loading...</td></tr>
-                        ) : products.length === 0 ? (
-                            <tr><td colSpan={6} className="px-5 py-10 text-center text-[#8A8A8A]">No products found. <Link href="/admin/products/new" className="underline text-[#8B7355]">Add your first product →</Link></td></tr>
-                        ) : (
-                            products.map((p: any) => {
-                                const thumbnail = (p.product_images || []).find((img: any) => img.type === 'thumbnail') || (p.product_images || [])[0];
-                                return (
-                                    <tr key={p.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAFAF9] ease-out duration-150">
-                                        <td className="px-3 py-4">
-                                            {thumbnail ? (
-                                                <img src={thumbnail.url} alt={p.name} className="w-10 h-10 object-cover object-center rounded-sm border border-[#E8E4DF]" />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-sm border border-[#E8E4DF] bg-[#F6F5F2] flex items-center justify-center">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#C8C4BF" strokeWidth="1.5" /><circle cx="8.5" cy="8.5" r="1.5" fill="#C8C4BF" /><path d="M21 15l-5-5L5 21" stroke="#C8C4BF" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div>
-                                                <p className="text-[#0A0A0A] font-normal">{p.name}</p>
-                                                <p className="text-[#8A8A8A] text-xs">{p.brand}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4 text-[#4A4A4A]">{p.piece_type ?? "—"}</td>
-                                        <td className="px-5 py-4 text-[#0A0A0A]">${p.price}</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-light tracking-wider uppercase ${p.stock_status === "In stock" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
-                                                {p.stock_status}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            {p.affiliate_link ? (
-                                                <a href={p.affiliate_link} target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:underline text-xs truncate max-w-[160px] block">
-                                                    Link ↗
-                                                </a>
-                                            ) : (
-                                                <span className="text-[#C8C4BF] text-xs">No link</span>
-                                            )}
-                                        </td>
-                                        <td className="px-5 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-3">
-                                                <Link href={`/admin/products/${p.id}`} className="text-xs text-[#4A4A4A] hover:text-[#0A0A0A] ease-out duration-200">Edit</Link>
-                                                <button onClick={() => handleDelete(p.id)} className="text-xs text-red-500 hover:text-red-700 ease-out duration-200">Delete</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
+            {/* Tag legend */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {TAG_CONFIG.map((t) => (
+                    <span key={t.key} className={`text-[10px] font-light tracking-wider uppercase px-2.5 py-1 ${t.color}`}>
+                        {t.label}
+                    </span>
+                ))}
+                <span className="text-xs font-light text-[#8A8A8A] ml-2 self-center">
+                    — Click a badge to toggle on/off
+                </span>
             </div>
+
+            {loading ? (
+                <div className="space-y-2">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="h-14 animate-pulse bg-[#F0EDEA]" />
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white border border-[#E8E4DF] overflow-x-auto">
+                    <table className="w-full text-sm font-light min-w-[600px]">
+                        <thead>
+                            <tr className="border-b border-[#E8E4DF] bg-[#FAFAF9]">
+                                <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A] w-[40%]">Product</th>
+                                <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Price</th>
+                                <th className="text-left px-5 py-3 text-xs font-light tracking-[0.15em] uppercase text-[#8A8A8A]">Tags</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={3} className="px-5 py-10 text-center text-[#8A8A8A]">No products found.</td>
+                                </tr>
+                            ) : filtered.map((product) => (
+                                <tr key={product.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAFAF9]">
+                                    <td className="px-5 py-3">
+                                        <p className="text-[#0A0A0A] font-light line-clamp-1">{product.name}</p>
+                                        <p className="text-[10px] text-[#8A8A8A] mt-0.5 font-mono">{product.id.slice(0, 8)}…</p>
+                                    </td>
+                                    <td className="px-5 py-3 text-[#4A4A4A]">
+                                        ${product.price?.toFixed(2) ?? "—"}
+                                    </td>
+                                    <td className="px-5 py-3">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {TAG_CONFIG.map((tag) => {
+                                                const isOn = product[tag.key as keyof Product] as boolean;
+                                                const isSaving = saving === `${product.id}-${tag.key}`;
+                                                return (
+                                                    <button
+                                                        key={tag.key}
+                                                        onClick={() => toggleTag(product.id, tag.key as any, isOn)}
+                                                        disabled={isSaving}
+                                                        className={`text-[10px] font-light tracking-wider uppercase px-2.5 py-1 border transition-all duration-150 disabled:opacity-50 ${isOn
+                                                                ? `${tag.color} border-transparent`
+                                                                : "border-[#E8E4DF] text-[#BCBCBC] bg-white hover:border-[#8A8A8A]"
+                                                            }`}
+                                                        title={`Toggle ${tag.label}`}
+                                                    >
+                                                        {isSaving ? "…" : tag.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
