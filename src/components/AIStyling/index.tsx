@@ -123,26 +123,27 @@ export default function AIStyling() {
 
         if (isInWishlist) {
             // Remove
-            dispatch(removeItemFromWishlist(item.id));
+            dispatch(removeItemFromWishlist({ item_id: item.id, item_type: "product" }));
             try {
                 const { removeFromWishlist } = await import("@/lib/queries/wishlist");
-                await removeFromWishlist(item.id);
+                await removeFromWishlist(item.id, "product");
             } catch { }
         } else {
             // Add
             dispatch(addItemToWishlist({
                 id: item.id,
+                item_id: item.id,
+                item_type: "product",
+                created_at: new Date().toISOString(),
                 title: item.name,
                 price: item.price,
                 discountedPrice: item.price,
-                quantity: 1,
-                status: "In stock",
-                imgs: item.imageUrl ? { thumbnails: [item.imageUrl], previews: [item.imageUrl] } : undefined,
+                imageUrl: item.imageUrl ?? undefined,
             }));
 
             try {
                 const { addToWishlist } = await import("@/lib/queries/wishlist");
-                await addToWishlist(item.id);
+                await addToWishlist(item.id, "product");
             } catch { }
         }
     };
@@ -155,12 +156,13 @@ export default function AIStyling() {
             if (!wishlistItems.some(w => w.id === item.id)) {
                 dispatch(addItemToWishlist({
                     id: item.id,
+                    item_id: item.id,
+                    item_type: "product",
+                    created_at: new Date().toISOString(),
                     title: item.name,
                     price: item.price,
                     discountedPrice: item.price,
-                    quantity: 1,
-                    status: "In stock",
-                    imgs: item.imageUrl ? { thumbnails: [item.imageUrl], previews: [item.imageUrl] } : undefined,
+                    imageUrl: item.imageUrl ?? undefined,
                 }));
             }
         });
@@ -168,7 +170,7 @@ export default function AIStyling() {
         // Async save all to DB background
         try {
             const { addToWishlist } = await import("@/lib/queries/wishlist");
-            await Promise.all(suggestions.map(item => addToWishlist(item.id)));
+            await Promise.all(suggestions.map(item => addToWishlist(item.id, "product")));
         } catch { }
 
         setTimeout(() => setAllSaved(false), 2000);

@@ -3,6 +3,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/app/context/AuthContext";
+import { useAppSelector } from "@/redux/store";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/redux/store";
+import {
+    addItemToWishlist,
+    removeItemFromWishlist,
+    selectLookbookWishlist,
+} from "@/redux/features/wishlist-slice";
+import { addToWishlist, removeFromWishlist } from "@/lib/queries/wishlist";
 import CreateLookbookModal from "./CreateLookbookModal";
 
 // Gradient backgrounds for collections without images
@@ -35,13 +44,16 @@ type LookbookItem = {
 
 export default function Lookbook() {
     const [activeTag, setActiveTag] = useState<string>("All");
-    const [saved, setSaved] = useState<string[]>([]);
     const [collections, setCollections] = useState<LookbookItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { user } = useCurrentUser();
     const supabase = createClient();
     const router = useRouter();
+    const dispatch = useDispatch<AppDispatch>();
+
+    const lookbookWishlist = useAppSelector(selectLookbookWishlist);
+    const savedIds = lookbookWishlist.map((item) => item.item_id);
 
     const fetchCollections = async () => {
         setLoading(true);
@@ -66,10 +78,35 @@ export default function Lookbook() {
             ? collections
             : collections.filter((l) => l.tag === activeTag);
 
-    const toggleSave = (id: string) =>
-        setSaved((prev) =>
-            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-        );
+    const toggleSave = async (look: LookbookItem) => {
+        if (!user) {
+            router.push("/signin");
+            return;
+        }
+        const isSaved = savedIds.includes(look.id);
+
+        try {
+            if (isSaved) {
+                await removeFromWishlist(look.id, "lookbook");
+                dispatch(removeItemFromWishlist({ item_id: look.id, item_type: "lookbook" }));
+            } else {
+                await addToWishlist(look.id, "lookbook");
+                dispatch(
+                    addItemToWishlist({
+                        id: look.id, // temp
+                        item_id: look.id,
+                        item_type: "lookbook",
+                        created_at: new Date().toISOString(),
+                        collectionName: look.name,
+                        collectionSlug: look.slug,
+                        coverImage: look.cover_image ?? look.image_url,
+                    })
+                );
+            }
+        } catch (err: any) {
+            console.error("Lookbook wishlist err:", err.message || err, err);
+        }
+    };
 
     return (
         <main style={{ background: "#F6F5F2" }}>
@@ -279,15 +316,15 @@ export default function Lookbook() {
                                                     Shop This Look
                                                 </button>
                                                 <button
-                                                    onClick={() => toggleSave(look.id)}
+                                                    onClick={() => toggleSave(look)}
                                                     className="py-2.5 px-3 text-xs font-light ease-out duration-200"
                                                     style={
-                                                        saved.includes(look.id)
+                                                        savedIds.includes(look.id)
                                                             ? { background: "#0A0A0A", color: "#F6F5F2", border: "1px solid #0A0A0A" }
                                                             : { background: "transparent", color: "#8A8A8A", border: "1px solid #E8E4DF" }
                                                     }
                                                 >
-                                                    {saved.includes(look.id) ? "✓ Saved" : "♡ Save"}
+                                                    {savedIds.includes(look.id) ? "✓ Saved" : "♡ Save"}
                                                 </button>
                                             </div>
                                         </div>

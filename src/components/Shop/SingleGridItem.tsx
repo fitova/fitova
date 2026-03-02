@@ -41,18 +41,25 @@ const SingleGridItem = ({ item }: { item: Product }) => {
     setTimeout(() => setWishlistAnimating(false), 400);
 
     if (isInWishlist) {
-      // Remove from wishlist
-      dispatch(removeItemFromWishlist(item.id));
+      dispatch(removeItemFromWishlist({ item_id: String(item.id), item_type: "product" }));
       try {
         const { removeFromWishlist } = await import("@/lib/queries/wishlist");
-        await removeFromWishlist(item.id);
+        await removeFromWishlist(String(item.id), "product");
       } catch { /* ignore if not logged in */ }
     } else {
-      // Add to wishlist
-      dispatch(addItemToWishlist({ ...item, status: "available", quantity: 1 }));
+      dispatch(addItemToWishlist({
+        id: String(item.id),
+        item_id: String(item.id),
+        item_type: "product",
+        created_at: new Date().toISOString(),
+        title: item.title,
+        price: item.price,
+        discountedPrice: item.discountedPrice,
+        imageUrl: item.imgs?.previews?.[0] ?? item.imgs?.thumbnails?.[0],
+      }));
       try {
         const { addToWishlist } = await import("@/lib/queries/wishlist");
-        await addToWishlist(item.id);
+        await addToWishlist(String(item.id), "product");
       } catch { /* ignore if not logged in */ }
     }
   };

@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
+import { addToWishlist } from "@/lib/queries/wishlist";
 import { tracking } from "@/lib/queries/tracking";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { getRelatedProducts } from "@/lib/queries/products";
@@ -125,8 +126,8 @@ const Tabs = ({ product }: { product: any }) => {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`py-4 text-xs font-light tracking-[0.2em] uppercase border-b-[1.5px] -mb-px transition-colors duration-200 ${tab === t.id
-                ? "border-dark text-dark"
-                : "border-transparent hover:text-dark"
+              ? "border-dark text-dark"
+              : "border-transparent hover:text-dark"
               }`}
             style={{ color: tab === t.id ? "#0A0A0A" : "#8A8A8A" }}
           >
@@ -273,10 +274,26 @@ const ShopDetails = () => {
     if (product.id) tracking.trackCartEvent(product.id, user?.id, "add");
   }, [product, dispatch, user]);
 
-  const handleWishlist = useCallback(() => {
-    if (!product) return;
-    dispatch(addItemToWishlist({ ...product, status: "available", quantity: 1 }));
-  }, [product, dispatch]);
+  const handleWishlist = useCallback(async () => {
+    if (!product || !user) return;
+    try {
+      await addToWishlist(product.id, "product");
+      dispatch(
+        addItemToWishlist({
+          id: product.id,
+          item_id: product.id,
+          item_type: "product",
+          created_at: new Date().toISOString(),
+          title: product.title,
+          price: product.price,
+          discountedPrice: product.discountedPrice,
+          imageUrl: product.imgs?.previews?.[0] ?? product.imgs?.thumbnails?.[0],
+        })
+      );
+    } catch (err) {
+      console.error("Wishlist err:", err);
+    }
+  }, [product, dispatch, user]);
 
   const handleAffiliate = useCallback(() => {
     if (product?.id) tracking.trackAffiliateClick(product.id);
@@ -363,8 +380,8 @@ const ShopDetails = () => {
                         key={i}
                         onClick={() => setActiveImg(i)}
                         className={`relative overflow-hidden transition-all duration-200 ${i === activeImg
-                            ? "ring-1 ring-dark ring-offset-1"
-                            : "opacity-60 hover:opacity-100"
+                          ? "ring-1 ring-dark ring-offset-1"
+                          : "opacity-60 hover:opacity-100"
                           }`}
                         style={{ width: 72, height: 90, flexShrink: 0, backgroundColor: "#EDEAE5" }}
                       >
@@ -440,8 +457,8 @@ const ShopDetails = () => {
                           onClick={() => setActiveColor(c)}
                           title={c}
                           className={`w-7 h-7 rounded-full border-2 transition-all duration-200 ${activeColor === c
-                              ? "border-dark scale-110"
-                              : "border-transparent hover:border-dark/40"
+                            ? "border-dark scale-110"
+                            : "border-transparent hover:border-dark/40"
                             }`}
                           style={{ backgroundColor: c.toLowerCase() }}
                         />
@@ -465,8 +482,8 @@ const ShopDetails = () => {
                           key={s}
                           onClick={() => setActiveSize(s)}
                           className={`px-4 py-2 text-xs font-light tracking-[0.1em] uppercase border transition-all duration-200 ${activeSize === s
-                              ? "border-dark bg-dark text-white"
-                              : "border-[#E8E4DF] text-dark hover:border-dark"
+                            ? "border-dark bg-dark text-white"
+                            : "border-[#E8E4DF] text-dark hover:border-dark"
                             }`}
                         >
                           {s}

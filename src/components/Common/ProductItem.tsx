@@ -8,6 +8,7 @@ import { addItemToCart } from "@/redux/features/cart-slice";
 import { tracking } from "@/lib/queries/tracking";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
+import { addToWishlist } from "@/lib/queries/wishlist";
 import { updateproductDetails } from "@/redux/features/product-details";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
@@ -38,16 +39,29 @@ const ProductItem = ({ item }: { item: Product }) => {
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
-  const handleItemToWishList = () => {
-    dispatch(
-      addItemToWishlist({
-        ...item,
-        status: "available",
-        quantity: 1,
-      })
-    );
-    setSavedToWishlist(true);
-    setTimeout(() => setSavedToWishlist(false), 2000);
+  const handleItemToWishList = async () => {
+    if (!user) return; // must be logged in
+    try {
+      // 1. Save to Supabase
+      await addToWishlist(item.id as string, "product");
+      // 2. Optimistic UI update in Redux
+      dispatch(
+        addItemToWishlist({
+          id: String(item.id),
+          item_id: String(item.id),
+          item_type: "product",
+          created_at: new Date().toISOString(),
+          title: item.title,
+          price: item.price,
+          discountedPrice: item.discountedPrice,
+          imageUrl: item.imgs?.previews?.[0] ?? item.imgs?.thumbnails?.[0],
+        })
+      );
+      setSavedToWishlist(true);
+      setTimeout(() => setSavedToWishlist(false), 2000);
+    } catch (err) {
+      console.error("Wishlist error:", err);
+    }
   };
 
   const handleProductDetails = () => {

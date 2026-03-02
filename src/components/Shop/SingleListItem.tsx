@@ -34,14 +34,23 @@ const SingleListItem = ({ item }: { item: Product }) => {
     tracking.trackCartEvent(item.id, user?.id, "add");
   };
 
-  const handleItemToWishList = () => {
+  const handleItemToWishList = async () => {
     dispatch(
       addItemToWishlist({
-        ...item,
-        status: "available",
-        quantity: 1,
+        id: String(item.id),
+        item_id: String(item.id),
+        item_type: "product",
+        created_at: new Date().toISOString(),
+        title: item.title,
+        price: item.price,
+        discountedPrice: item.discountedPrice,
+        imageUrl: item.imgs?.previews?.[0] ?? item.imgs?.thumbnails?.[0],
       })
     );
+    try {
+      const { addToWishlist } = await import("@/lib/queries/wishlist");
+      await addToWishlist(String(item.id), "product");
+    } catch { /* ignore if not logged in */ }
   };
 
   return (

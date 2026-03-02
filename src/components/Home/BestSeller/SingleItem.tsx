@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/app/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
+import { addToWishlist } from "@/lib/queries/wishlist";
 
 const SingleItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
@@ -34,14 +35,25 @@ const SingleItem = ({ item }: { item: Product }) => {
     tracking.trackCartEvent(item.id, user?.id, "add");
   };
 
-  const handleItemToWishList = () => {
-    dispatch(
-      addItemToWishlist({
-        ...item,
-        status: "available",
-        quantity: 1,
-      })
-    );
+  const handleItemToWishList = async () => {
+    if (!user) return;
+    try {
+      await addToWishlist(item.id as string, "product");
+      dispatch(
+        addItemToWishlist({
+          id: String(item.id),
+          item_id: String(item.id),
+          item_type: "product",
+          created_at: new Date().toISOString(),
+          title: item.title,
+          price: item.price,
+          discountedPrice: item.discountedPrice,
+          imageUrl: item.imgs?.previews?.[0] ?? item.imgs?.thumbnails?.[0],
+        })
+      );
+    } catch (err) {
+      console.error("Wishlist error:", err);
+    }
   };
 
   return (

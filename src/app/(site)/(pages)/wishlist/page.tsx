@@ -3,17 +3,12 @@ import { Wishlist } from "@/components/Wishlist";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Wishlist Page | NextCommerce Nextjs E-commerce template",
-  description: "This is Wishlist Page for NextCommerce Template",
-  // other metadata
+  title: "Wishlist | Fitova — Your Smart Fashion Hub",
+  description: "Your saved products and curated looks, all in one place.",
 };
 
 const WishlistPage = () => {
-  return (
-    <main>
-      <Wishlist />
-    </main>
-  );
+  return <Wishlist />;
 };
 
 export default WishlistPage;
