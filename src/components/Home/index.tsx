@@ -6,7 +6,6 @@ import Categories from "./Categories";
 import NewArrival from "./NewArrivals";
 import BestSeller from "./BestSeller";
 import TrendingSection from "./TrendingSection";
-import ThisWeek from "./ThisWeek";
 import Newsletter from "../Common/Newsletter";
 import LookbookPreview from "./LookbookPreview";
 import ThreeDSection from "./ThreeDSection/client";
@@ -21,7 +20,6 @@ const Home = () => {
       <NewArrival />
       <BestSeller />
       <TrendingSection />
-      <ThisWeek />
       <ThreeDSection />
       <LookbookPreview />
       <Newsletter />

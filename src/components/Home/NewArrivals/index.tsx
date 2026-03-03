@@ -1,16 +1,31 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { FreeMode } from "swiper/modules";
+import "swiper/css";
 import ProductItem from "@/components/Common/ProductItem";
 import { getNewArrivals, getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
+
+/* ─── Skeleton ──────────────────────────────────────────────── */
+const Skeleton = () => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <div key={i} className="animate-pulse">
+        <div className="w-full aspect-[3/4] bg-[#E8E4DF] mb-3" />
+        <div className="h-3 w-2/3 bg-[#E8E4DF] rounded mb-2" />
+        <div className="h-3 w-1/2 bg-[#E8E4DF] rounded" />
+      </div>
+    ))}
+  </div>
+);
 
 const NewArrival = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try new arrivals first, fallback to latest products
     getNewArrivals(8)
       .then((data) => {
         if (data.length > 0) return data;
@@ -58,25 +73,35 @@ const NewArrival = () => {
         </div>
 
         {/* Loading skeleton */}
-        {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="w-full aspect-[3/4] bg-[#E8E4DF] mb-3" />
-                <div className="h-3 w-2/3 bg-[#E8E4DF] rounded mb-2" />
-                <div className="h-3 w-1/2 bg-[#E8E4DF] rounded" />
-              </div>
-            ))}
-          </div>
-        )}
+        {loading && <Skeleton />}
 
-        {/* Products grid */}
+        {/* Mobile: horizontal Swiper. Desktop: CSS grid */}
         {!loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
-            {products.map((item, key) => (
-              <ProductItem item={mapProductFromDB(item) as any} key={key} />
-            ))}
-          </div>
+          <>
+            {/* Mobile swiper (<640px) */}
+            <div className="block sm:hidden -mx-4 px-4">
+              <Swiper
+                modules={[FreeMode]}
+                slidesPerView={1.2}
+                spaceBetween={16}
+                freeMode
+                className="!overflow-visible"
+              >
+                {products.map((item, key) => (
+                  <SwiperSlide key={key} className="!h-auto">
+                    <ProductItem item={mapProductFromDB(item) as any} />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+
+            {/* Tablet + desktop grid */}
+            <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+              {products.map((item, key) => (
+                <ProductItem item={mapProductFromDB(item) as any} key={key} />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Mobile view all */}

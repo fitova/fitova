@@ -41,27 +41,22 @@ const VideoHero = () => {
                     Fitova — AI Fashion
                 </span>
 
-                {/* Headline */}
-                <h1
-                    className="font-playfair text-4xl sm:text-6xl lg:text-7xl xl:text-8xl mb-10 leading-tight"
-                    style={{
-                        color: "#F6F5F2",
-                        letterSpacing: "-0.03em",
-                        textShadow: "0 2px 40px rgba(0,0,0,0.4)",
-                    }}
-                >
-                    Wear Your
-                    <br />
-                    <em style={{ fontStyle: "italic", fontWeight: 400 }}>Identity</em>
-                </h1>
+
 
                 {/* Shop button */}
                 <a
                     href="/shop-with-sidebar"
-                    className="group relative inline-flex items-center justify-center gap-3 font-light text-xs tracking-[0.15em] uppercase border px-10 py-4 mt-8 ease-out duration-300 hover:bg-[#F6F5F2] hover:text-[#0A0A0A]"
-                    style={{
-                        borderColor: "#F6F5F2",
-                        color: "#F6F5F2",
+                    className="group relative inline-flex items-center justify-center gap-3 font-light text-xs tracking-[0.15em] uppercase border px-10 py-4 mt-8 ease-out duration-300"
+                    style={{ borderColor: "#F6F5F2", color: "#F6F5F2", backgroundColor: "transparent" }}
+                    onMouseEnter={(e) => {
+                        const el = e.currentTarget as HTMLElement;
+                        el.style.backgroundColor = "#F6F5F2";
+                        el.style.color = "#0A0A0A";
+                    }}
+                    onMouseLeave={(e) => {
+                        const el = e.currentTarget as HTMLElement;
+                        el.style.backgroundColor = "transparent";
+                        el.style.color = "#F6F5F2";
                     }}
                 >
                     Shop Now

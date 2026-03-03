@@ -4,6 +4,9 @@ import SingleItem from "./SingleItem";
 import { useTypingAnimation } from "@/hooks/useTypingAnimation";
 import { Product } from "@/types/product";
 import { getBestSellers } from "@/lib/queries/bestSellers";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { FreeMode } from "swiper/modules";
+import "swiper/css";
 
 const BestSeller = () => {
   const animatedTitle = useTypingAnimation("Best Sellers", 60, 200);
@@ -47,10 +50,46 @@ const BestSeller = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7.5">
-          {/* <!-- Best Sellers item --> */}
+        {/* Mobile swiper (<640px) */}
+        {!loading && (
+          <div className="block sm:hidden -mx-4 px-4">
+            <Swiper
+              modules={[FreeMode]}
+              slidesPerView={1.1}
+              spaceBetween={16}
+              freeMode
+              className="!overflow-visible"
+            >
+              {products.map((item, key) => (
+                <SwiperSlide key={key} className="!h-auto">
+                  <SingleItem item={item as any} />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+        )}
+
+        {/* Tablet + desktop grid */}
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-7.5">
           {loading ? (
-            <p>Loading best sellers...</p>
+            <>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="animate-pulse border border-[#E8E4DF]" style={{ minHeight: "403px", backgroundColor: "#F6F5F2" }}>
+                  <div className="px-4 py-7.5 text-center">
+                    <div className="flex justify-center gap-1 mb-3">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <div key={s} className="w-3.5 h-3.5 rounded-full bg-[#E8E4DF]" />
+                      ))}
+                    </div>
+                    <div className="h-3 w-1/2 bg-[#E8E4DF] rounded mx-auto mb-2" />
+                    <div className="h-4 w-1/3 bg-[#E8E4DF] rounded mx-auto" />
+                  </div>
+                  <div className="flex justify-center items-center mt-4">
+                    <div className="w-[280px] h-[280px] bg-[#E8E4DF]" />
+                  </div>
+                </div>
+              ))}
+            </>
           ) : (
             products.map((item, key) => (
               <SingleItem item={item as any} key={key} />

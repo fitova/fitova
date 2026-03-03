@@ -228,8 +228,8 @@ const ThreeDSection = () => {
                 className="relative overflow-hidden flex items-center justify-center"
                 style={{
                     background: isMobile
-                        ? "linear-gradient(to bottom, #0A0A0A 0%, #1A1A1A 60%, #F0EDE8 100%)"
-                        : "linear-gradient(to right, #0A0A0A 0%, #1A1A1A 40%, #F0EDE8 100%)",
+                        ? "linear-gradient(to bottom, #0A0A0A 0%, #111111 50%, #161616 100%)"
+                        : "linear-gradient(to right, #0A0A0A 0%, #111111 35%, #161616 100%)",
                     minHeight: "50vh",
                 }}
             >
@@ -263,8 +263,8 @@ const ThreeDSection = () => {
             className="relative overflow-hidden"
             style={{
                 background: isMobile
-                    ? "linear-gradient(to bottom, #0A0A0A 0%, #1A1A1A 40%, #888880 70%, #F0EDE8 100%)"
-                    : "linear-gradient(to right, #0A0A0A 0%, #1A1A1A 28%, #888880 42%, #F0EDE8 52%, #FFFFFF 100%)",
+                    ? "linear-gradient(to bottom, #0A0A0A 0%, #111111 50%, #161616 100%)"
+                    : "linear-gradient(135deg, #050505 0%, #0F0F0F 35%, #1A1A18 55%, #0D0D0D 100%)",
                 // On mobile: auto height to prevent overflow. On desktop: 100vh.
                 minHeight: isMobile ? "auto" : "100vh",
                 height: isMobile ? "auto" : "100vh",

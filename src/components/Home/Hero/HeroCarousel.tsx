@@ -78,11 +78,13 @@ const HeroCarousal = () => {
           <SwiperSlide key={slide.id}>
             <div className="flex items-center pt-6 sm:pt-0 flex-col-reverse sm:flex-row h-full min-h-[450px]" style={{ background: "#0A0A0A" }}>
               <div className="max-w-[450px] py-10 sm:py-15 lg:py-24.5 pl-4 sm:pl-7.5 lg:pl-16 z-10 w-full">
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="block font-light tracking-[0.3em] uppercase text-xs" style={{ color: "#8A8A8A" }}>
-                    {slide.subtitle}
-                  </span>
-                </div>
+                {slide.subtitle && (
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="block font-light tracking-[0.3em] uppercase text-xs" style={{ color: "#8A8A8A" }}>
+                      {slide.subtitle}
+                    </span>
+                  </div>
+                )}
 
                 <h1 className="font-playfair text-[#F6F5F2] text-4xl sm:text-5xl lg:text-5xl mb-6 leading-tight whitespace-pre-line">
                   {isFirstSlide ? (

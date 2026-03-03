@@ -14,19 +14,29 @@ export type Collection = {
     is_featured: boolean;
     display_order: number;
     created_at: string;
+    user_id?: string | null;
+    // Joined from profiles (optional — only present when user_id exists)
+    creator?: {
+        full_name: string | null;
+        avatar_url: string | null;
+    } | null;
 };
 
-// Fetch all collections
+// Fetch all collections (with optional creator info from profiles)
 export async function getCollections(limit = 10) {
     const supabase = createClient();
     const { data, error } = await supabase
         .from("collections")
-        .select("*")
+        .select("*, profiles:user_id(full_name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(limit);
 
     if (error) throw error;
-    return data as Collection[];
+    return (data ?? []).map((col: any) => ({
+        ...col,
+        creator: col.profiles ?? null,
+        profiles: undefined,
+    })) as Collection[];
 }
 
 // Fetch a single collection and its products by slug
@@ -58,12 +68,16 @@ export async function getFeaturedCollections(limit = 4) {
     const supabase = createClient();
     const { data, error } = await supabase
         .from("collections")
-        .select("id, name, slug, tag, cover_image, display_order, is_featured, generated_by_ai")
+        .select("id, name, slug, tag, cover_image, display_order, is_featured, generated_by_ai, user_id, profiles:user_id(full_name, avatar_url)")
         .eq("is_featured", true)
         .order("display_order", { ascending: true })
         .limit(limit);
 
     if (error) throw error;
-    return data as Collection[];
+    return (data ?? []).map((col: any) => ({
+        ...col,
+        creator: col.profiles ?? null,
+        profiles: undefined,
+    })) as Collection[];
 }
 

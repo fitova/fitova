@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { tracking } from "@/lib/queries/tracking";
 
@@ -35,6 +35,19 @@ type Props = {
 };
 
 export default function LookbookDetailClient({ collection, products }: Props) {
+    const [copied, setCopied] = useState(false);
+
+    const handleShare = async () => {
+        const url = window.location.href;
+        if (navigator.share) {
+            await navigator.share({ title: collection.name, url }).catch(() => null);
+        } else {
+            await navigator.clipboard.writeText(url).catch(() => null);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
     return (
         <main style={{ background: "#F6F5F2", minHeight: "100vh" }}>
             {/* ── Hero ──────────────────────────── */}
@@ -54,17 +67,50 @@ export default function LookbookDetailClient({ collection, products }: Props) {
                 {/* Overlay */}
                 <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)" }} />
 
-                <div className="relative z-10">
-                    <Link
-                        href="/lookbook"
-                        className="inline-flex items-center gap-1.5 text-xs font-light tracking-[0.15em] uppercase mb-6 ease-out duration-200"
-                        style={{ color: "rgba(246,245,242,0.5)" }}
-                    >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        Back to Lookbook
-                    </Link>
+                <div className="relative z-10 flex flex-col items-center">
+                    {/* Top row: back + share */}
+                    <div className="flex items-center justify-between w-full max-w-lg mb-6">
+                        <Link
+                            href="/lookbook"
+                            className="inline-flex items-center gap-1.5 text-xs font-light tracking-[0.15em] uppercase ease-out duration-200"
+                            style={{ color: "rgba(246,245,242,0.5)" }}
+                        >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            Back to Lookbook
+                        </Link>
+
+                        {/* Share button */}
+                        <button
+                            onClick={handleShare}
+                            aria-label="Share this collection"
+                            className="inline-flex items-center gap-2 text-xs font-light tracking-[0.1em] uppercase border px-4 py-2 ease-out duration-200"
+                            style={{
+                                borderColor: "rgba(246,245,242,0.3)",
+                                color: copied ? "rgba(246,245,242,0.9)" : "rgba(246,245,242,0.5)",
+                            }}
+                        >
+                            {copied ? (
+                                <>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    Copied!
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
+                                        <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+                                        <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="1.5" />
+                                        <path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                    Share
+                                </>
+                            )}
+                        </button>
+                    </div>
 
                     {collection.tag && (
                         <span
