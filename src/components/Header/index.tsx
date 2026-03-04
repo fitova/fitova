@@ -4,6 +4,7 @@ import Link from "next/link";
 import CustomSelect from "./CustomSelect";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
+import MegaMenu from "./MegaMenu";
 import { useAppSelector } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
@@ -11,11 +12,13 @@ import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import { useStyleHub } from "@/app/context/StyleHubContext";
 import Image from "next/image";
 import { useCurrentUser } from "@/app/context/AuthContext";
+import { getCategoryHierarchy, CategoryWithChildren } from "@/lib/queries/categories";
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [stickyMenu, setStickyMenu] = useState(false);
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryWithChildren[]>([]);
   const { openCartModal } = useCartModalContext();
   const { openStyleHub } = useStyleHub();
   const { user } = useCurrentUser();
@@ -39,6 +42,13 @@ const Header = () => {
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
   });
+
+  // Fetch category hierarchy once (Men/Women/Kids + subcategories)
+  useEffect(() => {
+    getCategoryHierarchy()
+      .then(setCategoryHierarchy)
+      .catch(() => setCategoryHierarchy([]));
+  }, []);
 
   const options = [
     { label: "All Categories", value: "0" },
@@ -320,6 +330,13 @@ const Header = () => {
               {/* <!-- Main Nav Start --> */}
               <nav>
                 <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
+                  {/* Mega Menu: Men / Women / Kids (from DB) */}
+                  {categoryHierarchy.length > 0 && (
+                    <MegaMenu
+                      categories={categoryHierarchy}
+                      stickyMenu={stickyMenu}
+                    />
+                  )}
                   {menuData.map((menuItem, i) =>
                     menuItem.submenu ? (
                       <Dropdown

@@ -162,3 +162,50 @@ export async function getProductById(id: string) {
     if (error) throw error;
     return data;
 }
+
+/* ─── Reviews ────────────────────────────────────────────────────────────── */
+
+export type ProductReview = {
+    id: string;
+    product_id: string;
+    user_id: string;
+    rating: number;           // 1–5
+    comment: string | null;
+    created_at: string;
+    // joined from profiles
+    profiles?: { full_name: string | null; avatar_url: string | null } | null;
+};
+
+/**
+ * Fetch paginated reviews for a product, newest first.
+ * Joins `profiles` for author name & avatar.
+ */
+export async function getProductReviews(productId: string, page = 0, perPage = 10) {
+    const supabase = createClient();
+    const from = page * perPage;
+    const to = from + perPage - 1;
+    const { data, error, count } = await supabase
+        .from("product_reviews")
+        .select("id, product_id, user_id, rating, comment, created_at, profiles(full_name, avatar_url)", { count: "exact" })
+        .eq("product_id", productId)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+    if (error) throw error;
+    return { reviews: (data ?? []) as unknown as ProductReview[], count: count ?? 0 };
+}
+
+/**
+ * Submit (or update) a review. Relies on UNIQUE(product_id, user_id) constraint
+ * + Supabase RLS (user must be authenticated).
+ */
+export async function submitProductReview(productId: string, rating: number, comment: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { error } = await supabase.from("product_reviews").upsert(
+        { product_id: productId, user_id: user.id, rating, comment },
+        { onConflict: "product_id,user_id" }
+    );
+    if (error) throw error;
+}

@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AestheticColorWheel from "@/components/Admin/AestheticColorWheel";
 import { adminService } from "@/services/admin.service";
+import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
 const EMPTY = {
@@ -40,7 +41,13 @@ export default function ProductFormPage() {
     const isNew = params?.id === "new";
     const router = useRouter();
     const queryClient = useQueryClient();
+    const supabase = createClient();
     const [form, setForm] = useState(EMPTY);
+
+    // Image upload state
+    const [images, setImages] = useState<string[]>([]); // preview URLs (Supabase Storage)
+    const [uploadingImg, setUploadingImg] = useState(false);
+    const imgInputRef = useRef<HTMLInputElement>(null);
 
     // Load existing product if editing
     const { data: existingProduct, isLoading: isLoadingProduct } = useQuery({
@@ -52,8 +59,38 @@ export default function ProductFormPage() {
     useEffect(() => {
         if (existingProduct) {
             setForm(toFormValue(existingProduct));
+            // Preload existing images
+            const existing = existingProduct?.imgs?.previews ?? [];
+            if (existing.length > 0) setImages(existing);
         }
     }, [existingProduct]);
+
+    // Upload image to Supabase Storage
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        setUploadingImg(true);
+        const newUrls: string[] = [];
+        for (const file of Array.from(files)) {
+            const ext = file.name.split(".").pop();
+            const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error } = await supabase.storage.from("products").upload(path, file, { upsert: true });
+            if (error) {
+                toast.error(`Failed to upload ${file.name}`);
+                continue;
+            }
+            const { data: urlData } = supabase.storage.from("products").getPublicUrl(path);
+            if (urlData?.publicUrl) newUrls.push(urlData.publicUrl);
+        }
+        setImages((prev) => [...prev, ...newUrls]);
+        setUploadingImg(false);
+        if (newUrls.length > 0) toast.success(`${newUrls.length} image(s) uploaded`);
+        // Reset input
+        if (imgInputRef.current) imgInputRef.current.value = "";
+    };
+
+    const removeImage = (idx: number) =>
+        setImages((prev) => prev.filter((_, i) => i !== idx));
 
     const parseList = (s: string) =>
         s ? s.split(",").map((x) => x.trim()).filter(Boolean) : [];
@@ -83,7 +120,10 @@ export default function ProductFormPage() {
         e.preventDefault();
         if (!form.name || !form.price) { toast.error("Name and price are required."); return; }
 
-        const payload = { ...form };
+        const payload = {
+            ...form,
+            imgs: images.length > 0 ? { previews: images } : undefined,
+        };
 
         if (isNew) {
             mutationCreate.mutate(payload);
@@ -111,6 +151,58 @@ export default function ProductFormPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+                {/* ── Images ────────────────────────────────────── */}
+                <div className="bg-white border border-[#E8E4DF] p-6 space-y-4">
+                    <p className="text-xs font-light tracking-[0.2em] uppercase text-[#8A8A8A] pb-2 border-b border-[#E8E4DF]">
+                        📷 Product Images
+                    </p>
+                    {/* Thumbnails */}
+                    <div className="flex flex-wrap gap-3">
+                        {images.map((url, idx) => (
+                            <div key={idx} className="relative group w-24 h-24 border border-[#E8E4DF] overflow-hidden">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                <button
+                                    type="button"
+                                    onClick={() => removeImage(idx)}
+                                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                >
+                                    ✕
+                                </button>
+                                {idx === 0 && (
+                                    <span className="absolute bottom-0 left-0 right-0 text-[9px] bg-[#0A0A0A] text-white text-center py-0.5 font-light tracking-wider uppercase">Main</span>
+                                )}
+                            </div>
+                        ))}
+
+                        {/* Upload box */}
+                        <label
+                            htmlFor="product-image-upload"
+                            className={`w-24 h-24 border-2 border-dashed border-[#E8E4DF] flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#0A0A0A] hover:bg-[#FAFAF9] transition-all duration-200 ${uploadingImg ? "opacity-50 pointer-events-none" : ""}`}
+                        >
+                            {uploadingImg ? (
+                                <div className="w-5 h-5 border-2 border-t-[#0A0A0A] border-[#E8E4DF] rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#8A8A8A]">
+                                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                    <span className="text-[10px] font-light text-[#8A8A8A] tracking-wide uppercase">Add</span>
+                                </>
+                            )}
+                        </label>
+                        <input
+                            id="product-image-upload"
+                            ref={imgInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleImageUpload}
+                        />
+                    </div>
+                    <p className="text-xs font-light text-[#8A8A8A]">First image is the main display image. Images are uploaded to Supabase Storage.</p>
+                </div>
                 {/* Basic Info */}
                 <div className="bg-white border border-[#E8E4DF] p-6 space-y-4">
                     <p className="text-xs font-light tracking-[0.2em] uppercase text-[#8A8A8A] pb-2 border-b border-[#E8E4DF]">Basic Information</p>

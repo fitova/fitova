@@ -254,6 +254,24 @@ const StyleHubModal = () => {
                 {activePanel === "filters" && (
                     <>
                         <div className="flex-1 overflow-y-auto px-7 py-5 space-y-6">
+                            {/* Gender Filter */}
+                            <FilterSection title="Gender">
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    {(["All", "Men", "Women", "Kids"] as const).map((g) => {
+                                        const val = g === "All" ? "" : g.toLowerCase();
+                                        const active = (g === "All" && !filters.gender) || filters.gender === val;
+                                        return (
+                                            <ChipButton
+                                                key={g}
+                                                label={g}
+                                                active={active}
+                                                onClick={() => setFilter("gender" as any, val)}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </FilterSection>
+
                             {/* Sleek Circular Color Wheel */}
                             <FilterSection title="Color Palette">
                                 <div className="mt-6 mb-4 flex justify-center">
@@ -330,46 +348,57 @@ const StyleHubModal = () => {
 
                         {/* ── Footer ───────────────────────────────────────── */}
                         <div
-                            className="px-7 py-5 flex gap-3 flex-shrink-0"
+                            className="px-7 py-4 flex-shrink-0 space-y-3"
                             style={{ borderTop: "1px solid rgba(246,245,242,0.08)" }}
                         >
-                            <button
-                                onClick={resetFilters}
-                                className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200"
-                                style={{ border: "1px solid rgba(246,245,242,0.2)", color: "rgba(246,245,242,0.6)" }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(246,245,242,0.6)"; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(246,245,242,0.2)"; }}
-                            >
-                                Reset
-                            </button>
-                            <button
-                                onClick={() => setShowSaveModal(true)}
-                                className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 flex items-center justify-center gap-2"
-                                style={{ background: "#F6F5F2", color: "#0A0A0A" }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#E8E4DF"; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#F6F5F2"; }}
-                            >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" />
-                                    <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" strokeWidth="1.5" />
-                                    <polyline points="7 3 7 8 15 8" stroke="currentColor" strokeWidth="1.5" />
-                                </svg>
-                                Save World
-                            </button>
-                            <button
-                                onClick={applyToShop}
-                                className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 flex items-center justify-center gap-2"
-                                style={{ background: "#8B7355", color: "#F6F5F2" }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#7A6347"; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#8B7355"; }}
-                            >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" strokeWidth="1.5" />
-                                    <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.5" />
-                                    <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" strokeWidth="1.5" />
-                                </svg>
-                                Shop Now
-                            </button>
+                            {/* Reset — subtle link row */}
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={resetFilters}
+                                    className="text-[10px] font-light tracking-[0.15em] uppercase ease-out duration-200 flex items-center gap-1.5"
+                                    style={{ color: "rgba(246,245,242,0.35)" }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(246,245,242,0.7)"; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(246,245,242,0.35)"; }}
+                                >
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                                        <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                                        <path d="M3 3v5h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    Reset Filters
+                                </button>
+                            </div>
+
+                            {/* Save World + Shop Now — equal primary buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowSaveModal(true)}
+                                    className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 flex items-center justify-center gap-2"
+                                    style={{ border: "1px solid rgba(246,245,242,0.25)", color: "#F6F5F2" }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(246,245,242,0.7)"; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(246,245,242,0.25)"; }}
+                                >
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" />
+                                        <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" strokeWidth="1.5" />
+                                        <polyline points="7 3 7 8 15 8" stroke="currentColor" strokeWidth="1.5" />
+                                    </svg>
+                                    Save World
+                                </button>
+                                <button
+                                    onClick={applyToShop}
+                                    className="flex-1 py-3 text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 flex items-center justify-center gap-2"
+                                    style={{ background: "#F6F5F2", color: "#0A0A0A" }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#E8E4DF"; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#F6F5F2"; }}
+                                >
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" strokeWidth="1.5" />
+                                        <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="1.5" />
+                                        <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" strokeWidth="1.5" />
+                                    </svg>
+                                    Shop Now
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}

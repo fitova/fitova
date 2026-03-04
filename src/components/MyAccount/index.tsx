@@ -13,6 +13,13 @@ const MyAccount = () => {
   const [addressModal, setAddressModal] = useState(false);
   const { user, signOut } = useAuth();
   const supabase = createClient();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stats, setStats] = useState({ orders: 0, wishlist: 0, lookbooks: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const [userLookbooks, setUserLookbooks] = useState<any[]>([]);
+  const [sectionLoading, setSectionLoading] = useState(false);
+  const [savedWorlds, setSavedWorlds] = useState<any[]>([]);
 
   // Profile forms state
   const [firstName, setFirstName] = useState("");
@@ -33,14 +40,18 @@ const MyAccount = () => {
 
   useEffect(() => {
     if (!user) return;
+    // Always check email first (instant, no DB needed) - case-insensitive
+    if (user.email?.toLowerCase() === 'fitova.style@gmail.com') {
+      setIsAdmin(true);
+    }
     async function loadProfile() {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, country")
+        .select("full_name, country, is_admin")
         .eq("id", user?.id)
         .single();
 
-      if (data) {
+      if (!error && data) {
         if (data.full_name) {
           const parts = data.full_name.split(" ");
           setFirstName(parts[0] || "");
@@ -49,10 +60,65 @@ const MyAccount = () => {
         if (data.country) {
           setCountry(data.country);
         }
+        if (data.is_admin === true) {
+          setIsAdmin(true);
+        }
       }
     }
     loadProfile();
   }, [user, supabase]);
+
+  useEffect(() => {
+    if (!user) { setStatsLoading(false); return; }
+    async function loadStats() {
+      const [ordersRes, wishlistRes, lookbooksRes] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("collections").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+      ]);
+      setStats({
+        orders: ordersRes.count ?? 0,
+        wishlist: wishlistRes.count ?? 0,
+        lookbooks: lookbooksRes.count ?? 0,
+      });
+      setStatsLoading(false);
+    }
+    loadStats();
+  }, [user, supabase]);
+
+  // Load wishlist items and lookbooks when their tabs are activated
+  useEffect(() => {
+    if (!user) return;
+    if (activeTab === "wishlist-tab") {
+      setSectionLoading(true);
+      supabase
+        .from("wishlist")
+        .select("item_id, item_type, products(id, name, price, slug, imgs)")
+        .eq("user_id", user.id)
+        .eq("item_type", "product")
+        .order("created_at", { ascending: false })
+        .limit(20)
+        .then(({ data }) => { setWishlistItems(data ?? []); setSectionLoading(false); });
+    } else if (activeTab === "lookbooks-tab") {
+      setSectionLoading(true);
+      supabase
+        .from("collections")
+        .select("id, name, slug, cover_image, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20)
+        .then(({ data }) => { setUserLookbooks(data ?? []); setSectionLoading(false); });
+    } else if (activeTab === "worlds-tab") {
+      setSectionLoading(true);
+      supabase
+        .from("saved_style_worlds")
+        .select("id, name, filters, image_url, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20)
+        .then(({ data }) => { setSavedWorlds(data ?? []); setSectionLoading(false); });
+    }
+  }, [activeTab, user, supabase]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,6 +366,75 @@ const MyAccount = () => {
                       Account Details
                     </button>
 
+                    {/* Wishlist Tab */}
+                    <button
+                      onClick={() => setActiveTab("wishlist-tab")}
+                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "wishlist-tab"
+                        ? "text-white bg-blue"
+                        : "text-dark-2 bg-gray-1"
+                        }`}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                      </svg>
+                      Wishlist
+                    </button>
+
+                    {/* My Lookbooks Tab */}
+                    <button
+                      onClick={() => setActiveTab("lookbooks-tab")}
+                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "lookbooks-tab"
+                        ? "text-white bg-blue"
+                        : "text-dark-2 bg-gray-1"
+                        }`}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                      My Lookbooks
+                    </button>
+
+                    {/* Saved Worlds Tab */}
+                    <button
+                      onClick={() => setActiveTab("worlds-tab")}
+                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "worlds-tab"
+                        ? "text-white bg-blue"
+                        : "text-dark-2 bg-gray-1"
+                        }`}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M3.6 9h16.8M3.6 15h16.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M12 3c-2.5 2.5-3 5.5-3 9s.5 6.5 3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M12 3c2.5 2.5 3 5.5 3 9s-.5 6.5-3 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                      Saved Worlds
+                    </button>
+
+                    {/* Admin Dashboard — only for is_admin users — shown BEFORE logout */}
+                    {isAdmin && (
+                      <>
+                        <div className="border-t border-gray-3 my-1" />
+                        <a
+                          href="/admin"
+                          className="flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 text-white"
+                          style={{ background: "#1A1A1A" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+                            <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+                            <path d="M2 12l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+                          </svg>
+                          Admin Dashboard
+                        </a>
+                      </>
+                    )}
+
                     <button
                       onClick={signOut}
                       className="flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white text-dark-2 bg-gray-1"
@@ -334,25 +469,80 @@ const MyAccount = () => {
             {/* <!-- dashboard tab content start --> */}
 
             <div
-              className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "dashboard" ? "block" : "hidden"
-                }`}
+              className={`xl:max-w-[770px] w-full ${activeTab === "dashboard" ? "block" : "hidden"}`}
             >
-              <p className="text-dark">
-                Hello {displayName} (not you?{" "}
-                <button
-                  onClick={signOut}
-                  className="text-red ease-out duration-200 hover:underline"
-                >
-                  Log Out
-                </button>
-                )
-              </p>
+              {/* Welcome card */}
+              <div className="bg-white rounded-xl shadow-1 px-7 py-7 mb-5">
+                <p className="font-medium text-dark text-lg">
+                  Welcome back, {displayName}{" "}
+                  <span className="text-custom-sm font-normal text-dark-5">
+                    (<button onClick={signOut} className="text-red hover:underline ease-out duration-200">Log Out</button>)
+                  </span>
+                </p>
+                {memberSince && (
+                  <p className="text-custom-xs text-dark-5 mt-1">Member since {memberSince}</p>
+                )}
+                <p className="text-custom-sm mt-3 text-dark-4">
+                  From your account dashboard you can view your recent orders,
+                  manage your shipping and billing addresses, and edit your password and account details.
+                </p>
+              </div>
 
-              <p className="text-custom-sm mt-4">
-                From your account dashboard you can view your recent orders,
-                manage your shipping and billing addresses, and edit your
-                password and account details.
-              </p>
+              {/* Stats cards */}
+              <div className="grid grid-cols-3 gap-4 mb-5">
+                {([
+                  {
+                    label: "Orders", value: stats.orders, tab: "orders", icon: (
+                      <svg className="fill-current" width="28" height="28" viewBox="0 0 22 22" fill="none">
+                        <path d="M8.0203 11.9167C8.0203 11.537 7.71249 11.2292 7.3328 11.2292C6.9531 11.2292 6.6453 11.537 6.6453 11.9167V15.5833C6.6453 15.963 6.9531 16.2708 7.3328 16.2708C7.71249 16.2708 8.0203 15.963 8.0203 15.5833V11.9167Z" />
+                        <path d="M14.6661 11.2292C15.0458 11.2292 15.3536 11.537 15.3536 11.9167V15.5833C15.3536 15.963 15.0458 16.2708 14.6661 16.2708C14.2864 16.2708 13.9786 15.963 13.9786 15.5833V11.9167C13.9786 11.537 14.2864 11.2292 14.6661 11.2292Z" />
+                        <path d="M11.687 11.9167C11.687 11.537 11.3792 11.2292 10.9995 11.2292C10.6198 11.2292 10.312 11.537 10.312 11.9167V15.5833C10.312 15.963 10.6198 16.2708 10.9995 16.2708C11.3792 16.2708 11.687 15.963 11.687 15.5833V11.9167Z" />
+                      </svg>
+                    )
+                  },
+                  {
+                    label: "Wishlist", value: stats.wishlist, tab: "dashboard", icon: (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 21C12 21 3 14 3 8a5 5 0 0110 0 5 5 0 0110 0c0 6-9 13-9 13z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                      </svg>
+                    )
+                  },
+                  {
+                    label: "Lookbooks", value: stats.lookbooks, tab: "dashboard", icon: (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    )
+                  },
+                ] as const).map(({ label, value, tab, icon }) => (
+                  <button
+                    key={label}
+                    onClick={() => setActiveTab(tab as any)}
+                    className="bg-white rounded-xl shadow-1 p-5 flex flex-col items-start gap-2 ease-out duration-200 hover:shadow-md text-left"
+                  >
+                    <span className="text-dark-4">{icon}</span>
+                    <span className="text-2xl font-semibold text-dark">
+                      {statsLoading ? "—" : value}
+                    </span>
+                    <span className="text-custom-xs text-dark-5 uppercase tracking-wide">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Quick links */}
+              <div className="bg-white rounded-xl shadow-1 px-7 py-5">
+                <p className="text-xs font-medium uppercase tracking-widest text-dark-5 mb-4">Quick Actions</p>
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => setActiveTab("orders")} className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">View Orders</button>
+                  <button onClick={() => setActiveTab("addresses")} className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">Addresses</button>
+                  <button onClick={() => setActiveTab("account-details")} className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">Edit Profile</button>
+                  <a href="/wishlist" className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">My Wishlist</a>
+                  <a href="/lookbook/create" className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">+ New Lookbook</a>
+                </div>
+              </div>
             </div>
             {/* <!-- dashboard tab content end -->
 
@@ -363,9 +553,143 @@ const MyAccount = () => {
             >
               <Orders />
             </div>
-            {/* <!-- orders tab content end -->
+            {/* <!-- orders tab content end --> */}
 
-          <!-- downloads tab content start --> */}
+            {/* <!-- wishlist tab --> */}
+            <div
+              className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "wishlist-tab" ? "block" : "hidden"}`}
+            >
+              <h3 className="font-medium text-xl text-dark mb-6">My Wishlist</h3>
+              {sectionLoading ? (
+                <div className="flex justify-center py-10"><div className="h-8 w-8 rounded-full border-4 border-t-dark border-gray-200 animate-spin" /></div>
+              ) : wishlistItems.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-dark-4 font-light mb-4">Your wishlist is empty</p>
+                  <a href="/shop-with-sidebar" className="text-sm text-dark border border-gray-3 px-5 py-2 rounded-md hover:border-dark ease-out duration-200 inline-block">Browse Products</a>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {wishlistItems.map((item: any) => {
+                    const p = item.products;
+                    if (!p) return null;
+                    const thumb = p.imgs?.previews?.[0];
+                    return (
+                      <a key={item.item_id} href={`/products/${p.slug}`} className="flex items-center gap-4 p-3 border border-gray-3 rounded-lg hover:border-dark ease-out duration-200">
+                        {thumb ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={thumb} alt={p.name} className="w-16 h-16 object-cover border border-gray-3" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-1 flex items-center justify-center"><span className="text-dark-4 text-xs">No img</span></div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-dark line-clamp-1">{p.name}</p>
+                          <p className="text-sm text-dark-4">${p.price?.toFixed(2)}</p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="mt-6 text-center">
+                <a href="/wishlist" className="text-sm text-blue hover:underline">View Full Wishlist →</a>
+              </div>
+            </div>
+
+            {/* <!-- lookbooks tab --> */}
+            <div
+              className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "lookbooks-tab" ? "block" : "hidden"}`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-medium text-xl text-dark">My Lookbooks</h3>
+                <a href="/lookbook/create" className="text-xs text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">+ Create New</a>
+              </div>
+              {sectionLoading ? (
+                <div className="flex justify-center py-10"><div className="h-8 w-8 rounded-full border-4 border-t-dark border-gray-200 animate-spin" /></div>
+              ) : userLookbooks.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-dark-4 font-light mb-4">You haven’t created any lookbooks yet</p>
+                  <a href="/lookbook/create" className="text-sm text-dark border border-gray-3 px-5 py-2 rounded-md hover:border-dark ease-out duration-200 inline-block">Create Your First Lookbook</a>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {userLookbooks.map((lb: any) => (
+                    <a key={lb.id} href={`/lookbook/${lb.slug}`} className="flex items-center gap-4 p-3 border border-gray-3 rounded-lg hover:border-dark ease-out duration-200">
+                      {lb.cover_image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={lb.cover_image} alt={lb.name} className="w-16 h-16 object-cover border border-gray-3" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-1 flex items-center justify-center">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="14" y="3" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="3" y="14" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="14" y="14" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /></svg>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-dark line-clamp-1">{lb.name}</p>
+                        <p className="text-xs text-dark-4">{new Date(lb.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* <!-- Saved Worlds tab --> */}
+            <div
+              className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "worlds-tab" ? "block" : "hidden"}`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-medium text-xl text-dark">Saved Worlds</h3>
+              </div>
+              {sectionLoading ? (
+                <div className="flex justify-center py-10"><div className="h-8 w-8 rounded-full border-4 border-t-dark border-gray-200 animate-spin" /></div>
+              ) : savedWorlds.length === 0 ? (
+                <div className="text-center py-10">
+                  <svg className="mx-auto mb-3" width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="#BCBCBC" strokeWidth="1.5" />
+                    <path d="M3.6 9h16.8M3.6 15h16.8" stroke="#BCBCBC" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M12 3c-2.5 2.5-3 5.5-3 9s.5 6.5 3 9" stroke="#BCBCBC" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <p className="text-dark-4 font-light mb-2">No saved worlds yet</p>
+                  <p className="text-xs text-dark-5">Save a world from the Style Hub to see it here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {savedWorlds.map((world: any) => {
+                    const filterEntries = Object.entries(world.filters || {}).filter(([, v]) => v && (typeof v === "string" || (Array.isArray(v) && (v as string[]).length > 0)));
+                    return (
+                      <div key={world.id} className="p-4 border border-gray-3 rounded-lg">
+                        {world.image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={world.image_url} alt={world.name} className="w-full h-28 object-cover rounded-md mb-3" referrerPolicy="no-referrer" />
+                        )}
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-dark">{world.name}</p>
+                          <p className="text-[10px] text-dark-5">{new Date(world.created_at).toLocaleDateString()}</p>
+                        </div>
+                        {filterEntries.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {filterEntries.slice(0, 6).map(([key, val]) => {
+                              const vals = Array.isArray(val) ? (val as string[]) : [val as string];
+                              return vals.map((v) => (
+                                <span key={`${key}-${v}`} className="text-[10px] font-light px-2 py-0.5 rounded border border-gray-3 text-dark-4 capitalize">
+                                  {key === "color" && v.startsWith("#") ? (
+                                    <span className="inline-flex items-center gap-1">
+                                      <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: v }} />
+                                      {v}
+                                    </span>
+                                  ) : v}
+                                </span>
+                              ));
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* <!-- downloads tab content start --> */}
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "downloads" ? "block" : "hidden"
                 }`}

@@ -16,6 +16,8 @@ import { tracking } from "@/lib/queries/tracking";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { Product, mapProductFromDB } from "@/types/product";
 import ProductItem from "@/components/Common/ProductItem";
+import ProductReviews from "@/components/ShopDetails/ProductReviews";
+import AddToLookbookModal from "@/components/Common/AddToLookbookModal";
 
 interface Props {
     product: any; // raw DB product with product_images[]
@@ -37,6 +39,11 @@ export default function ProductDetailsClient({ product, related }: Props) {
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [lookbookModalOpen, setLookbookModalOpen] = useState(false);
+
+    /* ── real avg_rating from DB trigger ───────────────────────── */
+    const avgRating: number = product.avg_rating ?? 0;
+    const reviewCount: number = product.review_count ?? 0;
 
     /* ── View tracking ──────────────────────────────────────────── */
     useEffect(() => {
@@ -116,7 +123,7 @@ export default function ProductDetailsClient({ product, related }: Props) {
     const relatedMapped: Product[] = related.map(mapProductFromDB);
 
     return (
-        <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0 py-12">
+        <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0 py-12 pt-[calc(var(--navbar-h)+2rem)]">
 
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-xs font-light mb-10" style={{ color: "#8A8A8A" }}>
@@ -198,15 +205,19 @@ export default function ProductDetailsClient({ product, related }: Props) {
                         {mapped.title}
                     </h1>
 
-                    {/* Stars */}
+                    {/* Stars — pulled from avg_rating DB cache */}
                     <div className="flex items-center gap-2 mb-5">
-                        <div className="flex items-center gap-1" aria-label={`${mapped.reviews} reviews`}>
-                            {[...Array(5)].map((_, i) => (
-                                <Image key={i} src="/images/icons/icon-star.svg" alt="" width={14} height={14} aria-hidden />
+                        <div className="flex items-center gap-0.5" aria-label={`${avgRating.toFixed(1)} out of 5`}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <svg key={star} width="14" height="14" viewBox="0 0 24 24"
+                                    fill={star <= Math.round(avgRating) ? "#1A1A1A" : "none"}
+                                    stroke="#1A1A1A" strokeWidth="1.5">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
                             ))}
                         </div>
                         <span className="text-xs font-light" style={{ color: "#8A8A8A" }}>
-                            ({mapped.reviews} reviews)
+                            {reviewCount > 0 ? `(${reviewCount} ${reviewCount === 1 ? "review" : "reviews"})` : "No reviews yet"}
                         </span>
                     </div>
 
@@ -240,25 +251,26 @@ export default function ProductDetailsClient({ product, related }: Props) {
                         </p>
                     )}
 
-                    {/* Colors */}
+                    {/* Colors — rendered as circles */}
                     {mapped.colors && mapped.colors.length > 0 && (
                         <div className="mb-5">
                             <p className="text-xs font-light tracking-wide uppercase mb-3" style={{ color: "#8A8A8A" }}>
-                                Color: <span className="text-dark">{selectedColor ?? "Select"}</span>
+                                Color: <span className="text-dark capitalize">{selectedColor ?? "Select"}</span>
                             </p>
-                            <div className="flex gap-2 flex-wrap">
+                            <div className="flex gap-2.5 flex-wrap">
                                 {mapped.colors.map((color) => (
                                     <button
                                         key={color}
                                         onClick={() => setSelectedColor(color)}
-                                        className="px-4 py-1.5 text-xs font-light border transition-colors duration-200"
+                                        title={color}
+                                        className="w-8 h-8 rounded-full border-2 transition-all duration-200 relative"
                                         style={{
+                                            backgroundColor: color,
                                             borderColor: selectedColor === color ? "#1A1A1A" : "#E8E4DF",
-                                            color: selectedColor === color ? "#1A1A1A" : "#8A8A8A",
+                                            boxShadow: selectedColor === color ? "0 0 0 2px #F6F5F2, 0 0 0 4px #1A1A1A" : "none",
                                         }}
-                                    >
-                                        {color}
-                                    </button>
+                                        aria-label={`Select color ${color}`}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -358,12 +370,11 @@ export default function ProductDetailsClient({ product, related }: Props) {
                         </button>
                     </div>
 
-                    {/* Add to Lookbook (future placeholder) */}
+                    {/* Add to Lookbook */}
                     <button
-                        disabled
-                        title="Coming soon"
-                        className="flex items-center gap-2 text-xs font-light tracking-wide border border-dashed border-[#E8E4DF] py-2.5 px-4 w-fit mb-8 opacity-50 cursor-not-allowed"
-                        style={{ color: "#8A8A8A" }}
+                        onClick={() => setLookbookModalOpen(true)}
+                        className="flex items-center gap-2 text-xs font-light tracking-wide border border-[#E8E4DF] py-2.5 px-4 w-fit mb-8 hover:border-dark transition-colors duration-200"
+                        style={{ color: "#6A6A6A" }}
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
@@ -372,7 +383,6 @@ export default function ProductDetailsClient({ product, related }: Props) {
                             <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="1.5" />
                         </svg>
                         Add to Lookbook
-                        <span className="text-[9px] tracking-wider opacity-70">COMING SOON</span>
                     </button>
 
                     {/* Meta info */}
@@ -402,6 +412,24 @@ export default function ProductDetailsClient({ product, related }: Props) {
                             </div>
                         )}
                     </div>
+
+                    {/* Product Tags */}
+                    {(product.tags as string[] | null)?.length > 0 && (
+                        <div className="mt-5 pt-4 border-t border-[#E8E4DF]">
+                            <div className="flex gap-2 flex-wrap">
+                                {(product.tags as string[]).map((tag: string) => (
+                                    <Link
+                                        key={tag}
+                                        href={`/shop-with-sidebar?tag=${encodeURIComponent(tag.toLowerCase())}`}
+                                        className="text-xs font-light px-3 py-1 border border-[#E8E4DF] hover:border-dark transition-colors duration-200"
+                                        style={{ color: "#6A6A6A" }}
+                                    >
+                                        #{tag}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -419,7 +447,7 @@ export default function ProductDetailsClient({ product, related }: Props) {
                             className="font-playfair font-normal text-3xl text-dark"
                             style={{ letterSpacing: "-0.02em" }}
                         >
-                            Related Products
+                            Complete Your Look
                         </h2>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-7.5 gap-y-9">
@@ -428,6 +456,21 @@ export default function ProductDetailsClient({ product, related }: Props) {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* Reviews Section */}
+            <ProductReviews
+                productId={String(product.id)}
+                avgRating={avgRating}
+                reviewCount={reviewCount}
+            />
+
+            {/* Add to Lookbook Modal */}
+            {lookbookModalOpen && (
+                <AddToLookbookModal
+                    productId={String(product.id)}
+                    onClose={() => setLookbookModalOpen(false)}
+                />
             )}
         </div>
     );

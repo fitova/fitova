@@ -12,7 +12,7 @@ import {
     selectLookbookWishlist,
 } from "@/redux/features/wishlist-slice";
 import { addToWishlist, removeFromWishlist } from "@/lib/queries/wishlist";
-import CreateLookbookModal from "./CreateLookbookModal";
+
 
 // Gradient backgrounds for collections without images
 const bgGradients = [
@@ -46,7 +46,6 @@ export default function Lookbook() {
     const [activeTag, setActiveTag] = useState<string>("All");
     const [collections, setCollections] = useState<LookbookItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const { user } = useCurrentUser();
     const supabase = createClient();
     const router = useRouter();
@@ -108,6 +107,55 @@ export default function Lookbook() {
         }
     };
 
+    /* ── Lazily-loaded 2×2 product preview on card hover ──── */
+    const HoverPreview = ({ collectionId }: { collectionId: string }) => {
+        const [thumbs, setThumbs] = useState<string[]>([]);
+        const [fetched, setFetched] = useState(false);
+
+        const load = async () => {
+            if (fetched) return;
+            setFetched(true);
+            const { data } = await supabase
+                .from("collection_products")
+                .select("products(imgs)")
+                .eq("collection_id", collectionId)
+                .limit(4);
+
+            if (data) {
+                const urls = data
+                    .map((row: any) => row.products?.imgs?.previews?.[0])
+                    .filter(Boolean) as string[];
+                setThumbs(urls);
+            }
+        };
+
+        return (
+            <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
+                onMouseEnter={load}
+            >
+                {thumbs.length >= 2 && (
+                    <div className="grid grid-cols-2 h-full">
+                        {[0, 1, 2, 3].map((i) =>
+                            thumbs[i] ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    key={i}
+                                    src={thumbs[i]}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <div key={i} className="w-full h-full" style={{ background: "#1A1A1A" }} />
+                            )
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <main style={{ background: "#F6F5F2" }}>
             {/* ── Hero ────────────────────────────────────────────── */}
@@ -136,7 +184,7 @@ export default function Lookbook() {
                 </p>
                 {user && (
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => router.push("/lookbook/create")}
                         className="px-6 py-3 border border-white/20 text-white hover:bg-white hover:text-black transition uppercase text-xs tracking-wider"
                     >
                         Create Your Lookbook
@@ -211,6 +259,9 @@ export default function Lookbook() {
                                                 ? { backgroundImage: `url(${look.cover_image || look.image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
                                                 : { background: bg }}
                                         >
+                                            {/* Hover 2×2 product preview */}
+                                            <HoverPreview collectionId={look.id} />
+
                                             {/* Gradient overlay */}
                                             <div
                                                 className="absolute inset-0 flex flex-col justify-end p-5"
@@ -221,6 +272,9 @@ export default function Lookbook() {
                                                     style={{ color: "rgba(246,245,242,0.55)" }}
                                                 >
                                                     {look.tag}
+                                                    {(look as any).gender && (
+                                                        <span className="ml-2 opacity-60">· {(look as any).gender}</span>
+                                                    )}
                                                 </span>
                                                 <h3
                                                     className="font-playfair text-xl font-normal"
@@ -335,12 +389,6 @@ export default function Lookbook() {
                     )}
                 </div>
             </section>
-
-            <CreateLookbookModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={fetchCollections}
-            />
         </main>
     );
 }

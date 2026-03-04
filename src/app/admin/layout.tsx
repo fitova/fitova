@@ -26,15 +26,21 @@ export default async function AdminLayout({
         redirect("/signin");
     }
 
-    // Optional: verify is_admin in profiles table
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", session.user.id)
-        .single();
+    // Allow access if: email matches admin email OR is_admin flag is set in DB
+    const ADMIN_EMAIL = "fitova.style@gmail.com";
+    const isEmailAdmin = session.user.email?.toLowerCase() === ADMIN_EMAIL;
 
-    if (!profile?.is_admin) {
-        redirect("/"); // Not an admin
+    if (!isEmailAdmin) {
+        // Only check DB if email doesn't match (avoids extra query for known admin)
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .single();
+
+        if (!profile?.is_admin) {
+            redirect("/"); // Not an admin
+        }
     }
 
     const user = { email: session.user.email || "admin@fitova.com", id: session.user.id };

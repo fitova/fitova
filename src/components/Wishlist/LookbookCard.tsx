@@ -37,7 +37,7 @@ const LookbookCard = ({ item }: { item: WishlistEntry }) => {
             </button>
 
             {/* Cover image */}
-            <Link href={`/collections/${slug}`} className="block overflow-hidden">
+            <Link href={`/lookbook/${slug}`} className="block overflow-hidden">
                 <div
                     className="relative w-full overflow-hidden"
                     style={{
@@ -77,14 +77,14 @@ const LookbookCard = ({ item }: { item: WishlistEntry }) => {
 
             {/* Info */}
             <div className="pt-4 pb-2 flex flex-col gap-3">
-                <Link href={`/collections/${slug}`}>
+                <Link href={`/lookbook/${slug}`}>
                     <h3 className="text-sm font-light text-dark leading-snug hover:opacity-60 transition-opacity duration-200 line-clamp-2">
                         {item.collectionName ?? "Curated Look"}
                     </h3>
                 </Link>
 
                 <Link
-                    href={`/collections/${slug}`}
+                    href={`/lookbook/${slug}`}
                     className="w-full text-center text-xs font-light tracking-[0.15em] uppercase py-3 border border-dark text-dark hover:bg-dark hover:text-white transition-all duration-300 mt-1"
                 >
                     View Look →

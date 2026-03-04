@@ -8,8 +8,13 @@ export type Category = {
     image_url: string | null;
     parent_id: string | null;
     sort_order: number;
+    piece_type: string | null;
     gender: string[] | null;
     created_at: string;
+};
+
+export type CategoryWithChildren = Category & {
+    children: Category[];
 };
 
 // Fetch all categories
@@ -58,4 +63,27 @@ export async function getSubcategoriesByParentId(parentId: string) {
         .order("sort_order", { ascending: true });
     if (error) return [];
     return data as Category[];
+}
+
+/**
+ * Returns the full category hierarchy:
+ * [{ id, name, slug, ..., children: [{ id, name, slug, piece_type, ... }] }]
+ * Used by MegaMenu — fetched once server-side in the layout.
+ */
+export async function getCategoryHierarchy(): Promise<CategoryWithChildren[]> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, slug, parent_id, sort_order, piece_type, gender, image_url, description, created_at")
+        .order("sort_order", { ascending: true });
+
+    if (error || !data) return [];
+
+    const parents = data.filter((c) => c.parent_id === null);
+    const children = data.filter((c) => c.parent_id !== null);
+
+    return parents.map((parent) => ({
+        ...parent,
+        children: children.filter((c) => c.parent_id === parent.id),
+    })) as CategoryWithChildren[];
 }

@@ -89,9 +89,9 @@ export const menuData: Menu[] = [
       },
       {
         id: 33,
-        title: "Recently Viewed",
+        title: "New Arrivals",
         newTab: false,
-        path: "/this-week/recently-viewed",
+        path: "/this-week/new-arrivals",
       },
     ],
   },

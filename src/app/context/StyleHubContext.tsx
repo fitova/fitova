@@ -13,6 +13,7 @@ export type StyleHubFilters = {
     season: string;
     material: string;
     brand: string;
+    gender: string;
 };
 
 export type SavedWorld = {
@@ -54,6 +55,7 @@ const defaultFilters: StyleHubFilters = {
     season: "",
     material: "",
     brand: "",
+    gender: "",
 };
 
 // Fallback filter options if DB fetch fails

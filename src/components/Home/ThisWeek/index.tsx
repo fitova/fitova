@@ -1,14 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Product } from "@/types/product";
+import { Product, mapProductFromDB } from "@/types/product";
 import { getTrendingProducts } from "@/lib/queries/trending";
 import { getBestSellers } from "@/lib/queries/bestSellers";
-import { getRecentlyViewed } from "@/lib/queries/recentlyViewed";
+import { getNewArrivals } from "@/lib/queries/products";
 import SingleItem from "../BestSeller/SingleItem";
 import { useCurrentUser } from "@/app/context/AuthContext";
 
-type Tab = "trending" | "best_sellers" | "recently_viewed";
+type Tab = "trending" | "best_sellers" | "new_arrivals";
 
 const ThisWeek = () => {
     const [activeTab, setActiveTab] = useState<Tab>("trending");
@@ -25,8 +25,9 @@ const ThisWeek = () => {
                     data = await getTrendingProducts(8);
                 } else if (activeTab === "best_sellers") {
                     data = await getBestSellers(8);
-                } else if (activeTab === "recently_viewed") {
-                    data = await getRecentlyViewed(user?.id, 8);
+                } else if (activeTab === "new_arrivals") {
+                    const raw = await getNewArrivals(8);
+                    data = raw.map(mapProductFromDB);
                 }
                 setProducts(data);
             } catch (error) {
@@ -72,13 +73,13 @@ const ThisWeek = () => {
                             Best Sellers
                         </button>
                         <button
-                            onClick={() => setActiveTab("recently_viewed")}
-                            className={`font-medium text-sm tracking-wide pb-2 border-b-2 transition-colors duration-300 ${activeTab === "recently_viewed"
+                            onClick={() => setActiveTab("new_arrivals")}
+                            className={`font-medium text-sm tracking-wide pb-2 border-b-2 transition-colors duration-300 ${activeTab === "new_arrivals"
                                 ? "border-dark text-dark"
                                 : "border-transparent text-dark-4 hover:text-dark"
                                 }`}
                         >
-                            Recently Viewed
+                            New Arrivals
                         </button>
                     </div>
 
@@ -108,9 +109,7 @@ const ThisWeek = () => {
                     ) : (
                         <div className="flex justify-center items-center h-full min-h-[400px]">
                             <p className="text-dark-4 font-light">
-                                {activeTab === "recently_viewed"
-                                    ? "You haven't viewed any products recently."
-                                    : `No products found for ${activeTab.replace("_", " ")}.`}
+                                {`No products found for ${activeTab.replace("_", " ")}.`}
                             </p>
                         </div>
                     )}

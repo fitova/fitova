@@ -5,10 +5,21 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --navbar-h: 64px;
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --navbar-h: 80px;
+    }
+  }
+
   html {
     @apply scroll-smooth;
     overflow-x: hidden;
   }
+
 
   body {
     @apply font-inter font-light text-base relative z-1;
@@ -274,5 +285,70 @@ input[type='search']::-webkit-search-results-decoration {
   min-width: 100%;
   /* right → left */
   animation: scrollRTL 55s linear infinite;
+  will-change: transform;
+}
+
+/* ── Scroll Reveal ────────────────────────────────────────────────────── */
+.sr {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+
+.sr.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+.sr-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.sr-delay-2 {
+  transition-delay: 0.2s;
+}
+
+.sr-delay-3 {
+  transition-delay: 0.3s;
+}
+
+.sr-delay-4 {
+  transition-delay: 0.4s;
+}
+
+.sr-delay-5 {
+  transition-delay: 0.5s;
+}
+
+/* ── Page Background Ornament ─────────────────────────────────────────── */
+@keyframes ornamentDrift {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+
+  50% {
+    transform: translateX(20px) translateY(-15px);
+  }
+
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.page-ornament {
+  position: fixed;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image:
+    repeating-linear-gradient(-45deg,
+      #1A1A1A 0px,
+      #1A1A1A 1px,
+      transparent 1px,
+      transparent 60px);
+  animation: ornamentDrift 20s ease-in-out infinite;
   will-change: transform;
 }
