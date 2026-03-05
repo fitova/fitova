@@ -75,7 +75,7 @@ const SingleListItem = ({ item }: { item: Product }) => {
   return (
     <div className="group rounded-lg bg-white shadow-1">
       <div className="flex">
-        <Link href={`/products/${item.slug ?? item.id}`} className="shadow-list relative overflow-hidden flex items-center justify-center max-w-[270px] w-full sm:min-h-[270px] p-4 block">
+        <Link href={`/products/${item.slug ?? item.id}`} scroll={false} className="shadow-list relative overflow-hidden flex items-center justify-center max-w-[270px] w-full sm:min-h-[270px] p-4 block">
           <Image src={item?.imgs?.previews?.[0] || "/images/products/product-1-bg-1.png"} alt={item?.title || "Product"} width={250} height={250} className="object-cover transition-transform duration-500 ease-out group-hover:-translate-x-full" />
           {item?.imgs?.previews?.[1] && (
             <Image src={item?.imgs?.previews?.[1]} alt={item?.title || "Product"} fill className="object-cover absolute inset-0 translate-x-full transition-transform duration-500 ease-out group-hover:translate-x-0" />
@@ -222,7 +222,7 @@ const SingleListItem = ({ item }: { item: Product }) => {
             )}
 
             <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
-              <Link href={`/products/${item.slug ?? item.id}`}> {item.title} </Link>
+              <Link href={`/products/${item.slug ?? item.id}`} scroll={false}> {item.title} </Link>
             </h3>
 
             <span className="flex items-center gap-2 font-medium text-lg">

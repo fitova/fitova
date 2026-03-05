@@ -1,17 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
-
-// ─── Module-level cache (survives re-renders, cleared after 5 min) ────────────
-type CacheEntry = { products: Product[]; timestamp: number };
-const productCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function getCacheKey(filters: object, sortBy: string): string {
-    return JSON.stringify({ ...filters, sortBy });
-}
-
+import { useQuery } from "@tanstack/react-query";
 
 export interface ShopFilters {
     category: string;
@@ -79,8 +70,6 @@ export function useShopFilters() {
     const searchParams = useSearchParams();
     const [productStyle, setProductStyle] = useState<"grid" | "list">("grid");
     const [sortBy, setSortBy] = useState("0");
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<ShopFilters>(() =>
         readInitialFilters(null) // SSR-safe: no searchParams on first render
     );
@@ -91,48 +80,28 @@ export function useShopFilters() {
         setFilters(readInitialFilters(searchParams));
     }, [searchParams]);
 
-    useEffect(() => {
-        const cacheKey = getCacheKey(filters, sortBy);
-        const cached = productCache.get(cacheKey);
-        const now = Date.now();
-        const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
-
-        // Immediately restore cached products (avoids blank flash on back-nav)
-        if (cached) {
-            setProducts(cached.products);
-            if (isFresh) { setLoading(false); return; } // still fresh — skip refetch
-        }
-
-        async function load() {
-            try {
-                if (!cached) setLoading(true); // only show spinner on first load
-                const data = await getProducts({
-                    gender: filters.gender || undefined,
-                    category: filters.category || undefined,
-                    style: filters.style || undefined,
-                    season: filters.season || undefined,
-                    brand: filters.brand || undefined,
-                    material: filters.material || undefined,
-                    colors: filters.colors.length > 0 ? filters.colors : undefined,
-                    size: filters.size || undefined,
-                    minPrice: filters.minPrice || undefined,
-                    maxPrice: filters.maxPrice < 1000 ? filters.maxPrice : undefined,
-                    sortBy,
-                    search: filters.search || undefined,
-                    pieceTypeGroup: filters.pieceTypeGroup || undefined,
-                });
-                const mapped = data.map((p: any) => p.imgs ? p : mapProductFromDB(p));
-                // Write to cache
-                productCache.set(cacheKey, { products: mapped, timestamp: Date.now() });
-                setProducts(mapped);
-            } catch (err) {
-                console.error("Failed to fetch products:", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
-    }, [filters, sortBy]);
+    const { data: products = [], isLoading: loading } = useQuery({
+        queryKey: ["products", { ...filters, sortBy }],
+        queryFn: async () => {
+            const data = await getProducts({
+                gender: filters.gender || undefined,
+                category: filters.category || undefined,
+                style: filters.style || undefined,
+                season: filters.season || undefined,
+                brand: filters.brand || undefined,
+                material: filters.material || undefined,
+                colors: filters.colors.length > 0 ? filters.colors : undefined,
+                size: filters.size || undefined,
+                minPrice: filters.minPrice || undefined,
+                maxPrice: filters.maxPrice < 1000 ? filters.maxPrice : undefined,
+                sortBy,
+                search: filters.search || undefined,
+                pieceTypeGroup: filters.pieceTypeGroup || undefined,
+            });
+            return data.map((p: any) => p.imgs ? p : mapProductFromDB(p));
+        },
+        staleTime: 5 * 60 * 1000,
+    });
 
     const sortOptions = [
         { label: "Latest Products", value: "0" },

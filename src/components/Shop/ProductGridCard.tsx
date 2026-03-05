@@ -55,7 +55,7 @@ const ProductGridCard = ({ item }: { item: Product }) => {
     return (
         <div className="group relative flex flex-col">
             {/* ── Image container ── */}
-            <Link href={`/products/${item.slug ?? item.id}`} className="relative overflow-hidden rounded-lg bg-[#F6F5F2] aspect-[3/4] mb-3 block">
+            <Link href={`/products/${item.slug ?? item.id}`} scroll={false} className="relative overflow-hidden rounded-lg bg-[#F6F5F2] aspect-[3/4] mb-3 block">
 
                 {/* Slide-in second image from the right on hover */}
                 <Image
