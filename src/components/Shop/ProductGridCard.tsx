@@ -31,14 +31,16 @@ const ProductGridCard = ({ item }: { item: Product }) => {
         ? Math.round(((item.price - item.discountedPrice!) / item.price) * 100)
         : 0;
 
-    const handleAddToCart = () => {
+    const handleAddToCart = (e?: React.MouseEvent) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         dispatch(addItemToCart({ ...item, id: item.id, quantity: 1 }));
         tracking.trackCartEvent(item.id, user?.id, "add");
         setAddedToCart(true);
         setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    const handleWishlist = async () => {
+    const handleWishlist = async (e?: React.MouseEvent) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         setWishlistAnimating(true);
         setTimeout(() => setWishlistAnimating(false), 400);
         if (isInWishlist) {
@@ -53,7 +55,7 @@ const ProductGridCard = ({ item }: { item: Product }) => {
     return (
         <div className="group relative flex flex-col">
             {/* ── Image container ── */}
-            <div className="relative overflow-hidden rounded-lg bg-[#F6F5F2] aspect-[3/4] mb-3">
+            <Link href={`/products/${item.slug ?? item.id}`} className="relative overflow-hidden rounded-lg bg-[#F6F5F2] aspect-[3/4] mb-3 block">
 
                 {/* Slide-in second image from the right on hover */}
                 <Image
@@ -104,21 +106,102 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                         {addedToCart ? "✓ Added" : "Add to Cart"}
                     </button>
                     <button
-                        onClick={() => { openModal(); dispatch(updateQuickView({ ...item })); }}
-                        className="w-9 h-9 rounded bg-white/90 backdrop-blur-sm flex items-center justify-center"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openModal(); dispatch(updateQuickView({ ...item })); }}
+                        className="w-9 h-9 rounded bg-white/90 backdrop-blur-sm flex items-center justify-center text-dark hover:bg-white transition-colors"
                         aria-label="Quick view"
                     >
-                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M8 5.5C6.619 5.5 5.5 6.619 5.5 8S6.619 10.5 8 10.5 10.5 9.381 10.5 8 9.381 5.5 8 5.5zm-1.5 2.5a1.5 1.5 0 013 0 1.5 1.5 0 01-3 0z" fill="#1a1a1a" /><path fillRule="evenodd" clipRule="evenodd" d="M8 2.167C5 2.167 2.964 3.969 1.787 5.498l-.021.028c-.266.345-.511.663-.677 1.04C.91 6.969.833 7.408.833 8s.077 1.031.256 1.434c.166.377.411.695.677 1.04l.021.027C2.964 12.031 5 13.833 8 13.833c3 0 5.036-1.802 6.213-3.332l.021-.027c.266-.345.511-.663.678-1.04.178-.403.255-.842.255-1.434s-.077-1.031-.255-1.434c-.167-.377-.412-.695-.678-1.04l-.021-.028C13.036 3.97 11 2.167 8 2.167z" fill="#1a1a1a" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
                     </button>
                 </div>
-            </div>
+            </Link>
 
             {/* ── Text info ── */}
             <div>
                 <Link href={`/products/${item.slug ?? item.id}`} className="block">
-                    <p className="text-[11px] text-[#8A8A8A] font-light uppercase tracking-wider mb-1">
-                        {item.brand ?? ""}
-                    </p>
+                    {/* Tags line injected right below brand name or integrated if brand exists */}
+                    {item.brand ? (
+                        <p className="text-[11px] text-[#8A8A8A] font-light uppercase tracking-wider mb-1 truncate">
+                            {item.brand}
+                            {(item.gender || item.piece_type || (item.colors && item.colors.length > 0)) && (
+                                <span className="inline-flex items-center gap-1.5 ml-1.5 normal-case font-normal text-[11px] md:text-xs">
+                                    ·
+                                    {item.gender && (
+                                        <span className="capitalize">{item.gender}</span>
+                                    )}
+                                    {(item.gender && item.piece_type) && <span>·</span>}
+                                    {item.piece_type && (
+                                        <span className="capitalize">
+                                            {item.piece_type.toLowerCase() === "long-sleeve-shirt" ? "L/S Shirt" :
+                                                item.piece_type.toLowerCase() === "short-sleeve-shirt" ? "S/S Shirt" :
+                                                    item.piece_type.replace(/-/g, ' ')}
+                                        </span>
+                                    )}
+                                    {((item.gender || item.piece_type) && item.colors && item.colors[0]) && <span>·</span>}
+                                    {item.colors && item.colors[0] && (
+                                        <span className="flex items-center gap-1 capitalize">
+                                            <span
+                                                className="w-2.5 h-2.5 rounded-full border border-[#E8E4DF]"
+                                                style={{
+                                                    backgroundColor: item.colors[0].toLowerCase() === 'black' ? '#1a1a1a' :
+                                                        item.colors[0].toLowerCase() === 'white' ? '#f5f5f5' :
+                                                            item.colors[0].toLowerCase() === 'beige' ? '#d4b896' :
+                                                                item.colors[0].toLowerCase() === 'navy' ? '#1e2a4a' :
+                                                                    item.colors[0].toLowerCase() === 'grey' || item.colors[0].toLowerCase() === 'gray' ? '#9ca3af' :
+                                                                        item.colors[0].toLowerCase() === 'brown' ? '#92400e' :
+                                                                            item.colors[0].toLowerCase() === 'red' ? '#ef4444' :
+                                                                                item.colors[0].toLowerCase() === 'blue' ? '#3b82f6' :
+                                                                                    item.colors[0].toLowerCase() === 'green' ? '#16a34a' :
+                                                                                        item.colors[0].toLowerCase() === 'pink' ? '#ec4899' :
+                                                                                            item.colors[0].toLowerCase() === 'purple' ? '#9333ea' :
+                                                                                                item.colors[0].toLowerCase() === 'yellow' ? '#facc15' :
+                                                                                                    item.colors[0].toLowerCase() === 'orange' ? '#f97316' : '#ccc'
+                                                }}
+                                            />
+                                            {item.colors[0]}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
+                        </p>
+                    ) : (
+                        <div className="text-[11px] md:text-xs text-[#8A8A8A] font-light mb-1 truncate flex items-center gap-1.5">
+                            {item.gender && (
+                                <span className="capitalize">{item.gender}</span>
+                            )}
+                            {(item.gender && item.piece_type) && <span>·</span>}
+                            {item.piece_type && (
+                                <span className="capitalize">
+                                    {item.piece_type.toLowerCase() === "long-sleeve-shirt" ? "L/S Shirt" :
+                                        item.piece_type.toLowerCase() === "short-sleeve-shirt" ? "S/S Shirt" :
+                                            item.piece_type.replace(/-/g, ' ')}
+                                </span>
+                            )}
+                            {((item.gender || item.piece_type) && item.colors && item.colors[0]) && <span>·</span>}
+                            {item.colors && item.colors[0] && (
+                                <span className="flex items-center gap-1 capitalize">
+                                    <span
+                                        className="w-2.5 h-2.5 rounded-full border border-[#E8E4DF]"
+                                        style={{
+                                            backgroundColor: item.colors[0].toLowerCase() === 'black' ? '#1a1a1a' :
+                                                item.colors[0].toLowerCase() === 'white' ? '#f5f5f5' :
+                                                    item.colors[0].toLowerCase() === 'beige' ? '#d4b896' :
+                                                        item.colors[0].toLowerCase() === 'navy' ? '#1e2a4a' :
+                                                            item.colors[0].toLowerCase() === 'grey' || item.colors[0].toLowerCase() === 'gray' ? '#9ca3af' :
+                                                                item.colors[0].toLowerCase() === 'brown' ? '#92400e' :
+                                                                    item.colors[0].toLowerCase() === 'red' ? '#ef4444' :
+                                                                        item.colors[0].toLowerCase() === 'blue' ? '#3b82f6' :
+                                                                            item.colors[0].toLowerCase() === 'green' ? '#16a34a' :
+                                                                                item.colors[0].toLowerCase() === 'pink' ? '#ec4899' :
+                                                                                    item.colors[0].toLowerCase() === 'purple' ? '#9333ea' :
+                                                                                        item.colors[0].toLowerCase() === 'yellow' ? '#facc15' :
+                                                                                            item.colors[0].toLowerCase() === 'orange' ? '#f97316' : '#ccc'
+                                        }}
+                                    />
+                                    {item.colors[0]}
+                                </span>
+                            )}
+                        </div>
+                    )}
                     <h3 className="text-sm font-medium text-dark truncate hover:opacity-60 transition-opacity duration-200 mb-1.5">
                         {item.title}
                     </h3>
@@ -133,26 +216,6 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                         <span className="text-sm font-semibold text-dark">${item.price}</span>
                     )}
                 </div>
-                {/* Metadata tags: gender / piece_type / main color */}
-                {(item.gender || item.piece_type || (item.colors && item.colors.length > 0)) && (
-                    <div className="flex flex-wrap gap-1">
-                        {item.gender && (
-                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
-                                {item.gender}
-                            </span>
-                        )}
-                        {item.piece_type && (
-                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
-                                {item.piece_type}
-                            </span>
-                        )}
-                        {item.colors && item.colors[0] && (
-                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
-                                {item.colors[0]}
-                            </span>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );

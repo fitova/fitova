@@ -80,7 +80,8 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
     const { user } = useAuth();
-    const supabase = createClient();
+    // Use useState to ensure the client is only created once per component lifecycle
+    const [supabase] = useState(() => createClient());
     const router = useRouter();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -91,19 +92,23 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
     // Fetch filter options from DB
     useEffect(() => {
         async function fetchFilterOptions() {
-            const { data, error } = await supabase
-                .from("style_hub_filters")
-                .select("*")
-                .eq("is_active", true)
-                .order("sort_order", { ascending: true });
+            try {
+                const { data, error } = await supabase
+                    .from("style_hub_filters")
+                    .select("*")
+                    .eq("is_active", true)
+                    .order("sort_order", { ascending: true });
 
-            if (!error && data && data.length > 0) {
-                setFilterOptions(data as FilterOption[]);
+                if (!error && data && data.length > 0) {
+                    setFilterOptions(data as FilterOption[]);
+                }
+            } catch (err) {
+                console.error("Exception fetching filter options:", err);
             }
             // If error or no data, keep fallback options
         }
         fetchFilterOptions();
-    }, []);
+    }, [supabase]);
 
     // Fetch saved worlds when user changes
     useEffect(() => {
@@ -113,21 +118,25 @@ export const StyleHubProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         async function fetchSavedWorlds() {
-            const { data, error } = await supabase
-                .from("saved_style_worlds")
-                .select("*")
-                .eq("user_id", user?.id)
-                .order("created_at", { ascending: false });
+            try {
+                const { data, error } = await supabase
+                    .from("saved_style_worlds")
+                    .select("*")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false });
 
-            if (error) {
-                console.error("Error fetching saved worlds:", error);
-            } else {
-                setSavedWorlds(data as SavedWorld[]);
+                if (error) {
+                    console.error("Error fetching saved worlds:", error.message || error);
+                } else {
+                    setSavedWorlds(data as SavedWorld[]);
+                }
+            } catch (err) {
+                console.error("Exception fetching saved worlds:", err);
             }
         }
 
         fetchSavedWorlds();
-    }, [user]);
+    }, [user, supabase]);
 
     const openStyleHub = () => setIsOpen(true);
     const closeStyleHub = () => setIsOpen(false);

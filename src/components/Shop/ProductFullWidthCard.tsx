@@ -54,14 +54,16 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
     const swatches = (item.colors ?? []).slice(0, 6);
     const tags = (item.tags ?? []).slice(0, 4);
 
-    const handleAddToCart = () => {
+    const handleAddToCart = (e?: React.MouseEvent) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         dispatch(addItemToCart({ ...item, id: item.id, quantity: 1 }));
         tracking.trackCartEvent(item.id, user?.id, "add");
         setAddedToCart(true);
         setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    const handleWishlist = async () => {
+    const handleWishlist = async (e?: React.MouseEvent) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         setWishlistAnimating(true);
         setTimeout(() => setWishlistAnimating(false), 400);
         if (isInWishlist) {
@@ -77,8 +79,8 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
         <div className="group flex gap-5 border-b border-[#E8E4DF] py-5 last:border-b-0 hover:bg-[#FAF9F7] transition-colors duration-200 rounded-lg px-3 cursor-pointer">
             {/* Image */}
             <Link href={`/products/${item.slug ?? item.id}`} className="relative flex-shrink-0 w-36 sm:w-44 rounded-lg overflow-hidden bg-[#F6F5F2]" style={{ aspectRatio: "3/4" }}>
-                <Image src={thumb} alt={item.title} fill className="object-cover transition-opacity duration-300 ease-out group-hover:opacity-0" sizes="176px" loading="lazy" />
-                <Image src={hover} alt={item.title} fill className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" sizes="176px" loading="lazy" />
+                <Image src={thumb} alt={item.title} fill className="object-cover transition-transform duration-500 ease-out group-hover:-translate-x-full" sizes="176px" loading="lazy" />
+                <Image src={hover} alt={item.title} fill className="object-cover absolute inset-0 translate-x-full transition-transform duration-500 ease-out group-hover:translate-x-0" sizes="176px" loading="lazy" />
                 {discountPct > 0 && (
                     <span className="absolute top-2 left-2 bg-dark text-white text-[10px] font-medium px-2 py-0.5 rounded z-10">
                         -{discountPct}%
@@ -113,39 +115,37 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
                         </button>
                     </div>
 
-                    {/* Category / gender tags */}
-                    {(item.gender || item.piece_type) && (
-                        <div className="flex flex-wrap gap-1 mb-2">
+                    {/* Unified Tags Row */}
+                    {(item.gender || item.piece_type || swatches.length > 0) && (
+                        <div className="flex flex-wrap items-center gap-2 mb-3 mt-1">
                             {item.gender && (
-                                <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                <span className="text-[10px] uppercase text-[#8A8A8A] font-medium tracking-wider">
                                     {item.gender}
                                 </span>
                             )}
+                            {(item.gender && item.piece_type) && <span className="text-[#8A8A8A] text-xs">|</span>}
                             {item.piece_type && (
-                                <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
-                                    {item.piece_type}
+                                <span className="text-[10px] uppercase text-[#8A8A8A] font-medium tracking-wider">
+                                    {item.piece_type.toLowerCase() === "long-sleeve-shirt" ? "L/S Shirt" :
+                                        item.piece_type.toLowerCase() === "short-sleeve-shirt" ? "S/S Shirt" :
+                                            item.piece_type.replace(/-/g, ' ')}
                                 </span>
                             )}
-                        </div>
-                    )}
 
-                    {/* Tags */}
-                    {tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                            {tags.map(tag => (
-                                <span key={tag} className="text-[10px] bg-[#F0EDE8] text-[#6B6B6B] px-2 py-0.5 rounded-full">
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
+                            {((item.gender || item.piece_type) && swatches.length > 0) && <span className="text-[#8A8A8A] text-xs ml-1 mr-1">|</span>}
 
-                    {/* Color swatches */}
-                    {swatches.length > 0 && (
-                        <div className="flex items-center gap-1.5 mb-3">
-                            {swatches.map((c, i) => <ColorSwatch key={i} color={c} />)}
-                            {(item.colors?.length ?? 0) > 6 && (
-                                <span className="text-[10px] text-[#8A8A8A]">+{(item.colors?.length ?? 0) - 6}</span>
+                            {swatches.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    {swatches.map((c, i) => (
+                                        <span key={i} className={`flex items-center gap-1.5 ${i === 0 ? 'mr-1' : ''}`}>
+                                            <ColorSwatch color={c} />
+                                            {i === 0 && <span className="text-[10px] uppercase text-[#8A8A8A] font-medium tracking-wider leading-none">{c}</span>}
+                                        </span>
+                                    ))}
+                                    {(item.colors?.length ?? 0) > 6 && (
+                                        <span className="text-[10px] text-[#8A8A8A] leading-none ml-1">+{(item.colors?.length ?? 0) - 6}</span>
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}
