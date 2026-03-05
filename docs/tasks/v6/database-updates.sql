@@ -33,20 +33,38 @@ VALUES
   ('Kids',  'kids',  3, '{kids}',  NULL)
 ON CONFLICT (slug) DO NOTHING;
 
--- 1.5 Insert subcategories for Men
--- parent_id resolved via subquery — works regardless of which UUID was assigned to 'men'
+-- 1.5 Insert subcategories for Men (without generic 'Accessories' — handled as sub-section below)
 INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
 SELECT name, slug, sort_order, gender::TEXT[], piece_type,
        (SELECT id FROM categories WHERE slug = 'men')
 FROM (VALUES
-  ('T-Shirts',    'men-tshirts',     1, '{men}', 'tshirt'),
-  ('Shirts',      'men-shirts',      2, '{men}', 'shirt'),
-  ('Jackets',     'men-jackets',     3, '{men}', 'jacket'),
-  ('Pants',       'men-pants',       4, '{men}', 'pants'),
-  ('Shoes',       'men-shoes',       5, '{men}', 'shoes'),
-  ('Accessories', 'men-accessories', 6, '{men}', 'accessories'),
-  ('Perfumes',    'men-perfumes',    7, '{men}', 'perfume')
+  ('T-Shirts', 'men-tshirts', 1, '{men}', 'tshirt'),
+  ('Shirts',   'men-shirts',  2, '{men}', 'shirt'),
+  ('Jackets',  'men-jackets', 3, '{men}', 'jacket'),
+  ('Pants',    'men-pants',   4, '{men}', 'pants'),
+  ('Shoes',    'men-shoes',   5, '{men}', 'shoes'),
+  ('Perfumes', 'men-perfumes',7, '{men}', 'perfume')
 ) AS v(name, slug, sort_order, gender, piece_type)
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.5b Men Accessories parent category
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT 'Accessories', 'men-accessories', 6, '{men}'::TEXT[], 'accessories',
+       (SELECT id FROM categories WHERE slug = 'men')
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.5c Men Accessories subcategories → child of men-accessories
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT name, slug, sort_order, '{men}'::TEXT[], piece_type,
+       (SELECT id FROM categories WHERE slug = 'men-accessories')
+FROM (VALUES
+  ('Watches',    'men-watches',    1, 'watch'),
+  ('Belts',      'men-belts',      2, 'belt'),
+  ('Hats & Caps','men-hats',       3, 'cap'),
+  ('Bags',       'men-bags',       4, 'bag'),
+  ('Sunglasses', 'men-sunglasses', 5, 'sunglasses'),
+  ('Wallets',    'men-wallets',    6, 'wallet')
+) AS v(name, slug, sort_order, piece_type)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 1.6 Insert subcategories for Women
@@ -54,15 +72,35 @@ INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
 SELECT name, slug, sort_order, gender::TEXT[], piece_type,
        (SELECT id FROM categories WHERE slug = 'women')
 FROM (VALUES
-  ('Dresses',     'women-dresses',     1, '{women}', 'dress'),
-  ('Tops',        'women-tops',        2, '{women}', 'top'),
-  ('Skirts',      'women-skirts',      3, '{women}', 'skirt'),
-  ('Jackets',     'women-jackets',     4, '{women}', 'jacket'),
-  ('Pants',       'women-pants',       5, '{women}', 'pants'),
-  ('Shoes',       'women-shoes',       6, '{women}', 'shoes'),
-  ('Accessories', 'women-accessories', 7, '{women}', 'accessories'),
-  ('Perfumes',    'women-perfumes',    8, '{women}', 'perfume')
+  ('Dresses', 'women-dresses', 1, '{women}', 'dress'),
+  ('Tops',    'women-tops',    2, '{women}', 'top'),
+  ('Skirts',  'women-skirts',  3, '{women}', 'skirt'),
+  ('Jackets', 'women-jackets', 4, '{women}', 'jacket'),
+  ('Pants',   'women-pants',   5, '{women}', 'pants'),
+  ('Shoes',   'women-shoes',   6, '{women}', 'shoes'),
+  ('Perfumes','women-perfumes',8, '{women}', 'perfume')
 ) AS v(name, slug, sort_order, gender, piece_type)
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.6b Women Accessories parent
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT 'Accessories', 'women-accessories', 7, '{women}'::TEXT[], 'accessories',
+       (SELECT id FROM categories WHERE slug = 'women')
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.6c Women Accessories subcategories
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT name, slug, sort_order, '{women}'::TEXT[], piece_type,
+       (SELECT id FROM categories WHERE slug = 'women-accessories')
+FROM (VALUES
+  ('Bags',       'women-bags',       1, 'bag'),
+  ('Jewelry',    'women-jewelry',    2, 'jewelry'),
+  ('Scarves',    'women-scarves',    3, 'scarf'),
+  ('Sunglasses', 'women-sunglasses', 4, 'sunglasses'),
+  ('Hats',       'women-hats',       5, 'cap'),
+  ('Wallets',    'women-wallets',    6, 'wallet'),
+  ('Belts',      'women-belts',      7, 'belt')
+) AS v(name, slug, sort_order, piece_type)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 1.7 Insert subcategories for Kids
@@ -70,11 +108,28 @@ INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
 SELECT name, slug, sort_order, gender::TEXT[], piece_type,
        (SELECT id FROM categories WHERE slug = 'kids')
 FROM (VALUES
-  ('Tops',        'kids-tops',        1, '{kids}', 'top'),
-  ('Pants',       'kids-pants',       2, '{kids}', 'pants'),
-  ('Shoes',       'kids-shoes',       3, '{kids}', 'shoes'),
-  ('Accessories', 'kids-accessories', 4, '{kids}', 'accessories')
+  ('Tops',    'kids-tops',    1, '{kids}', 'top'),
+  ('Pants',   'kids-pants',   2, '{kids}', 'pants'),
+  ('Shoes',   'kids-shoes',   3, '{kids}', 'shoes')
 ) AS v(name, slug, sort_order, gender, piece_type)
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.7b Kids Accessories parent
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT 'Accessories', 'kids-accessories', 4, '{kids}'::TEXT[], 'accessories',
+       (SELECT id FROM categories WHERE slug = 'kids')
+ON CONFLICT (slug) DO NOTHING;
+
+-- 1.7c Kids Accessories subcategories
+INSERT INTO categories (name, slug, sort_order, gender, piece_type, parent_id)
+SELECT name, slug, sort_order, '{kids}'::TEXT[], piece_type,
+       (SELECT id FROM categories WHERE slug = 'kids-accessories')
+FROM (VALUES
+  ('Bags',       'kids-bags',       1, 'bag'),
+  ('Hats & Caps','kids-hats',       2, 'cap'),
+  ('Socks',      'kids-socks',      3, 'socks'),
+  ('Sunglasses', 'kids-sunglasses', 4, 'sunglasses')
+) AS v(name, slug, sort_order, piece_type)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 1.8 Index on parent_id for hierarchy lookups
@@ -225,15 +280,19 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_user_id
 -- RLS: users can only see/modify their own cart
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS cart_items_select ON cart_items;
 CREATE POLICY cart_items_select ON cart_items
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS cart_items_insert ON cart_items;
 CREATE POLICY cart_items_insert ON cart_items
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS cart_items_update ON cart_items;
 CREATE POLICY cart_items_update ON cart_items
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS cart_items_delete ON cart_items;
 CREATE POLICY cart_items_delete ON cart_items
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -255,12 +314,15 @@ CREATE INDEX IF NOT EXISTS idx_user_saved_offers_user_id
 
 ALTER TABLE user_saved_offers ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS saved_offers_select ON user_saved_offers;
 CREATE POLICY saved_offers_select ON user_saved_offers
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS saved_offers_insert ON user_saved_offers;
 CREATE POLICY saved_offers_insert ON user_saved_offers
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS saved_offers_delete ON user_saved_offers;
 CREATE POLICY saved_offers_delete ON user_saved_offers
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -283,15 +345,19 @@ CREATE INDEX IF NOT EXISTS idx_lookbook_comments_collection_id
 
 ALTER TABLE lookbook_comments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS lookbook_comments_select ON lookbook_comments;
 CREATE POLICY lookbook_comments_select ON lookbook_comments
   FOR SELECT USING (true);  -- public read
 
+DROP POLICY IF EXISTS lookbook_comments_insert ON lookbook_comments;
 CREATE POLICY lookbook_comments_insert ON lookbook_comments
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS lookbook_comments_update ON lookbook_comments;
 CREATE POLICY lookbook_comments_update ON lookbook_comments
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS lookbook_comments_delete ON lookbook_comments;
 CREATE POLICY lookbook_comments_delete ON lookbook_comments
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -504,10 +570,154 @@ CREATE INDEX IF NOT EXISTS idx_products_colors_gin
   ON products USING GIN (colors);
 
 
+
+
 -- ============================================================
--- END OF MIGRATION
+-- END OF v5 MIGRATION
 -- ============================================================
 -- Verify by running:
 --   SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 --   SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'products';
+-- ============================================================
+
+
+-- ============================================================
+-- FITOVA v6 — Database Updates
+-- Date: 2026-03-05
+-- Add BELOW v5 migration. Each section is idempotent.
+-- ============================================================
+
+
+-- ============================================================
+-- v6 SECTION 1: GENDERS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS genders (
+  id   SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE
+);
+
+INSERT INTO genders (name, slug) VALUES
+  ('Men',   'men'),
+  ('Women', 'women'),
+  ('Kids',  'kids')
+ON CONFLICT (slug) DO NOTHING;
+
+
+-- ============================================================
+-- v6 SECTION 2: CATEGORY IMAGES (Navbar Slider)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS category_images (
+  id          SERIAL PRIMARY KEY,
+  gender_id   INT  NOT NULL REFERENCES genders(id) ON DELETE CASCADE,
+  image_url   TEXT NOT NULL,
+  alt_text    TEXT,
+  sort_order  INT  DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_category_images_gender ON category_images(gender_id);
+
+-- RLS: public read
+ALTER TABLE category_images ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read category_images" ON category_images;
+CREATE POLICY "public read category_images"
+  ON category_images FOR SELECT USING (true);
+
+
+-- ============================================================
+-- v6 SECTION 3: PRODUCTS — Discount & Views
+-- ============================================================
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS discount_percent SMALLINT CHECK (discount_percent BETWEEN 0 AND 100) DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_products_discount
+  ON products(discount_percent) WHERE discount_percent > 0;
+
+
+-- ============================================================
+-- v6 SECTION 4: COUPONS SYSTEM
+-- ============================================================
+CREATE TABLE IF NOT EXISTS coupons (
+  id               SERIAL PRIMARY KEY,
+  code             TEXT NOT NULL UNIQUE,
+  store_name       TEXT NOT NULL,
+  discount_percent SMALLINT NOT NULL CHECK (discount_percent BETWEEN 1 AND 100),
+  start_date       TIMESTAMPTZ NOT NULL,
+  end_date         TIMESTAMPTZ NOT NULL,
+  affiliate_link   TEXT,
+  is_active        BOOLEAN DEFAULT TRUE,
+  image_url        TEXT,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  CHECK (end_date > start_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_coupons_active_end ON coupons(is_active, end_date);
+
+ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read active coupons" ON coupons;
+CREATE POLICY "public read active coupons"
+  ON coupons FOR SELECT USING (is_active = true AND end_date > NOW());
+
+CREATE TABLE IF NOT EXISTS saved_coupons (
+  user_id   UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  coupon_id INT  REFERENCES coupons(id)  ON DELETE CASCADE,
+  saved_at  TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, coupon_id)
+);
+
+ALTER TABLE saved_coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner saved_coupons" ON saved_coupons;
+CREATE POLICY "owner saved_coupons"
+  ON saved_coupons FOR ALL
+  USING (auth.uid() = user_id);
+
+
+-- ============================================================
+-- v6 SECTION 5: SAVED DEALS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS saved_deals (
+  user_id    UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES products(id)  ON DELETE CASCADE,
+  saved_at   TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, product_id)
+);
+
+ALTER TABLE saved_deals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner saved_deals" ON saved_deals;
+CREATE POLICY "owner saved_deals"
+  ON saved_deals FOR ALL
+  USING (auth.uid() = user_id);
+
+
+-- ============================================================
+-- v6 SECTION 6: LOOKBOOKS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS lookbooks (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       TEXT NOT NULL,
+  slug        TEXT UNIQUE,
+  cover_image TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lookbook_products (
+  lookbook_id UUID REFERENCES lookbooks(id)  ON DELETE CASCADE,
+  product_id  UUID REFERENCES products(id)   ON DELETE CASCADE,
+  sort_order  INT DEFAULT 0,
+  PRIMARY KEY (lookbook_id, product_id)
+);
+
+ALTER TABLE lookbooks          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lookbook_products  ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "public read lookbooks" ON lookbooks;
+CREATE POLICY "public read lookbooks" ON lookbooks FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "public read lookbook_products" ON lookbook_products;
+CREATE POLICY "public read lookbook_products" ON lookbook_products FOR SELECT USING (true);
+
+
+-- ============================================================
+-- v6 END
 -- ============================================================

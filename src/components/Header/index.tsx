@@ -330,14 +330,24 @@ const Header = () => {
               {/* <!-- Main Nav Start --> */}
               <nav>
                 <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
-                  {/* Mega Menu: Men / Women / Kids (from DB) */}
-                  {categoryHierarchy.length > 0 && (
-                    <MegaMenu
-                      categories={categoryHierarchy}
-                      stickyMenu={stickyMenu}
-                    />
-                  )}
-                  {menuData.map((menuItem, i) =>
+                  {/* Home — always first */}
+                  <li className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full">
+                    <Link
+                      href="/"
+                      className={`hover:text-dark-2 text-custom-sm font-light tracking-wide text-dark flex ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
+                    >
+                      Home
+                    </Link>
+                  </li>
+
+                  {/* Mega Menu: Men / Women / Kids — always shown (has static fallback) */}
+                  <MegaMenu
+                    categories={categoryHierarchy}
+                    stickyMenu={stickyMenu}
+                  />
+
+                  {/* Rest of menuData — skip Home (id:1) since it's already above */}
+                  {menuData.filter(m => m.id !== 1).map((menuItem, i) =>
                     menuItem.submenu ? (
                       <Dropdown
                         key={i}
@@ -347,12 +357,11 @@ const Header = () => {
                     ) : (
                       <li
                         key={i}
-                        className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full "
+                        className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
                       >
                         <Link
                           href={menuItem.path}
-                          className={`hover:text-dark-2 text-custom-sm font-light tracking-wide text-dark flex ${stickyMenu ? "xl:py-4" : "xl:py-6"
-                            }`}
+                          className={`hover:text-dark-2 text-custom-sm font-light tracking-wide text-dark flex ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
                         >
                           {menuItem.title}
                         </Link>

@@ -4,8 +4,8 @@ import { useShopFilters } from "@/hooks/useShopFilters";
 import Breadcrumb from "../Common/Breadcrumb";
 import HierarchicalShopFilters from "./HierarchicalShopFilters";
 import PriceDropdown from "./PriceDropdown";
-import SingleGridItem from "../Shop/SingleGridItem";
-import SingleListItem from "../Shop/SingleListItem";
+import ProductGridCard from "../Shop/ProductGridCard";
+import ProductFullWidthCard from "../Shop/ProductFullWidthCard";
 
 const ShopWithSidebar = () => {
   const { productStyle, setProductStyle, products, loading, sortOptions: options } = useShopFilters();
@@ -30,8 +30,8 @@ const ShopWithSidebar = () => {
   return (
     <>
       <Breadcrumb
-        title="Explore All Products"
-        pages={["shop"]}
+        title="Explore All Outfits"
+        pages={["outfits"]}
       />
 
       <section className="bg-[#F6F5F2] min-h-screen pt-8 pb-20">
@@ -44,7 +44,7 @@ const ShopWithSidebar = () => {
                 Showing all
               </p>
               <h1 className="font-playfair font-normal text-3xl text-[#0A0A0A]" style={{ letterSpacing: "-0.02em" }}>
-                Shop
+                Outfits
               </h1>
             </div>
 
@@ -176,9 +176,9 @@ const ShopWithSidebar = () => {
                 >
                   {products.map((item, key) =>
                     productStyle === "grid" ? (
-                      <SingleGridItem item={item as any} key={key} />
+                      <ProductGridCard item={item as any} key={key} />
                     ) : (
-                      <SingleListItem item={item as any} key={key} />
+                      <ProductFullWidthCard item={item as any} key={key} />
                     )
                   )}
                 </div>

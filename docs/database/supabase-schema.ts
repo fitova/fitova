@@ -246,6 +246,41 @@ export type Database = {
           },
         ]
       }
+      category_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          gender_id: number
+          id: number
+          image_url: string
+          sort_order: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          gender_id: number
+          id?: number
+          image_url: string
+          sort_order?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          gender_id?: number
+          id?: number
+          image_url?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_images_gender_id_fkey"
+            columns: ["gender_id"]
+            isOneToOne: false
+            referencedRelation: "genders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_products: {
         Row: {
           collection_id: string
@@ -371,6 +406,63 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          affiliate_link: string | null
+          code: string
+          created_at: string | null
+          discount_percent: number
+          end_date: string
+          id: number
+          image_url: string | null
+          is_active: boolean | null
+          start_date: string
+          store_name: string
+        }
+        Insert: {
+          affiliate_link?: string | null
+          code: string
+          created_at?: string | null
+          discount_percent: number
+          end_date: string
+          id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          start_date: string
+          store_name: string
+        }
+        Update: {
+          affiliate_link?: string | null
+          code?: string
+          created_at?: string | null
+          discount_percent?: number
+          end_date?: string
+          id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          start_date?: string
+          store_name?: string
+        }
+        Relationships: []
+      }
+      genders: {
+        Row: {
+          id: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          slug: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       homepage_sections: {
         Row: {
           content: Json | null
@@ -484,6 +576,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lookbook_products: {
+        Row: {
+          lookbook_id: string
+          product_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          lookbook_id: string
+          product_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          lookbook_id?: string
+          product_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lookbook_products_lookbook_id_fkey"
+            columns: ["lookbook_id"]
+            isOneToOne: false
+            referencedRelation: "lookbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lookbook_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lookbooks: {
+        Row: {
+          cover_image: string | null
+          created_at: string | null
+          id: string
+          slug: string | null
+          title: string
+        }
+        Insert: {
+          cover_image?: string | null
+          created_at?: string | null
+          id?: string
+          slug?: string | null
+          title: string
+        }
+        Update: {
+          cover_image?: string | null
+          created_at?: string | null
+          id?: string
+          slug?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       newsletter_subscribers: {
         Row: {
@@ -695,6 +844,7 @@ export type Database = {
           created_at: string
           deal_tag: string | null
           description: string | null
+          discount_percent: number | null
           discounted_price: number | null
           gender: string | null
           id: string
@@ -733,6 +883,7 @@ export type Database = {
           created_at?: string
           deal_tag?: string | null
           description?: string | null
+          discount_percent?: number | null
           discounted_price?: number | null
           gender?: string | null
           id?: string
@@ -771,6 +922,7 @@ export type Database = {
           created_at?: string
           deal_tag?: string | null
           description?: string | null
+          discount_percent?: number | null
           discounted_price?: number | null
           gender?: string | null
           id?: string
@@ -875,6 +1027,72 @@ export type Database = {
           },
           {
             foreignKeyName: "review_helpful_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_coupons: {
+        Row: {
+          coupon_id: number
+          saved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: number
+          saved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: number
+          saved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_coupons_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_coupons_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_deals: {
+        Row: {
+          product_id: string
+          saved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          product_id: string
+          saved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          product_id?: string
+          saved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_deals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_deals_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

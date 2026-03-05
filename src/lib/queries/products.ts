@@ -38,9 +38,11 @@ export type Product = {
 // Fetch all products (optional filtering)
 export async function getProducts({
     categoryId,
+    category,
+    gender,
     isFeatured,
     isDeal,
-    limit = 20,
+    limit = 50,
     style,
     season,
     brand,
@@ -53,6 +55,8 @@ export async function getProducts({
     search,
 }: {
     categoryId?: string;
+    category?: string;       // slug-based filter (joins categories table)
+    gender?: string;         // 'men' | 'women' | 'kids' | 'unisex'
     isFeatured?: boolean;
     isDeal?: boolean;
     limit?: number;
@@ -64,13 +68,28 @@ export async function getProducts({
     size?: string;
     minPrice?: number;
     maxPrice?: number;
-    sortBy?: string; // '0' = newest, '1' = best selling, '2' = oldest, 'price_asc', 'price_desc'
+    sortBy?: string;
     search?: string;
 } = {}) {
     const supabase = createClient();
     let query = supabase.from("products").select("*, product_images(url, type, sort_order)");
 
     if (categoryId) query = query.eq("category_id", categoryId);
+
+    // Filter by category slug (join into categories table)
+    if (category) {
+        const supabaseSub = createClient();
+        const { data: catData } = await supabaseSub
+            .from("categories")
+            .select("id")
+            .eq("slug", category)
+            .single();
+        if (catData?.id) query = query.eq("category_id", catData.id);
+    }
+
+    // Filter by gender
+    if (gender) query = query.eq("gender", gender);
+
     if (isFeatured !== undefined) query = query.eq("is_featured", isFeatured);
     if (isDeal !== undefined) query = query.eq("is_deal", isDeal);
     if (season) query = query.ilike("season", season);

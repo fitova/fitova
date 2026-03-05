@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CategoryWithChildren } from "@/lib/queries/categories";
 
 interface MegaMenuProps {
@@ -8,145 +9,341 @@ interface MegaMenuProps {
     stickyMenu?: boolean;
 }
 
-/**
- * MegaMenu — shows on hover over Men/Women/Kids categories.
- * Splits subcategories into two columns:
- *   Left: Clothing (tshirt, shirt, jacket, pants, top, skirt, dress)
- *   Right: Footwear & More (shoes, accessories, perfume)
- */
-const CLOTHING_TYPES = ["tshirt", "shirt", "jacket", "pants", "top", "skirt", "dress", "blouse"];
-const FOOTWEAR_TYPES = ["shoes", "accessories", "perfume", "bag", "belt"];
+// ─── Static fallback (shown when DB is empty / loading) ──────────────────────
+type StaticChild = { id: string; name: string; slug: string; piece_type: string };
+type StaticCat = { id: string; name: string; slug: string; gender: string[]; image_url: null; children: StaticChild[] };
 
+const STATIC_CATEGORIES: StaticCat[] = [
+    {
+        id: "static-men", name: "Men", slug: "men", gender: ["men"], image_url: null,
+        children: [
+            // CLOTHING
+            { id: "s1", name: "T-Shirts", slug: "men-tshirts", piece_type: "tshirt" },
+            { id: "s2", name: "Shirts", slug: "men-shirts", piece_type: "shirt" },
+            { id: "s3", name: "Hoodies", slug: "men-hoodies", piece_type: "hoodie" },
+            { id: "s4", name: "Jackets", slug: "men-jackets", piece_type: "jacket" },
+            { id: "s5", name: "Pants", slug: "men-pants", piece_type: "pants" },
+            { id: "s6", name: "Jeans", slug: "men-jeans", piece_type: "jeans" },
+            { id: "s7", name: "Shorts", slug: "men-shorts", piece_type: "shorts" },
+            // FOOTWEAR
+            { id: "s8", name: "Sneakers", slug: "men-sneakers", piece_type: "sneakers" },
+            { id: "s9", name: "Boots", slug: "men-boots", piece_type: "boots" },
+            { id: "s10", name: "Sandals", slug: "men-sandals", piece_type: "sandals" },
+            // ACCESSORIES
+            { id: "s11", name: "Watches", slug: "men-watches", piece_type: "watch" },
+            { id: "s12", name: "Belts", slug: "men-belts", piece_type: "belt" },
+            { id: "s13", name: "Hats & Caps", slug: "men-hats", piece_type: "cap" },
+            { id: "s14", name: "Bags", slug: "men-bags", piece_type: "bag" },
+            { id: "s15", name: "Sunglasses", slug: "men-sunglasses", piece_type: "sunglasses" },
+            { id: "s16", name: "Wallets", slug: "men-wallets", piece_type: "wallet" },
+            // FRAGRANCES
+            { id: "s17", name: "Fragrances", slug: "men-perfumes", piece_type: "perfume" },
+        ],
+    },
+    {
+        id: "static-women", name: "Women", slug: "women", gender: ["women"], image_url: null,
+        children: [
+            // CLOTHING
+            { id: "w1", name: "Dresses", slug: "women-dresses", piece_type: "dress" },
+            { id: "w2", name: "Tops", slug: "women-tops", piece_type: "top" },
+            { id: "w3", name: "Skirts", slug: "women-skirts", piece_type: "skirt" },
+            { id: "w4", name: "Jackets", slug: "women-jackets", piece_type: "jacket" },
+            { id: "w5", name: "Pants", slug: "women-pants", piece_type: "pants" },
+            { id: "w6", name: "Outerwear", slug: "women-outerwear", piece_type: "outerwear" },
+            // FOOTWEAR
+            { id: "w7", name: "Heels", slug: "women-heels", piece_type: "heels" },
+            { id: "w8", name: "Sneakers", slug: "women-sneakers", piece_type: "sneakers" },
+            { id: "w9", name: "Boots", slug: "women-boots", piece_type: "boots" },
+            // ACCESSORIES
+            { id: "w10", name: "Bags", slug: "women-bags", piece_type: "bag" },
+            { id: "w11", name: "Jewelry", slug: "women-jewelry", piece_type: "jewelry" },
+            { id: "w12", name: "Scarves", slug: "women-scarves", piece_type: "scarf" },
+            { id: "w13", name: "Sunglasses", slug: "women-sunglasses", piece_type: "sunglasses" },
+            { id: "w14", name: "Hats", slug: "women-hats", piece_type: "cap" },
+            { id: "w15", name: "Wallets", slug: "women-wallets", piece_type: "wallet" },
+            { id: "w16", name: "Belts", slug: "women-belts", piece_type: "belt" },
+            // FRAGRANCES
+            { id: "w17", name: "Fragrances", slug: "women-perfumes", piece_type: "perfume" },
+        ],
+    },
+    {
+        id: "static-kids", name: "Kids", slug: "kids", gender: ["kids"], image_url: null,
+        children: [
+            // CLOTHING
+            { id: "k1", name: "Tops", slug: "kids-tops", piece_type: "top" },
+            { id: "k2", name: "Pants", slug: "kids-pants", piece_type: "pants" },
+            { id: "k3", name: "Dresses", slug: "kids-dresses", piece_type: "dress" },
+            { id: "k4", name: "Shorts", slug: "kids-shorts", piece_type: "shorts" },
+            // FOOTWEAR
+            { id: "k5", name: "Sneakers", slug: "kids-sneakers", piece_type: "sneakers" },
+            { id: "k6", name: "Sandals", slug: "kids-sandals", piece_type: "sandals" },
+            // ACCESSORIES
+            { id: "k7", name: "Bags", slug: "kids-bags", piece_type: "bag" },
+            { id: "k8", name: "Hats & Caps", slug: "kids-hats", piece_type: "cap" },
+            { id: "k9", name: "Socks", slug: "kids-socks", piece_type: "socks" },
+            { id: "k10", name: "Sunglasses", slug: "kids-sunglasses", piece_type: "sunglasses" },
+        ],
+    },
+];
+
+// ─── Piece type → column (STRICT, no overlap) ────────────────────────────────
+// CLOTHING: wearable garments
+const PIECE_CLOTHING = new Set([
+    "tshirt", "shirt", "hoodie", "jacket", "pants", "jeans", "shorts", "dress", "top",
+    "skirt", "outerwear", "blouse", "bottom", "cardigan", "sweater", "coat", "vest",
+]);
+// FOOTWEAR: anything worn on feet
+const PIECE_FOOTWEAR = new Set([
+    "sneakers", "boots", "sandals", "heels", "shoes", "loafers", "flats", "slippers",
+]);
+// FRAGRANCES
+const PIECE_PERFUMES = new Set(["perfume", "fragrance"]);
+// ACCESSORIES: everything else explicitly named
+const PIECE_ACCESSORIES = new Set([
+    "watch", "belt", "cap", "bag", "sunglasses", "wallet", "jewelry", "scarf", "socks",
+    "hat", "bracelet", "necklace", "ring", "earring", "backpack", "handbag", "clutch",
+    "tote", "accessories", // generic fallback
+]);
+
+type AnyChild = { id: string | number; name: string; slug?: string | null; piece_type?: string | null };
+
+// Infer piece_type from slug when piece_type is null
+// e.g. "men-jackets" → "jacket", "women-shoes" → "shoes"
+const SLUG_TO_TYPE: Record<string, string> = {
+    "jackets": "jacket", "jacket": "jacket",
+    "pants": "pants",
+    "shirts": "shirt", "shirt": "shirt",
+    "tshirts": "tshirt", "tshirt": "tshirt",
+    "hoodies": "hoodie", "hoodie": "hoodie",
+    "jeans": "jeans",
+    "shorts": "shorts",
+    "dresses": "dress", "dress": "dress",
+    "tops": "top", "top": "top",
+    "skirts": "skirt", "skirt": "skirt",
+    "outerwear": "outerwear",
+    "activewear": "tshirt",
+    // Footwear
+    "shoes": "shoes",
+    "sneakers": "sneakers",
+    "boots": "boots",
+    "sandals": "sandals",
+    "heels": "heels",
+    // Accessories
+    "watches": "watch",
+    "belts": "belt",
+    "bags": "bag",
+    "sunglasses": "sunglasses",
+    "wallets": "wallet",
+    "hats": "cap",
+    "jewelry": "jewelry",
+    "scarves": "scarf",
+    "socks": "socks",
+    // Fragrances
+    "perfumes": "perfume", "perfume": "perfume",
+    "fragrances": "perfume",
+};
+
+function inferType(c: AnyChild): string {
+    // Use piece_type if it exists and isn't "null" string
+    const pt = c.piece_type?.toLowerCase();
+    if (pt && pt !== "null") return pt;
+    // Fallback: derive from slug (e.g. "men-jackets" → "jackets" → "jacket")
+    if (c.slug) {
+        const lastPart = c.slug.split("-").pop() ?? "";
+        if (SLUG_TO_TYPE[lastPart]) return SLUG_TO_TYPE[lastPart];
+    }
+    // Last resort: try matching lowercase name
+    const nameLower = c.name.toLowerCase();
+    for (const [key, val] of Object.entries(SLUG_TO_TYPE)) {
+        if (nameLower.includes(key)) return val;
+    }
+    return "unknown";
+}
+
+function groupChildren(children: AnyChild[]) {
+    const clothing: AnyChild[] = [];
+    const footwear: AnyChild[] = [];
+    const perfumes: AnyChild[] = [];
+    const accessories: AnyChild[] = [];
+
+    for (const c of children) {
+        const type = inferType(c);
+        if (PIECE_CLOTHING.has(type)) clothing.push(c);
+        else if (PIECE_FOOTWEAR.has(type)) footwear.push(c);
+        else if (PIECE_PERFUMES.has(type)) perfumes.push(c);
+        else if (PIECE_ACCESSORIES.has(type)) accessories.push(c);
+        else clothing.push(c); // truly unknown → clothing
+    }
+
+    if (!clothing.length && !footwear.length && !perfumes.length && !accessories.length) {
+        return { clothing: children, footwear: [], perfumes: [], accessories: [] };
+    }
+    return { clothing, footwear, perfumes, accessories };
+}
+
+
+// ─── Inline auto-slider ───────────────────────────────────────────────────────
+const NavSlider = ({ images, alt }: { images: string[]; alt: string }) => {
+    const [current, setCurrent] = useState(0);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const start = useCallback(() => {
+        timerRef.current = setInterval(() => setCurrent(p => (p + 1) % images.length), 3500);
+    }, [images.length]);
+
+    useEffect(() => {
+        if (images.length <= 1) return;
+        start();
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, [images.length, start]);
+
+    if (!images.length) return (
+        <div className="w-full rounded-sm bg-[#F0EDE8] flex items-center justify-center" style={{ aspectRatio: "3/4" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" opacity="0.15">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="#000" strokeWidth="1.5" />
+                <path d="M3 15l5-5 4 4 3-3 6 6" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+        </div>
+    );
+
+    return (
+        <div className="relative overflow-hidden rounded-sm" style={{ aspectRatio: "3/4" }}
+            onMouseEnter={() => { if (timerRef.current) clearInterval(timerRef.current); }}
+            onMouseLeave={start}>
+            {images.map((src, i) => (
+                <div key={i} className="absolute inset-0 transition-opacity duration-700"
+                    style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}>
+                    <Image src={src} alt={`${alt} ${i + 1}`} fill className="object-cover" sizes="160px" loading="lazy" />
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ─── Category column ──────────────────────────────────────────────────────────
+const CategoryColumn = ({
+    label, items, genderSlug, onClose
+}: {
+    label: string; items: AnyChild[]; genderSlug: string; onClose: () => void;
+}) => {
+    if (!items.length) return null;
+    return (
+        <div className="min-w-0">
+            <p className="text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A]">{label}</p>
+            <ul className="flex flex-col gap-1.5">
+                {items.map(sub => (
+                    <li key={sub.id}>
+                        <Link
+                            href={`/outfits?gender=${genderSlug}&category=${sub.slug ?? sub.id}`}
+                            className="text-[13px] font-light text-dark hover:opacity-50 transition-opacity duration-200 block"
+                            onClick={onClose}
+                        >
+                            {sub.name}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+};
+
+// ─── Main MegaMenu ────────────────────────────────────────────────────────────
 const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleMouseEnter = (i: number) => {
+    const open = (i: number) => {
         if (closeTimer.current) clearTimeout(closeTimer.current);
         setActiveIndex(i);
     };
-
-    const handleMouseLeave = () => {
-        closeTimer.current = setTimeout(() => setActiveIndex(null), 150);
+    const close = () => {
+        closeTimer.current = setTimeout(() => setActiveIndex(null), 200);
     };
-
+    const closeNow = () => setActiveIndex(null);
     useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
-    if (!categories || categories.length === 0) return null;
+    const source: (CategoryWithChildren | StaticCat)[] =
+        categories?.length > 0 ? categories : STATIC_CATEGORIES;
 
     return (
         <>
-            {categories.map((cat, i) => {
+            {source.map((cat, i) => {
                 const isOpen = activeIndex === i;
-                const clothing = cat.children.filter(
-                    (c) => c.piece_type && CLOTHING_TYPES.includes(c.piece_type)
-                );
-                const footwear = cat.children.filter(
-                    (c) => c.piece_type && FOOTWEAR_TYPES.includes(c.piece_type)
-                );
-                // Items without piece_type go to a "More" bucket
-                const other = cat.children.filter(
-                    (c) => !c.piece_type || (!CLOTHING_TYPES.includes(c.piece_type) && !FOOTWEAR_TYPES.includes(c.piece_type))
-                );
+                const { clothing, footwear, perfumes, accessories } = groupChildren(cat.children as AnyChild[]);
+                const genderRaw = Array.isArray(cat.gender) ? cat.gender[0] : (cat.gender as string | null);
+                const genderSlug = genderRaw ?? cat.slug ?? "";
+                const sliderImages: string[] = (cat as CategoryWithChildren).image_url
+                    ? [(cat as CategoryWithChildren).image_url!] : [];
+
+                // Determine columns to show (skip empty)
+                const cols = [
+                    { label: "Clothing", items: clothing },
+                    { label: "Footwear", items: footwear },
+                    { label: "Accessories", items: accessories },
+                    { label: "Fragrances", items: perfumes },
+                ].filter(c => c.items.length > 0);
 
                 return (
                     <li
                         key={cat.id}
                         className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
-                        onMouseEnter={() => handleMouseEnter(i)}
-                        onMouseLeave={handleMouseLeave}
+                        onMouseEnter={() => open(i)}
+                        onMouseLeave={close}
                     >
-                        {/* Parent label */}
+                        {/* Nav button */}
                         <button
                             aria-haspopup="true"
                             aria-expanded={isOpen}
                             className={`flex items-center gap-1 text-custom-sm font-light tracking-wide text-dark hover:text-dark-2 ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
                         >
                             {cat.name}
-                            <svg
-                                width="10"
-                                height="6"
-                                viewBox="0 0 10 6"
-                                fill="none"
-                                className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                            >
-                                <path
-                                    d="M1 1L5 5L9 1"
-                                    stroke="currentColor"
-                                    strokeWidth="1.2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
+                            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"
+                                className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
+                                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </button>
 
-                        {/* Mega dropdown panel */}
+                        {/* Dropdown panel — max-width capped to viewport */}
                         <div
                             aria-hidden={!isOpen}
-                            className={`absolute left-0 top-full w-[480px] bg-white border border-[#E8E4DF] shadow-lg z-50 transition-all duration-200 ease-out ${isOpen
-                                ? "opacity-100 translate-y-0 pointer-events-auto"
-                                : "opacity-0 -translate-y-2 pointer-events-none"
-                                }`}
+                            className={`absolute left-0 top-full bg-white border border-[#E8E4DF] shadow-lg z-50 transition-all duration-200 ease-out ${isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"}`}
+                            style={{
+                                maxWidth: "calc(100vw - 2rem)",
+                                minWidth: "520px",
+                                width: "max-content",
+                            }}
                         >
-                            <div className="p-6 grid grid-cols-2 gap-8">
-                                {/* Column 1: Clothing */}
-                                <div>
-                                    <p className="text-[10px] font-light tracking-[0.3em] uppercase mb-4" style={{ color: "#8A8A8A" }}>
-                                        Clothing
-                                    </p>
-                                    <ul className="flex flex-col gap-2">
-                                        {clothing.map((sub) => (
-                                            <li key={sub.id}>
-                                                <Link
-                                                    href={`/shop-with-sidebar?category=${sub.slug}`}
-                                                    className="text-sm font-light text-dark hover:opacity-50 transition-opacity duration-200"
-                                                    onClick={() => setActiveIndex(null)}
-                                                >
-                                                    {sub.name}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                        {other.map((sub) => (
-                                            <li key={sub.id}>
-                                                <Link
-                                                    href={`/shop-with-sidebar?category=${sub.slug}`}
-                                                    className="text-sm font-light text-dark hover:opacity-50 transition-opacity duration-200"
-                                                    onClick={() => setActiveIndex(null)}
-                                                >
-                                                    {sub.name}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
+                            {/* View All */}
+                            <div className="px-6 pt-4 pb-3 border-b border-[#E8E4DF]">
+                                <Link
+                                    href={`/outfits?gender=${genderSlug}`}
+                                    className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.2em] uppercase text-dark hover:opacity-60 transition-opacity duration-200"
+                                    onClick={closeNow}
+                                >
+                                    View All {cat.name}
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                        <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </Link>
+                            </div>
+
+                            {/* Body: columns + optional slider */}
+                            <div className="p-5 flex gap-6 items-start overflow-hidden">
+                                {/* Columns — each in its own box */}
+                                <div className="flex gap-8 flex-shrink-0">
+                                    {cols.map(col => (
+                                        <CategoryColumn
+                                            key={col.label}
+                                            label={col.label}
+                                            items={col.items}
+                                            genderSlug={genderSlug}
+                                            onClose={closeNow}
+                                        />
+                                    ))}
                                 </div>
 
-                                {/* Column 2: Footwear & More */}
-                                <div>
-                                    <p className="text-[10px] font-light tracking-[0.3em] uppercase mb-4" style={{ color: "#8A8A8A" }}>
-                                        Footwear & More
-                                    </p>
-                                    <ul className="flex flex-col gap-2">
-                                        {footwear.map((sub) => (
-                                            <li key={sub.id}>
-                                                <Link
-                                                    href={`/shop-with-sidebar?category=${sub.slug}`}
-                                                    className="text-sm font-light text-dark hover:opacity-50 transition-opacity duration-200"
-                                                    onClick={() => setActiveIndex(null)}
-                                                >
-                                                    {sub.name}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                    {/* View All link */}
-                                    <Link
-                                        href={`/shop-with-sidebar?gender=${cat.slug}`}
-                                        className="inline-block mt-6 text-[10px] font-light tracking-[0.2em] uppercase border-b border-dark pb-0.5 text-dark hover:opacity-50 transition-opacity duration-200"
-                                        onClick={() => setActiveIndex(null)}
-                                    >
-                                        View All {cat.name}
-                                    </Link>
+                                {/* Slider (xl only) */}
+                                <div className="hidden xl:block w-[140px] flex-shrink-0">
+                                    <NavSlider images={sliderImages} alt={cat.name} />
                                 </div>
                             </div>
                         </div>

@@ -1,19 +1,21 @@
-import React from "react";
-import ShopWithSidebar from "@/components/ShopWithSidebar";
+import { redirect } from "next/navigation";
 
-import { Metadata } from "next";
-export const metadata: Metadata = {
-  title: "Shop Page | NextCommerce Nextjs E-commerce template",
-  description: "This is Shop Page for NextCommerce Template",
-  // other metadata
-};
-
-const ShopWithSidebarPage = () => {
-  return (
-    <main>
-      <ShopWithSidebar />
-    </main>
-  );
-};
-
-export default ShopWithSidebarPage;
+export default function ShopWithSidebarPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  // Build query string to preserve filters when redirecting
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => params.append(key, v));
+      } else {
+        params.set(key, value);
+      }
+    }
+  }
+  const qs = params.toString();
+  redirect(`/outfits${qs ? `?${qs}` : ""}`);
+}

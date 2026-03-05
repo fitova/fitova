@@ -1,5 +1,13 @@
 import { createClient } from "../supabase/client";
 
+export type CategoryImage = {
+    id: number;
+    gender_id: number;
+    image_url: string;
+    alt_text: string | null;
+    sort_order: number;
+};
+
 export type Category = {
     id: string;
     name: string;
@@ -70,6 +78,20 @@ export async function getSubcategoriesByParentId(parentId: string) {
  * [{ id, name, slug, ..., children: [{ id, name, slug, piece_type, ... }] }]
  * Used by MegaMenu — fetched once server-side in the layout.
  */
+/**
+ * Fetch slider images for the Mega Menu dropdown.
+ * Returns images grouped by gender_id.
+ */
+export async function getCategoryImages(): Promise<CategoryImage[]> {
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from("category_images")
+        .select("id, gender_id, image_url, alt_text, sort_order")
+        .order("sort_order", { ascending: true });
+    if (error || !data) return [];
+    return data as CategoryImage[];
+}
+
 export async function getCategoryHierarchy(): Promise<CategoryWithChildren[]> {
     const supabase = createClient();
     const { data, error } = await supabase

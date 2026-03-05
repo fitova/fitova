@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
 
@@ -30,30 +31,60 @@ const defaultFilters: ShopFilters = {
     search: "",
 };
 
+function readInitialFilters(searchParams: URLSearchParams | null): ShopFilters {
+    // 1. Check URL params first (highest priority — from MegaMenu links)
+    if (searchParams) {
+        const gender = searchParams.get("gender") ?? "";
+        const category = searchParams.get("category") ?? "";
+        const style = searchParams.get("style") ?? "";
+        const size = searchParams.get("size") ?? "";
+        const brand = searchParams.get("brand") ?? "";
+        const material = searchParams.get("material") ?? "";
+        const search = searchParams.get("search") ?? "";
+        const colors = searchParams.getAll("color");
+
+        if (gender || category || style || size || brand || material || search || colors.length > 0) {
+            return { ...defaultFilters, gender, category, style, size, brand, material, search, colors };
+        }
+    }
+
+    // 2. Fallback: StyleHub localStorage filters
+    if (typeof window !== "undefined") {
+        try {
+            const stored = localStorage.getItem("fitova_shop_filters");
+            if (stored) {
+                localStorage.removeItem("fitova_shop_filters");
+                return { ...defaultFilters, ...JSON.parse(stored) };
+            }
+        } catch (_) { }
+    }
+
+    return defaultFilters;
+}
+
 export function useShopFilters() {
+    const searchParams = useSearchParams();
     const [productStyle, setProductStyle] = useState<"grid" | "list">("grid");
     const [sortBy, setSortBy] = useState("0");
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState<ShopFilters>(() => {
-        // On mount, check if StyleHub pushed filters into localStorage
-        if (typeof window !== "undefined") {
-            try {
-                const stored = localStorage.getItem("fitova_shop_filters");
-                if (stored) {
-                    localStorage.removeItem("fitova_shop_filters"); // consume once
-                    return { ...defaultFilters, ...JSON.parse(stored) };
-                }
-            } catch (_) { }
-        }
-        return defaultFilters;
-    });
+    const [filters, setFilters] = useState<ShopFilters>(() =>
+        readInitialFilters(null) // SSR-safe: no searchParams on first render
+    );
+
+    // Sync from URL params on mount and when URL changes
+    useEffect(() => {
+        if (!searchParams) return;
+        setFilters(readInitialFilters(searchParams));
+    }, [searchParams]);
 
     useEffect(() => {
         async function load() {
             try {
                 setLoading(true);
                 const data = await getProducts({
+                    gender: filters.gender || undefined,
+                    category: filters.category || undefined,
                     style: filters.style || undefined,
                     season: filters.season || undefined,
                     brand: filters.brand || undefined,
