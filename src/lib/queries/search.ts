@@ -24,6 +24,7 @@ export type SearchCollection = {
 export type SearchCoupon = {
     id: string;
     code: string;
+    store_name: string;
     discount_type: string;
     discount_value: number;
     min_order_amount: number | null;
@@ -65,15 +66,15 @@ export async function globalSearch(query: string, limit = 5): Promise<GlobalSear
             .from("collections")
             .select("id, name, slug, description, thumbnail_url")
             .or(`name.ilike.${q},description.ilike.${q}`)
-            .limit(3),
+            .limit(5),
 
-        // Coupons: search by code (case-insensitive, active only)
+        // Coupons: search by code or store_name (case-insensitive, active only)
         supabase
             .from("coupons")
-            .select("id, code, discount_type, discount_value, min_order_amount, expires_at, is_active")
+            .select("id, code, store_name, discount_type, discount_value, min_order_amount, expires_at, is_active")
             .eq("is_active", true)
-            .ilike("code", q)
-            .limit(2),
+            .or(`code.ilike.${q},store_name.ilike.${q}`)
+            .limit(5),
     ]);
 
     return {

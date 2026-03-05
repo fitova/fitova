@@ -6,6 +6,7 @@ export type CategoryImage = {
     image_url: string;
     alt_text: string | null;
     sort_order: number;
+    piece_type_group: string | null;
 };
 
 export type Category = {
@@ -86,7 +87,7 @@ export async function getCategoryImages(): Promise<CategoryImage[]> {
     const supabase = createClient();
     const { data, error } = await supabase
         .from("category_images")
-        .select("id, gender_id, image_url, alt_text, sort_order")
+        .select("id, gender_id, image_url, alt_text, sort_order, piece_type_group")
         .order("sort_order", { ascending: true });
     if (error || !data) return [];
     return data as CategoryImage[];

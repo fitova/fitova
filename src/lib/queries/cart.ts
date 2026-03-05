@@ -27,12 +27,26 @@ export async function getCartItems(): Promise<CartItem[]> {
 
     const { data, error } = await supabase
         .from("cart_items")
-        .select("*, products(id, name, slug, price, discounted_price, brand, product_images(url, type, sort_order))")
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
     if (error) { console.error("getCartItems error:", error); return []; }
-    return (data ?? []) as CartItem[];
+    if (!data || data.length === 0) return [];
+
+    // Fetch products explicitly to avoid inner-join foreign key relationship errors
+    const productIds = Array.from(new Set(data.map(item => item.product_id)));
+    const { data: productsData } = await supabase
+        .from("products")
+        .select("id, name, slug, price, discounted_price, brand, product_images(url, type, sort_order)")
+        .in("id", productIds);
+
+    const productMap = new Map((productsData ?? []).map((p: any) => [p.id, p]));
+
+    return data.map(item => ({
+        ...item,
+        products: productMap.get(item.product_id)
+    })) as CartItem[];
 }
 
 /** Add or update a cart item (upsert on user_id + product_id + size + color) */

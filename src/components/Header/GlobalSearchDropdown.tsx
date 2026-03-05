@@ -23,7 +23,8 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
     const [results, setResults] = useState<GlobalSearchResults | null>(null);
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const debouncedQuery = useDebounce(query, 280);
+    const [activeIndex, setActiveIndex] = useState(-1);
+    const debouncedQuery = useDebounce(query, 300);
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
@@ -31,6 +32,11 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
     const hasResults =
         results &&
         (results.products.length > 0 || results.collections.length > 0 || results.coupons.length > 0);
+
+    const totalItems = (results?.products.length || 0) + (results?.collections.length || 0) + (results?.coupons.length || 0) + (hasResults ? 1 : 0);
+
+    // Reset active index when results change
+    useEffect(() => setActiveIndex(-1), [results]);
 
     // Fetch on debounced query change
     useEffect(() => {
@@ -59,12 +65,39 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
     }, []);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === "Escape") { setOpen(false); inputRef.current?.blur(); }
-        if (e.key === "Enter" && query.trim()) {
-            setOpen(false);
-            router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        if (e.key === "Escape") { setOpen(false); inputRef.current?.blur(); return; }
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIndex(prev => (prev < totalItems - 1 ? prev + 1 : prev));
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex(prev => (prev > -1 ? prev - 1 : prev));
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (activeIndex >= 0 && activeIndex < totalItems) {
+                setOpen(false);
+                let current = activeIndex;
+                const pLen = results?.products.length || 0;
+                const cLen = results?.collections.length || 0;
+                const cpLen = results?.coupons.length || 0;
+
+                if (current < pLen) {
+                    router.push(`/products/${results!.products[current].slug}`);
+                } else if (current < pLen + cLen) {
+                    current -= pLen;
+                    router.push(`/collections/${results!.collections[current].slug}`);
+                } else if (current < pLen + cLen + cpLen) {
+                    router.push(`/coupons`);
+                } else {
+                    router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                }
+            } else if (query.trim()) {
+                setOpen(false);
+                router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+            }
         }
-    }, [query, router]);
+    }, [query, activeIndex, totalItems, results, router]);
 
     const handleClose = () => { setOpen(false); setQuery(""); setResults(null); };
 
@@ -136,15 +169,16 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
                                 </Link>
                             </div>
                             <ul>
-                                {results.products.map(p => {
-                                    const thumb = p.product_images?.find(i => i.type === "thumbnail" || i.sort_order === 0)?.url;
+                                {results.products.map((p, i) => {
+                                    const itemIndex = i;
+                                    const thumb = p.product_images?.find(img => img.type === "thumbnail" || img.sort_order === 0)?.url;
                                     const price = p.discounted_price ?? p.price;
                                     return (
                                         <li key={p.id}>
                                             <Link
                                                 href={`/products/${p.slug}`}
                                                 onClick={handleClose}
-                                                className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9F7F5] transition-colors duration-150"
+                                                className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}
                                             >
                                                 {/* Thumbnail */}
                                                 <div className="w-10 h-12 flex-shrink-0 bg-[#F0EDE8] rounded-sm overflow-hidden relative">
@@ -183,27 +217,30 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
                                 <span className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#8A8A8A]">Lookbooks</span>
                             </div>
                             <ul>
-                                {results.collections.map(c => (
-                                    <li key={c.id}>
-                                        <Link
-                                            href={`/collections/${c.slug}`}
-                                            onClick={handleClose}
-                                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9F7F5] transition-colors duration-150"
-                                        >
-                                            <div className="w-10 h-10 flex-shrink-0 bg-[#F0EDE8] rounded-sm overflow-hidden relative">
-                                                {c.thumbnail_url ? (
-                                                    <Image src={c.thumbnail_url} alt={c.name} fill className="object-cover" sizes="40px" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-dark-4">LB</div>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-[12px] font-medium text-dark truncate">{c.name}</p>
-                                                {c.description && <p className="text-[11px] text-dark-4 truncate">{c.description}</p>}
-                                            </div>
-                                        </Link>
-                                    </li>
-                                ))}
+                                {results.collections.map((c, i) => {
+                                    const itemIndex = results.products.length + i;
+                                    return (
+                                        <li key={c.id}>
+                                            <Link
+                                                href={`/collections/${c.slug}`}
+                                                onClick={handleClose}
+                                                className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}
+                                            >
+                                                <div className="w-10 h-10 flex-shrink-0 bg-[#F0EDE8] rounded-sm overflow-hidden relative">
+                                                    {c.thumbnail_url ? (
+                                                        <Image src={c.thumbnail_url} alt={c.name} fill className="object-cover" sizes="40px" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-dark-4">LB</div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[12px] font-medium text-dark truncate">{c.name}</p>
+                                                    {c.description && <p className="text-[11px] text-dark-4 truncate">{c.description}</p>}
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     )}
@@ -215,40 +252,51 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
                                 <span className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#8A8A8A]">Coupons</span>
                             </div>
                             <ul>
-                                {results.coupons.map(c => (
-                                    <li key={c.id}>
-                                        <div className="flex items-center gap-3 px-4 py-2.5">
-                                            <div className="flex items-center gap-2 flex-1">
-                                                <span className="font-mono text-[11px] font-semibold text-dark bg-[#F0EDE8] px-2 py-1 rounded-sm tracking-widest">{c.code}</span>
-                                                <span className="text-[11px] text-dark-4">
-                                                    {c.discount_type === "percent"
-                                                        ? `${c.discount_value}% off`
-                                                        : `$${c.discount_value} off`}
-                                                    {c.min_order_amount ? ` on $${c.min_order_amount}+` : ""}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </li>
-                                ))}
+                                {results.coupons.map((c, i) => {
+                                    const itemIndex = results.products.length + results.collections.length + i;
+                                    return (
+                                        <li key={c.id}>
+                                            <Link
+                                                href="/coupons"
+                                                onClick={handleClose}
+                                                className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 block ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}
+                                            >
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <span className="font-mono text-[11px] font-semibold text-dark bg-[#F0EDE8] px-2 py-1 rounded-sm tracking-widest">{c.code}</span>
+                                                    <span className="text-[11px] text-dark-4 max-w-[80px] truncate">{c.store_name}</span>
+                                                    <span className="text-[11px] text-dark-4 ml-auto">
+                                                        {c.discount_type === "percent"
+                                                            ? `${c.discount_value}% off`
+                                                            : `$${c.discount_value} off`}
+                                                        {c.min_order_amount ? ` on $${c.min_order_amount}+` : ""}
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     )}
 
                     {/* ── See All Results ────────────────────────── */}
-                    {hasResults && (
-                        <div className="border-t border-[#F0EDE8] px-4 py-3">
-                            <Link
-                                href={`/search?q=${encodeURIComponent(query)}`}
-                                onClick={handleClose}
-                                className="flex items-center justify-center gap-2 text-[11px] font-medium tracking-[0.2em] uppercase text-dark hover:opacity-60 transition-opacity"
-                            >
-                                See All Results
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </Link>
-                        </div>
-                    )}
+                    {hasResults && (() => {
+                        const itemIndex = results.products.length + results.collections.length + results.coupons.length;
+                        return (
+                            <div className={`border-t border-[#F0EDE8] transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}>
+                                <Link
+                                    href={`/search?q=${encodeURIComponent(query)}`}
+                                    onClick={handleClose}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 text-[11px] font- medium tracking-[0.2em] uppercase text-dark block w-full h-full"
+                                >
+                                    See All Results
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
         </div>

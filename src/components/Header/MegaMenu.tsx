@@ -2,10 +2,11 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CategoryWithChildren } from "@/lib/queries/categories";
+import { CategoryWithChildren, CategoryImage } from "@/lib/queries/categories";
 
 interface MegaMenuProps {
     categories: CategoryWithChildren[];
+    categoryImages?: CategoryImage[];
     stickyMenu?: boolean;
     isTransparent?: boolean;
 }
@@ -310,7 +311,7 @@ const CategoryColumn = ({
 };
 
 // ─── Main MegaMenu ────────────────────────────────────────────────────────────
-const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuProps) => {
+const MegaMenu = ({ categories, categoryImages = [], stickyMenu, isTransparent = false }: MegaMenuProps) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -336,9 +337,17 @@ const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuPro
                 const genderRaw = Array.isArray(cat.gender) ? cat.gender[0] : (cat.gender as string | null);
                 const genderSlug = genderRaw ?? cat.slug ?? "";
 
-                // Build slider images — include piece_type_group tag if available
-                const catTyped = cat as CategoryWithChildren & { image_url?: string | null };
-                const sliderImages: SliderImage[] = catTyped.image_url ? [{ src: catTyped.image_url }] : [];
+                // Build slider images — try backend categoryImages first, else fallback to cat.image_url
+                const genderImages = categoryImages.filter(ci => ci.gender_id.toString() === cat.id);
+                let sliderImages: SliderImage[] = [];
+                if (genderImages.length > 0) {
+                    sliderImages = genderImages.map(ci => ({ src: ci.image_url, group: ci.piece_type_group }));
+                } else {
+                    const catTyped = cat as CategoryWithChildren & { image_url?: string | null };
+                    if (catTyped.image_url) {
+                        sliderImages = [{ src: catTyped.image_url }];
+                    }
+                }
 
                 // Determine columns to show (skip empty; Kids never shows Fragrances)
                 const isKids = genderSlug === "kids";
@@ -369,15 +378,10 @@ const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuPro
                             </svg>
                         </button>
 
-                        {/* Dropdown panel — max-width capped to viewport */}
+                        {/* Dropdown panel */}
                         <div
                             aria-hidden={!isOpen}
-                            className={`absolute left-0 top-full bg-white border border-[#E8E4DF] shadow-lg z-50 transition-all duration-200 ease-out ${isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"}`}
-                            style={{
-                                maxWidth: "calc(100vw - 2rem)",
-                                minWidth: "520px",
-                                width: "max-content",
-                            }}
+                            className={`xl:absolute left-0 top-full bg-white xl:border border-[#E8E4DF] xl:shadow-lg z-50 transition-all duration-200 ease-out ${isOpen ? "opacity-100 translate-y-0 h-auto pointer-events-auto" : "opacity-0 -translate-y-2 h-0 overflow-hidden pointer-events-none xl:h-auto"} xl:max-w-[calc(100vw-2rem)] xl:min-w-[520px] xl:w-max w-full`}
                         >
                             {/* View All */}
                             <div className="px-6 pt-4 pb-3 border-b border-[#E8E4DF]">
@@ -394,9 +398,9 @@ const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuPro
                             </div>
 
                             {/* Body: columns + optional slider */}
-                            <div className="p-5 flex gap-6 items-start overflow-hidden">
+                            <div className="p-5 flex flex-col xl:flex-row gap-6 items-start overflow-hidden">
                                 {/* Columns — each in its own box */}
-                                <div className="flex gap-8 flex-shrink-0">
+                                <div className="flex flex-col xl:flex-row gap-6 xl:gap-8 flex-shrink-0 w-full xl:w-auto">
                                     {cols.map(col => (
                                         <CategoryColumn
                                             key={col.label}
@@ -418,6 +422,90 @@ const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuPro
                     </li>
                 );
             })}
+
+            {/* ─── Static "This Week" MegaMenu ─────────────────────────────────────────── */}
+            <li
+                className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
+                onMouseEnter={() => open(999)}
+                onMouseLeave={close}
+            >
+                {/* Nav button */}
+                <button
+                    aria-haspopup="true"
+                    aria-expanded={activeIndex === 999}
+                    className={`flex items-center gap-1 text-custom-sm font-light tracking-wide transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
+                >
+                    This Week
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none"
+                        className={`transition-transform duration-200 ${activeIndex === 999 ? "rotate-180" : ""}`}>
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </button>
+
+                {/* Dropdown panel */}
+                <div
+                    aria-hidden={activeIndex !== 999}
+                    className={`xl:absolute left-0 top-full bg-white xl:border border-[#E8E4DF] xl:shadow-lg z-50 transition-all duration-200 ease-out ${activeIndex === 999 ? "opacity-100 translate-y-0 h-auto pointer-events-auto" : "opacity-0 -translate-y-2 h-0 overflow-hidden pointer-events-none xl:h-auto"} xl:max-w-[calc(100vw-2rem)] xl:min-w-[420px] xl:w-max w-full`}
+                >
+                    <div className="px-6 pt-4 pb-3 border-b border-[#E8E4DF]">
+                        <Link
+                            href="/this-week"
+                            className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.2em] uppercase text-dark hover:opacity-60 transition-opacity duration-200"
+                            onClick={closeNow}
+                        >
+                            View All This Week
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </Link>
+                    </div>
+
+                    <div className="p-5 flex flex-col xl:flex-row gap-6 items-start overflow-hidden">
+                        <div className="flex flex-col xl:flex-row gap-6 xl:gap-8 flex-shrink-0 w-full xl:w-auto">
+                            <div className="min-w-0">
+                                <h3 className="group/lbl inline-flex items-center gap-1 text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A] hover:text-dark transition-colors duration-200 cursor-pointer">
+                                    Collections
+                                </h3>
+                                <ul className="flex flex-col gap-3">
+                                    <li>
+                                        <Link href="/this-week/trending" className="text-[13px] font-light text-dark hover:opacity-50 transition-opacity duration-200 block" onClick={closeNow}>
+                                            Trending
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/this-week/best-sellers" className="text-[13px] font-light text-dark hover:opacity-50 transition-opacity duration-200 block" onClick={closeNow}>
+                                            Best Sellers
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/this-week/new-arrivals" className="text-[13px] font-light text-dark hover:opacity-50 transition-opacity duration-200 block" onClick={closeNow}>
+                                            New Arrivals
+                                        </Link>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="min-w-0">
+                                <h3 className="group/lbl inline-flex items-center gap-1 text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A] hover:text-dark transition-colors duration-200 cursor-pointer">
+                                    Personal
+                                </h3>
+                                <ul className="flex flex-col gap-3">
+                                    <li>
+                                        <Link href="/this-week/recently-viewed" className="text-[13px] font-light text-dark hover:opacity-50 transition-opacity duration-200 block" onClick={closeNow}>
+                                            Recently Viewed
+                                        </Link>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Slider (xl only) */}
+                        <div className="hidden xl:block w-[140px] flex-shrink-0">
+                            <NavSlider images={[{ src: "/images/categories/categories-04.png", group: "clothing" }]} alt="This Week" hoveredGroup={null} />
+                        </div>
+                    </div>
+                </div>
+            </li>
         </>
     );
 };

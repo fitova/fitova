@@ -12,7 +12,7 @@ import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import { useStyleHub } from "@/app/context/StyleHubContext";
 import Image from "next/image";
 import { useCurrentUser } from "@/app/context/AuthContext";
-import { getCategoryHierarchy, CategoryWithChildren } from "@/lib/queries/categories";
+import { getCategoryHierarchy, getCategoryImages, CategoryWithChildren, CategoryImage } from "@/lib/queries/categories";
 import GlobalSearchDropdown from "./GlobalSearchDropdown";
 
 /* ── All-Categories dropdown for scoping search ──────────── */
@@ -52,8 +52,8 @@ function AllCategoriesDropdown({
       <button
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 text-xs font-light tracking-wide whitespace-nowrap px-3 py-2 border transition-all duration-300 ${isTransparent
-            ? "border-white/30 text-white hover:bg-white/10"
-            : "border-[#E8E4DF] text-[#0A0A0A] hover:bg-[#FAFAF9]"
+          ? "border-white/30 text-white hover:bg-white/10"
+          : "border-[#E8E4DF] text-[#0A0A0A] hover:bg-[#FAFAF9]"
           }`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -110,6 +110,7 @@ const Header = () => {
   const [stickyMenu, setStickyMenu] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryWithChildren[]>([]);
+  const [categoryImages, setCategoryImages] = useState<CategoryImage[]>([]);
   const { openCartModal } = useCartModalContext();
   const { openStyleHub } = useStyleHub();
   const { user } = useCurrentUser();
@@ -132,34 +133,39 @@ const Header = () => {
   };
 
   // Sticky menu + transparent-to-solid transition
-  const handleStickyMenu = () => {
-    if (window.scrollY >= 80) {
-      setStickyMenu(true);
-      setIsAtTop(false);
-    } else {
-      setStickyMenu(false);
-      setIsAtTop(true);
-    }
-  };
-
   useEffect(() => {
+    const handleStickyMenu = () => {
+      if (window.scrollY >= 20) {
+        setStickyMenu(true);
+        setIsAtTop(false);
+      } else {
+        setStickyMenu(false);
+        setIsAtTop(true);
+      }
+    };
+
+    handleStickyMenu(); // set initial state
     window.addEventListener("scroll", handleStickyMenu, { passive: true });
     return () => window.removeEventListener("scroll", handleStickyMenu);
-  });
+  }, []);
 
-  // Fetch category hierarchy once (Men/Women/Kids + subcategories)
+  // Fetch category hierarchy and images once
   useEffect(() => {
     getCategoryHierarchy()
       .then(setCategoryHierarchy)
       .catch(() => setCategoryHierarchy([]));
+
+    getCategoryImages()
+      .then(setCategoryImages)
+      .catch(() => setCategoryImages([]));
   }, []);
 
   return (
     <header
-      className={`fixed left-0 top-0 w-full z-50 transition-all duration-300 ease-in-out ${isTransparent
+      className={`fixed left-0 top-0 w-full z-50 transition-all duration-500 ease-in-out ${isTransparent
         ? "bg-transparent border-transparent"
         : stickyMenu
-          ? "bg-white/98 backdrop-blur-sm shadow-sm border-b border-[#E8E4DF]"
+          ? "bg-white shadow-sm border-b border-[#E8E4DF]"
           : "bg-white border-b border-[#E8E4DF]"
         }`}
     >
@@ -394,21 +400,50 @@ const Header = () => {
         <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
           <div className="flex items-center justify-between">
             {/* <!--=== Main Nav Start ===--> */}
+            {/* Mobile Drawer Overlay */}
+            {navigationOpen && (
+              <div
+                className="fixed inset-0 bg-black/50 z-[100] transition-opacity xl:hidden"
+                onClick={() => setNavigationOpen(false)}
+              />
+            )}
             <div
-              className={`w-[288px] absolute right-4 top-full xl:static xl:w-auto h-0 xl:h-auto invisible xl:visible xl:flex items-center justify-between ${navigationOpen &&
-                `!visible bg-white shadow-lg border border-gray-3 !h-auto max-h-[400px] overflow-y-scroll rounded-md p-5`
+              className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[110] transform transition-transform duration-300 ease-in-out shadow-2xl xl:static xl:w-auto xl:h-auto xl:bg-transparent xl:shadow-none xl:translate-x-0 xl:flex items-center justify-between ${navigationOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
+              {/* Mobile Drawer Header (Logo & Close) */}
+              <div className="flex items-center justify-between px-5 py-6 border-b border-[#E8E4DF] xl:hidden">
+                <div className="flex-1 flex justify-center">
+                  <Link href="/" onClick={() => setNavigationOpen(false)}>
+                    <img
+                      src="/images/logo/logo.svg"
+                      alt="Fitova Logo"
+                      className="h-8 w-auto px-4"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "/images/logo/logo.svg"; }}
+                    />
+                  </Link>
+                </div>
+                <button
+                  onClick={() => setNavigationOpen(false)}
+                  className="p-1 -mr-1 text-[#0A0A0A]"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
+
               {/* <!-- Main Nav Start --> */}
-              <nav>
-                <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
+              <nav className="h-[calc(100%-80px)] overflow-y-auto xl:h-auto xl:overflow-visible">
+                <ul className="flex xl:items-center flex-col xl:flex-row gap-0 xl:gap-8 px-5 py-4 xl:px-0 xl:py-0">
                   {/* Home — always first */}
-                  <li className="group relative before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
+                  <li className="group relative border-b border-[#E8E4DF] xl:border-none before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
                     style={{ "--tw-before-bg": isTransparent ? "white" : "#1a1a1a" } as React.CSSProperties}
                   >
                     <Link
                       href="/"
-                      className={`text-custom-sm font-light tracking-wide flex transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
+                      onClick={() => setNavigationOpen(false)}
+                      className={`text-custom-sm font-light tracking-wide flex py-3 xl:py-0 transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "xl:text-white xl:hover:text-white/70 text-dark hover:text-dark-2" : "text-dark hover:text-dark-2"}`}
                     >
                       Home
                     </Link>
@@ -417,6 +452,7 @@ const Header = () => {
                   {/* Mega Menu: Men / Women / Kids — always shown (has static fallback) */}
                   <MegaMenu
                     categories={categoryHierarchy}
+                    categoryImages={categoryImages}
                     stickyMenu={stickyMenu}
                     isTransparent={isTransparent}
                   />
@@ -428,6 +464,7 @@ const Header = () => {
                         key={i}
                         menuItem={menuItem}
                         stickyMenu={stickyMenu}
+                        isTransparent={isTransparent}
                       />
                     ) : (
                       <li
@@ -437,7 +474,8 @@ const Header = () => {
                       >
                         <Link
                           href={menuItem.path}
-                          className={`text-custom-sm font-light tracking-wide flex transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
+                          onClick={() => setNavigationOpen(false)}
+                          className={`text-custom-sm font-light tracking-wide flex py-3 border-b border-[#E8E4DF] xl:border-none transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "xl:text-white xl:hover:text-white/70 text-dark hover:text-dark-2" : "text-dark hover:text-dark-2"}`}
                         >
                           {menuItem.title}
                         </Link>
