@@ -23,6 +23,7 @@ export type Product = {
   category_id?: string | null;
   affiliate_link?: string | null;
   affiliate_program?: string | null;
+  commission?: number | null;
   stock_status?: string;
   // Homepage section flags
   is_featured?: boolean;
@@ -63,6 +64,7 @@ export function mapProductFromDB(dbProduct: any): Product {
     category_id: dbProduct.category_id,
     affiliate_link: dbProduct.affiliate_link,
     affiliate_program: dbProduct.affiliate_program,
+    commission: dbProduct.commission,
     stock_status: dbProduct.stock_status,
     is_featured: dbProduct.is_featured,
     is_deal: dbProduct.is_deal,

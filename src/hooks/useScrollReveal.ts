@@ -1,14 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * useScrollReveal
  * Attaches an IntersectionObserver to the returned ref.
- * When the element scrolls into view, it adds 'revealed' class.
+ * When the element scrolls into view, revealClass is updated to include 'revealed'.
  * Use with CSS: .sr { opacity: 0; transform: translateY(24px); transition: all 0.6s ease; }
  *               .sr.revealed { opacity: 1; transform: none; }
  */
 export function useScrollReveal(threshold = 0.15) {
     const ref = useRef<HTMLElement | null>(null);
+    const [revealed, setRevealed] = useState(false);
 
     useEffect(() => {
         const el = ref.current;
@@ -17,7 +18,7 @@ export function useScrollReveal(threshold = 0.15) {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    el.classList.add("revealed");
+                    setRevealed(true);
                     observer.unobserve(el);
                 }
             },
@@ -28,5 +29,9 @@ export function useScrollReveal(threshold = 0.15) {
         return () => observer.disconnect();
     }, [threshold]);
 
-    return ref;
+    return {
+        ref,
+        baseClass: "sr",
+        revealClass: revealed ? "revealed" : "",
+    };
 }

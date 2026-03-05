@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 
-export default function ShopWithSidebarPage({
+export default async function ShopWithSidebarPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const resolvedParams = await searchParams;
   // Build query string to preserve filters when redirecting
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(searchParams)) {
+  for (const [key, value] of Object.entries(resolvedParams)) {
     if (value) {
       if (Array.isArray(value)) {
         value.forEach((v) => params.append(key, v));

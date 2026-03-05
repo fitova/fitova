@@ -47,7 +47,7 @@ export default function ProductDetailsClient({ product, related }: Props) {
 
     /* ── View tracking ──────────────────────────────────────────── */
     useEffect(() => {
-        tracking.trackProductView?.(product.id, user?.id, "");
+        tracking.trackProductView?.(product.id, user?.id);
     }, [product.id, user?.id]);
 
     /* ── Images ─────────────────────────────────────────────────── */
@@ -103,7 +103,7 @@ export default function ProductDetailsClient({ product, related }: Props) {
     /* ── Affiliate link click ──────────────────────────────────── */
     const handleAffiliateClick = () => {
         if (!product.affiliate_link) return;
-        tracking.trackAffiliateClick?.(product.id, user?.id);
+        tracking.trackAffiliateClick?.(product.id);
         window.open(product.affiliate_link, "_blank", "noopener,noreferrer");
     };
 
