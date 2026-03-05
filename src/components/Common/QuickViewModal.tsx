@@ -1,436 +1,330 @@
 "use client";
-import React, { useEffect, useState } from "react";
-
+import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { AppDispatch, useAppSelector } from "@/redux/store";
 import { addItemToCart } from "@/redux/features/cart-slice";
+import { addItemToWishlist, removeItemFromWishlist } from "@/redux/features/wishlist-slice";
 import { tracking } from "@/lib/queries/tracking";
 import { useCurrentUser } from "@/app/context/AuthContext";
-import { useDispatch } from "react-redux";
-import Image from "next/image";
-import { usePreviewSlider } from "@/app/context/PreviewSliderContext";
-import { resetQuickView } from "@/redux/features/quickView-slice";
-import { updateproductDetails } from "@/redux/features/product-details";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 const QuickViewModal = () => {
   const { isModalOpen, closeModal } = useModalContext();
-  const { openPreviewModal } = usePreviewSlider();
-  const [quantity, setQuantity] = useState(1);
+  const router = useRouter();
   const { user } = useCurrentUser();
-
   const dispatch = useDispatch<AppDispatch>();
-
-  // get the product data
   const product = useAppSelector((state) => state.quickViewReducer.value);
 
-  const [activePreview, setActivePreview] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [wishlistAnimating, setWishlistAnimating] = useState(false);
 
-  // preview modal
-  const handlePreviewSlider = () => {
-    dispatch(updateproductDetails(product));
+  const isInWishlist = useSelector((state: RootState) =>
+    state.wishlistReducer.items.some((w) => w.id === product?.id)
+  );
 
-    openPreviewModal();
-  };
-
-  // add to cart
-  const handleAddToCart = () => {
-    dispatch(
-      addItemToCart({
-        ...product,
-        id: product.id as unknown as string,
-        quantity,
-      })
-    );
-    tracking.trackCartEvent(product.id as string, user?.id, "add");
-
-    closeModal();
-  };
-
+  // Reset state when modal opens with new product
   useEffect(() => {
-    // closing modal while clicking outside
-    function handleClickOutside(event) {
-      if (!event.target.closest(".modal-content")) {
-        closeModal();
-      }
-    }
-
     if (isModalOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-
       setQuantity(1);
+      setActiveImage(0);
+      setAddedToCart(false);
+      // Lock body scroll
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isModalOpen, product?.id]);
+
+  // ESC key to close
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
     };
+    if (isModalOpen) document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
   }, [isModalOpen, closeModal]);
 
+  const handleImageClick = useCallback(() => {
+    const slug = product?.slug ?? product?.id;
+    if (slug) {
+      closeModal();
+      router.push(`/products/${slug}`);
+    }
+  }, [product, closeModal, router]);
+
+  const handleAddToCart = () => {
+    dispatch(addItemToCart({ ...product, id: product.id as unknown as string, quantity }));
+    tracking.trackCartEvent(product.id as string, user?.id, "add");
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2200);
+  };
+
+  const handleWishlist = async () => {
+    setWishlistAnimating(true);
+    setTimeout(() => setWishlistAnimating(false), 400);
+    const itemId = String(product.id);
+    const thumb = product.imgs?.thumbnails?.[0] ?? product.imgs?.previews?.[0] ?? "";
+    if (isInWishlist) {
+      dispatch(removeItemFromWishlist({ item_id: itemId, item_type: "product" }));
+      try { const { removeFromWishlist } = await import("@/lib/queries/wishlist"); await removeFromWishlist(itemId, "product"); } catch { }
+    } else {
+      dispatch(addItemToWishlist({ id: itemId, item_id: itemId, item_type: "product", created_at: new Date().toISOString(), title: product.title, price: product.price, discountedPrice: product.discountedPrice, imageUrl: thumb }));
+      try { const { addToWishlist } = await import("@/lib/queries/wishlist"); await addToWishlist(itemId, "product"); } catch { }
+    }
+  };
+
+  if (!isModalOpen || !product) return null;
+
+  const images = product.imgs?.previews ?? product.imgs?.thumbnails ?? [];
+  const currentImage = images[activeImage] ?? "/images/products/product-1-bg-1.png";
+  const hasDiscount = product.discountedPrice && product.discountedPrice < product.price;
+  const discountPct = hasDiscount
+    ? Math.round(((product.price - product.discountedPrice!) / product.price) * 100)
+    : 0;
+
   return (
-    <div
-      className={`${isModalOpen ? "z-[99999] flex" : "hidden"
-        } fixed inset-0 overflow-y-auto no-scrollbar bg-dark/70 sm:px-8`}
-    >
-      <div className="flex items-end sm:items-center justify-center min-h-screen w-full">
-        <div className="w-full h-fit sm:max-w-[1100px] rounded-t-3xl sm:rounded-xl shadow-3 bg-white p-5 pt-8 sm:p-7.5 pb-10 relative modal-content animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300 mt-20 sm:mt-0">
+    <>
+      {/* ── Backdrop ──────────────────────────────────── */}
+      <div
+        className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={closeModal}
+      />
+
+      {/* ── Modal ─────────────────────────────────────── */}
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+        <div
+          className="pointer-events-auto w-full max-w-[960px] max-h-[90vh] overflow-y-auto no-scrollbar bg-white rounded-sm shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
           <button
-            onClick={() => closeModal()}
-            aria-label="button for close modal"
-            className="absolute top-0 right-0 sm:top-6 sm:right-6 flex items-center justify-center w-10 h-10 rounded-full ease-in duration-150 bg-meta text-body hover:text-dark"
+            onClick={closeModal}
+            aria-label="Close"
+            className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm text-[#8A8A8A] hover:text-[#0A0A0A] transition-colors"
           >
-            <svg
-              className="fill-current"
-              width="26"
-              height="26"
-              viewBox="0 0 26 26"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M14.3108 13L19.2291 8.08167C19.5866 7.72417 19.5866 7.12833 19.2291 6.77083C19.0543 6.59895 18.8189 6.50262 18.5737 6.50262C18.3285 6.50262 18.0932 6.59895 17.9183 6.77083L13 11.6892L8.08164 6.77083C7.90679 6.59895 7.67142 6.50262 7.42623 6.50262C7.18104 6.50262 6.94566 6.59895 6.77081 6.77083C6.41331 7.12833 6.41331 7.72417 6.77081 8.08167L11.6891 13L6.77081 17.9183C6.41331 18.2758 6.41331 18.8717 6.77081 19.2292C7.12831 19.5867 7.72414 19.5867 8.08164 19.2292L13 14.3108L17.9183 19.2292C18.2758 19.5867 18.8716 19.5867 19.2291 19.2292C19.5866 18.8717 19.5866 18.2758 19.2291 17.9183L14.3108 13Z"
-                fill=""
-              />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
 
-          <div className="flex flex-wrap items-center gap-12.5">
-            <div className="max-w-[526px] w-full">
-              <div className="flex gap-5">
-                <div className="flex flex-col gap-5">
-                  {product.imgs.thumbnails?.map((img, key) => (
+          <div className="flex flex-col sm:flex-row">
+            {/* ── LEFT: Image Gallery ─────────────────── */}
+            <div className="sm:w-[55%] flex-shrink-0">
+              {/* Main Image — click to navigate */}
+              <div
+                onClick={handleImageClick}
+                className="relative aspect-[3/4] bg-[#F6F5F2] cursor-pointer group overflow-hidden"
+              >
+                <Image
+                  src={currentImage}
+                  alt={product.title}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width:640px) 100vw, 55vw"
+                />
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-xs tracking-[0.2em] uppercase bg-black/50 backdrop-blur-sm px-4 py-2">
+                    View Full Details →
+                  </span>
+                </div>
+                {/* Discount badge */}
+                {discountPct > 0 && (
+                  <span className="absolute top-3 left-3 bg-[#0A0A0A] text-white text-[10px] font-medium px-2.5 py-1 tracking-wider uppercase">
+                    -{discountPct}%
+                  </span>
+                )}
+              </div>
+
+              {/* Thumbnail row */}
+              {images.length > 1 && (
+                <div className="flex gap-1.5 p-3 overflow-x-auto no-scrollbar">
+                  {images.slice(0, 6).map((img, i) => (
                     <button
-                      onClick={() => setActivePreview(key)}
-                      key={key}
-                      className={`flex items-center justify-center w-20 h-20 overflow-hidden rounded-lg bg-gray-1 ease-out duration-200 hover:border-2 hover:border-blue ${activePreview === key && "border-2 border-blue"
+                      key={i}
+                      onClick={() => setActiveImage(i)}
+                      className={`flex-shrink-0 w-16 h-20 relative overflow-hidden transition-all duration-200 ${activeImage === i
+                        ? "ring-2 ring-[#0A0A0A] ring-offset-1"
+                        : "opacity-50 hover:opacity-80"
                         }`}
                     >
-                      <Image
-                        src={img || ""}
-                        alt="thumbnail"
-                        width={61}
-                        height={61}
-                        className="aspect-square"
-                      />
+                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
                     </button>
                   ))}
                 </div>
-
-                <div className="relative z-1 overflow-hidden flex items-center justify-center w-full sm:min-h-[508px] bg-gray-1 rounded-lg border border-gray-3">
-                  <div>
-                    <button
-                      onClick={handlePreviewSlider}
-                      aria-label="button for zoom"
-                      className="gallery__Image w-10 h-10 rounded-[5px] bg-white shadow-1 flex items-center justify-center ease-out duration-200 text-dark hover:text-blue absolute top-4 lg:top-8 right-4 lg:right-8 z-50"
-                    >
-                      <svg
-                        className="fill-current"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 22 22"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M9.11493 1.14581L9.16665 1.14581C9.54634 1.14581 9.85415 1.45362 9.85415 1.83331C9.85415 2.21301 9.54634 2.52081 9.16665 2.52081C7.41873 2.52081 6.17695 2.52227 5.23492 2.64893C4.31268 2.77292 3.78133 3.00545 3.39339 3.39339C3.00545 3.78133 2.77292 4.31268 2.64893 5.23492C2.52227 6.17695 2.52081 7.41873 2.52081 9.16665C2.52081 9.54634 2.21301 9.85415 1.83331 9.85415C1.45362 9.85415 1.14581 9.54634 1.14581 9.16665L1.14581 9.11493C1.1458 7.43032 1.14579 6.09599 1.28619 5.05171C1.43068 3.97699 1.73512 3.10712 2.42112 2.42112C3.10712 1.73512 3.97699 1.43068 5.05171 1.28619C6.09599 1.14579 7.43032 1.1458 9.11493 1.14581ZM16.765 2.64893C15.823 2.52227 14.5812 2.52081 12.8333 2.52081C12.4536 2.52081 12.1458 2.21301 12.1458 1.83331C12.1458 1.45362 12.4536 1.14581 12.8333 1.14581L12.885 1.14581C14.5696 1.1458 15.904 1.14579 16.9483 1.28619C18.023 1.43068 18.8928 1.73512 19.5788 2.42112C20.2648 3.10712 20.5693 3.97699 20.7138 5.05171C20.8542 6.09599 20.8542 7.43032 20.8541 9.11494V9.16665C20.8541 9.54634 20.5463 9.85415 20.1666 9.85415C19.787 9.85415 19.4791 9.54634 19.4791 9.16665C19.4791 7.41873 19.4777 6.17695 19.351 5.23492C19.227 4.31268 18.9945 3.78133 18.6066 3.39339C18.2186 3.00545 17.6873 2.77292 16.765 2.64893ZM1.83331 12.1458C2.21301 12.1458 2.52081 12.4536 2.52081 12.8333C2.52081 14.5812 2.52227 15.823 2.64893 16.765C2.77292 17.6873 3.00545 18.2186 3.39339 18.6066C3.78133 18.9945 4.31268 19.227 5.23492 19.351C6.17695 19.4777 7.41873 19.4791 9.16665 19.4791C9.54634 19.4791 9.85415 19.787 9.85415 20.1666C9.85415 20.5463 9.54634 20.8541 9.16665 20.8541H9.11494C7.43032 20.8542 6.09599 20.8542 5.05171 20.7138C3.97699 20.5693 3.10712 20.2648 2.42112 19.5788C1.73512 18.8928 1.43068 18.023 1.28619 16.9483C1.14579 15.904 1.1458 14.5696 1.14581 12.885L1.14581 12.8333C1.14581 12.4536 1.45362 12.1458 1.83331 12.1458ZM20.1666 12.1458C20.5463 12.1458 20.8541 12.4536 20.8541 12.8333V12.885C20.8542 14.5696 20.8542 15.904 20.7138 16.9483C20.5693 18.023 20.2648 18.8928 19.5788 19.5788C18.8928 20.2648 18.023 20.5693 16.9483 20.7138C15.904 20.8542 14.5696 20.8542 12.885 20.8541H12.8333C12.4536 20.8541 12.1458 20.5463 12.1458 20.1666C12.1458 19.787 12.4536 19.4791 12.8333 19.4791C14.5812 19.4791 15.823 19.4777 16.765 19.351C17.6873 19.227 18.2186 18.9945 18.6066 18.6066C18.9945 18.2186 19.227 17.6873 19.351 16.765C19.4777 15.823 19.4791 14.5812 19.4791 12.8333C19.4791 12.4536 19.787 12.1458 20.1666 12.1458Z"
-                          fill=""
-                        />
-                      </svg>
-                    </button>
-
-                    {product?.imgs?.previews?.[activePreview] && (
-                      <Image
-                        src={product.imgs.previews[activePreview]}
-                        alt="products-details"
-                        width={400}
-                        height={400}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="max-w-[445px] w-full">
-              <span className="inline-block text-custom-xs font-medium text-white py-1 px-3 bg-green mb-6.5">
-                SALE 20% OFF
-              </span>
+            {/* ── RIGHT: Product Info ──────────────────── */}
+            <div className="sm:w-[45%] p-6 sm:p-8 flex flex-col justify-between">
+              <div>
+                {/* Brand */}
+                {product.brand && (
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#8A8A8A] font-light mb-1">
+                    {product.brand}
+                  </p>
+                )}
 
-              <h3 className="font-semibold text-xl xl:text-heading-5 text-dark mb-4">
-                {product.title}
-              </h3>
+                {/* Title */}
+                <h2 className="text-lg sm:text-xl font-medium text-[#0A0A0A] mb-3 leading-snug">
+                  {product.title}
+                </h2>
 
-              <div className="flex flex-wrap items-center gap-5 mb-6">
-                <div className="flex items-center gap-1.5">
-                  {/* <!-- stars --> */}
-                  <div className="flex items-center gap-1">
-                    <svg
-                      className="fill-[#FFA645]"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g clipPath="url(#clip0_375_9172)">
-                        <path
-                          d="M16.7906 6.72187L11.7 5.93438L9.39377 1.09688C9.22502 0.759375 8.77502 0.759375 8.60627 1.09688L6.30002 5.9625L1.23752 6.72187C0.871891 6.77812 0.731266 7.25625 1.01252 7.50938L4.69689 11.3063L3.82502 16.6219C3.76877 16.9875 4.13439 17.2969 4.47189 17.0719L9.05627 14.5687L13.6125 17.0719C13.9219 17.2406 14.3156 16.9594 14.2313 16.6219L13.3594 11.3063L17.0438 7.50938C17.2688 7.25625 17.1563 6.77812 16.7906 6.72187Z"
-                          fill=""
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_375_9172">
-                          <rect width="18" height="18" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-
-                    <svg
-                      className="fill-[#FFA645]"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g clipPath="url(#clip0_375_9172)">
-                        <path
-                          d="M16.7906 6.72187L11.7 5.93438L9.39377 1.09688C9.22502 0.759375 8.77502 0.759375 8.60627 1.09688L6.30002 5.9625L1.23752 6.72187C0.871891 6.77812 0.731266 7.25625 1.01252 7.50938L4.69689 11.3063L3.82502 16.6219C3.76877 16.9875 4.13439 17.2969 4.47189 17.0719L9.05627 14.5687L13.6125 17.0719C13.9219 17.2406 14.3156 16.9594 14.2313 16.6219L13.3594 11.3063L17.0438 7.50938C17.2688 7.25625 17.1563 6.77812 16.7906 6.72187Z"
-                          fill=""
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_375_9172">
-                          <rect width="18" height="18" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-
-                    <svg
-                      className="fill-[#FFA645]"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g clipPath="url(#clip0_375_9172)">
-                        <path
-                          d="M16.7906 6.72187L11.7 5.93438L9.39377 1.09688C9.22502 0.759375 8.77502 0.759375 8.60627 1.09688L6.30002 5.9625L1.23752 6.72187C0.871891 6.77812 0.731266 7.25625 1.01252 7.50938L4.69689 11.3063L3.82502 16.6219C3.76877 16.9875 4.13439 17.2969 4.47189 17.0719L9.05627 14.5687L13.6125 17.0719C13.9219 17.2406 14.3156 16.9594 14.2313 16.6219L13.3594 11.3063L17.0438 7.50938C17.2688 7.25625 17.1563 6.77812 16.7906 6.72187Z"
-                          fill=""
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_375_9172">
-                          <rect width="18" height="18" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-
-                    <svg
-                      className="fill-gray-4"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g clipPath="url(#clip0_375_9172)">
-                        <path
-                          d="M16.7906 6.72187L11.7 5.93438L9.39377 1.09688C9.22502 0.759375 8.77502 0.759375 8.60627 1.09688L6.30002 5.9625L1.23752 6.72187C0.871891 6.77812 0.731266 7.25625 1.01252 7.50938L4.69689 11.3063L3.82502 16.6219C3.76877 16.9875 4.13439 17.2969 4.47189 17.0719L9.05627 14.5687L13.6125 17.0719C13.9219 17.2406 14.3156 16.9594 14.2313 16.6219L13.3594 11.3063L17.0438 7.50938C17.2688 7.25625 17.1563 6.77812 16.7906 6.72187Z"
-                          fill=""
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_375_9172">
-                          <rect width="18" height="18" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-
-                    <svg
-                      className="fill-gray-4"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <g clipPath="url(#clip0_375_9172)">
-                        <path
-                          d="M16.7906 6.72187L11.7 5.93438L9.39377 1.09688C9.22502 0.759375 8.77502 0.759375 8.60627 1.09688L6.30002 5.9625L1.23752 6.72187C0.871891 6.77812 0.731266 7.25625 1.01252 7.50938L4.69689 11.3063L3.82502 16.6219C3.76877 16.9875 4.13439 17.2969 4.47189 17.0719L9.05627 14.5687L13.6125 17.0719C13.9219 17.2406 14.3156 16.9594 14.2313 16.6219L13.3594 11.3063L17.0438 7.50938C17.2688 7.25625 17.1563 6.77812 16.7906 6.72187Z"
-                          fill=""
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_375_9172">
-                          <rect width="18" height="18" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
+                {/* Tags */}
+                {(product.gender || product.piece_type) && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {product.gender && (
+                      <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-2 py-0.5">
+                        {product.gender}
+                      </span>
+                    )}
+                    {product.piece_type && (
+                      <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-2 py-0.5">
+                        {product.piece_type}
+                      </span>
+                    )}
                   </div>
+                )}
 
-                  <span>
-                    <span className="font-medium text-dark"> 4.7 Rating </span>
-                    <span className="text-dark-2"> (5 reviews) </span>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g clipPath="url(#clip0_375_9221)">
-                      <path
-                        d="M10 0.5625C4.78125 0.5625 0.5625 4.78125 0.5625 10C0.5625 15.2188 4.78125 19.4688 10 19.4688C15.2188 19.4688 19.4688 15.2188 19.4688 10C19.4688 4.78125 15.2188 0.5625 10 0.5625ZM10 18.0625C5.5625 18.0625 1.96875 14.4375 1.96875 10C1.96875 5.5625 5.5625 1.96875 10 1.96875C14.4375 1.96875 18.0625 5.59375 18.0625 10.0312C18.0625 14.4375 14.4375 18.0625 10 18.0625Z"
-                        fill="#22AD5C"
-                      />
-                      <path
-                        d="M12.6875 7.09374L8.9688 10.7187L7.2813 9.06249C7.00005 8.78124 6.56255 8.81249 6.2813 9.06249C6.00005 9.34374 6.0313 9.78124 6.2813 10.0625L8.2813 12C8.4688 12.1875 8.7188 12.2812 8.9688 12.2812C9.2188 12.2812 9.4688 12.1875 9.6563 12L13.6875 8.12499C13.9688 7.84374 13.9688 7.40624 13.6875 7.12499C13.4063 6.84374 12.9688 6.84374 12.6875 7.09374Z"
-                        fill="#22AD5C"
-                      />
-                    </g>
-                    <defs>
-                      <clipPath id="clip0_375_9221">
-                        <rect width="20" height="20" fill="white" />
-                      </clipPath>
-                    </defs>
-                  </svg>
-
-                  <span className="font-medium text-dark"> In Stock </span>
-                </div>
-              </div>
-
-              <p>
-                Lorem Ipsum is simply dummy text of the printing and typesetting
-                industry. Lorem Ipsum has.
-              </p>
-
-              <div className="flex flex-wrap justify-between gap-5 mt-6 mb-7.5">
-                <div>
-                  <h4 className="font-semibold text-lg text-dark mb-3.5">
-                    Price
-                  </h4>
-
-                  <span className="flex items-center gap-2">
-                    <span className="font-semibold text-dark text-xl xl:text-heading-4">
-                      ${product.discountedPrice}
-                    </span>
-                    <span className="font-medium text-dark-4 text-lg xl:text-2xl line-through">
+                {/* Price */}
+                <div className="flex items-baseline gap-2.5 mb-5">
+                  {hasDiscount ? (
+                    <>
+                      <span className="text-2xl font-semibold text-[#0A0A0A]">
+                        ${product.discountedPrice}
+                      </span>
+                      <span className="text-base text-[#8A8A8A] line-through">
+                        ${product.price}
+                      </span>
+                      <span className="text-xs text-emerald-600 font-medium">
+                        Save {discountPct}%
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-2xl font-semibold text-[#0A0A0A]">
                       ${product.price}
                     </span>
-                  </span>
+                  )}
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-lg text-dark mb-3.5">
-                    Quantity
-                  </h4>
+                {/* Description (real, not Lorem Ipsum) */}
+                {product.description && (
+                  <p className="text-sm text-[#6B6B6B] font-light leading-relaxed mb-5 line-clamp-3">
+                    {product.description}
+                  </p>
+                )}
 
-                  <div className="flex items-center gap-3">
+                {/* Color swatches */}
+                {product.colors && product.colors.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-[#8A8A8A] mb-2">
+                      Colors
+                    </p>
+                    <div className="flex gap-2">
+                      {product.colors.slice(0, 6).map((c, i) => (
+                        <span
+                          key={i}
+                          className="w-6 h-6 rounded-full border border-[#E0DDD8]"
+                          style={{ backgroundColor: c }}
+                          title={c}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sizes */}
+                {product.size && product.size.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-[#8A8A8A] mb-2">
+                      Size
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.size.map((s, i) => (
+                        <span
+                          key={i}
+                          className="text-xs border border-[#E8E4DF] px-3 py-1.5 text-[#4A4A4A] hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer transition-colors"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Bottom: Quantity + Actions ─────────── */}
+              <div>
+                {/* Quantity */}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.15em] text-[#8A8A8A]">
+                    Qty
+                  </span>
+                  <div className="flex items-center border border-[#E8E4DF]">
                     <button
                       onClick={() => quantity > 1 && setQuantity(quantity - 1)}
-                      aria-label="button for remove product"
-                      className="flex items-center justify-center w-10 h-10 rounded-[5px] bg-gray-2 text-dark ease-out duration-200 hover:text-blue"
-                      disabled={quantity < 0 && true}
+                      className="w-9 h-9 flex items-center justify-center text-[#8A8A8A] hover:text-[#0A0A0A] transition-colors"
                     >
-                      <svg
-                        className="fill-current"
-                        width="16"
-                        height="2"
-                        viewBox="0 0 16 2"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M-8.548e-08 0.977778C-3.82707e-08 0.437766 0.437766 3.82707e-08 0.977778 8.548e-08L15.0222 1.31328e-06C15.5622 1.36049e-06 16 0.437767 16 0.977779C16 1.51779 15.5622 1.95556 15.0222 1.95556L0.977778 1.95556C0.437766 1.95556 -1.32689e-07 1.51779 -8.548e-08 0.977778Z"
-                          fill=""
-                        />
+                      <svg width="12" height="2" viewBox="0 0 12 2" fill="none">
+                        <path d="M0 1h12" stroke="currentColor" strokeWidth="1.5" />
                       </svg>
                     </button>
-
-                    <span
-                      className="flex items-center justify-center w-20 h-10 rounded-[5px] border border-gray-4 bg-white font-medium text-dark"
-                      x-text="quantity"
-                    >
+                    <span className="w-10 h-9 flex items-center justify-center text-sm font-medium text-[#0A0A0A] border-x border-[#E8E4DF]">
                       {quantity}
                     </span>
-
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      aria-label="button for add product"
-                      className="flex items-center justify-center w-10 h-10 rounded-[5px] bg-gray-2 text-dark ease-out duration-200 hover:text-blue"
+                      className="w-9 h-9 flex items-center justify-center text-[#8A8A8A] hover:text-[#0A0A0A] transition-colors"
                     >
-                      <svg
-                        className="fill-current"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M8.08889 0C8.6289 2.36047e-08 9.06667 0.437766 9.06667 0.977778L9.06667 15.0222C9.06667 15.5622 8.6289 16 8.08889 16C7.54888 16 7.11111 15.5622 7.11111 15.0222L7.11111 0.977778C7.11111 0.437766 7.54888 -2.36047e-08 8.08889 0Z"
-                          fill=""
-                        />
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M0 7.91111C4.72093e-08 7.3711 0.437766 6.93333 0.977778 6.93333L15.0222 6.93333C15.5622 6.93333 16 7.3711 16 7.91111C16 8.45112 15.5622 8.88889 15.0222 8.88889L0.977778 8.88889C0.437766 8.88889 -4.72093e-08 8.45112 0 7.91111Z"
-                          fill=""
-                        />
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M6 0v12M0 6h12" stroke="currentColor" strokeWidth="1.5" />
                       </svg>
                     </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  disabled={quantity === 0 && true}
-                  onClick={() => handleAddToCart()}
-                  className={`inline-flex font-medium text-white bg-blue py-3 px-7 rounded-md ease-out duration-200 hover:bg-blue-dark
-                  `}
-                >
-                  Add to Cart
-                </button>
-
-                <button
-                  className={`inline-flex items-center gap-2 font-medium text-white bg-dark py-3 px-6 rounded-md ease-out duration-200 hover:bg-opacity-95 `}
-                >
-                  <svg
-                    className="fill-current"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
+                {/* Action buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 py-3 text-sm font-medium tracking-wide text-white transition-all duration-200"
+                    style={{ background: addedToCart ? "#16a34a" : "#0A0A0A" }}
                   >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M4.68698 3.68688C3.30449 4.31882 2.29169 5.82191 2.29169 7.6143C2.29169 9.44546 3.04103 10.8569 4.11526 12.0665C5.00062 13.0635 6.07238 13.8897 7.11763 14.6956C7.36588 14.8869 7.61265 15.0772 7.85506 15.2683C8.29342 15.6139 8.68445 15.9172 9.06136 16.1374C9.43847 16.3578 9.74202 16.4584 10 16.4584C10.258 16.4584 10.5616 16.3578 10.9387 16.1374C11.3156 15.9172 11.7066 15.6139 12.145 15.2683C12.3874 15.0772 12.6342 14.8869 12.8824 14.6956C13.9277 13.8897 14.9994 13.0635 15.8848 12.0665C16.959 10.8569 17.7084 9.44546 17.7084 7.6143C17.7084 5.82191 16.6955 4.31882 15.3131 3.68688C13.97 3.07295 12.1653 3.23553 10.4503 5.01733C10.3325 5.13974 10.1699 5.20891 10 5.20891C9.83012 5.20891 9.66754 5.13974 9.54972 5.01733C7.83474 3.23553 6.03008 3.07295 4.68698 3.68688ZM10 3.71573C8.07331 1.99192 5.91582 1.75077 4.16732 2.55002C2.32061 3.39415 1.04169 5.35424 1.04169 7.6143C1.04169 9.83557 1.9671 11.5301 3.18062 12.8966C4.15241 13.9908 5.34187 14.9067 6.39237 15.7155C6.63051 15.8989 6.8615 16.0767 7.0812 16.2499C7.50807 16.5864 7.96631 16.9453 8.43071 17.2166C8.8949 17.4879 9.42469 17.7084 10 17.7084C10.5754 17.7084 11.1051 17.4879 11.5693 17.2166C12.0337 16.9453 12.492 16.5864 12.9188 16.2499C13.1385 16.0767 13.3695 15.8989 13.6077 15.7155C14.6582 14.9067 15.8476 13.9908 16.8194 12.8966C18.0329 11.5301 18.9584 9.83557 18.9584 7.6143C18.9584 5.35424 17.6794 3.39415 15.8327 2.55002C14.0842 1.75077 11.9267 1.99192 10 3.71573Z"
-                      fill=""
-                    />
-                  </svg>
-                  Add to Wishlist
+                    {addedToCart ? "✓ Added to Cart" : "Add to Cart"}
+                  </button>
+                  <button
+                    onClick={handleWishlist}
+                    aria-label="Wishlist"
+                    className="w-12 h-12 flex items-center justify-center border border-[#E8E4DF] hover:border-[#0A0A0A] transition-all duration-300"
+                    style={{ transform: wishlistAnimating ? "scale(1.15)" : "scale(1)" }}
+                  >
+                    {isInWishlist ? (
+                      <svg width="18" height="18" viewBox="0 0 16 16" fill="#ef4444"><path d="M8 13.4s-6.3-4-6.3-7.5C1.7 3.6 3.2 2 5 2c1 0 2.1.6 3 1.7C8.9 2.6 10 2 11 2c1.8 0 3.3 1.6 3.3 3.9C14.3 9.4 8 13.4 8 13.4z" /></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M3.74949 2.94946C2.6435 3.45502 1.83325 4.65749 1.83325 6.0914C1.83325 7.55633 2.43273 8.68549 3.29211 9.65318C4.0004 10.4507 4.85781 11.1118 5.694 11.7564C5.89261 11.9095 6.09002 12.0617 6.28395 12.2146C6.63464 12.491 6.94747 12.7337 7.24899 12.9099C7.55068 13.0862 7.79352 13.1667 7.99992 13.1667C8.20632 13.1667 8.44916 13.0862 8.75085 12.9099C9.05237 12.7337 9.3652 12.491 9.71589 12.2146C9.90982 12.0617 10.1072 11.9095 10.3058 11.7564C11.142 11.1118 11.9994 10.4507 12.7077 9.65318C13.5671 8.68549 14.1666 7.55633 14.1666 6.0914C14.1666 4.65749 13.3563 3.45502 12.2503 2.94946C11.1759 2.45832 9.73214 2.58839 8.36016 4.01382C8.2659 4.11175 8.13584 4.16709 7.99992 4.16709C7.864 4.16709 7.73393 4.11175 7.63967 4.01382C6.26769 2.58839 4.82396 2.45832 3.74949 2.94946Z" fill="#1a1a1a" /></svg>
+                    )}
+                  </button>
+                </div>
+
+                {/* View full page link */}
+                <button
+                  onClick={handleImageClick}
+                  className="w-full mt-3 py-2.5 text-xs tracking-[0.15em] uppercase text-[#8A8A8A] hover:text-[#0A0A0A] transition-colors border border-[#E8E4DF] hover:border-[#0A0A0A]"
+                >
+                  View Full Details
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

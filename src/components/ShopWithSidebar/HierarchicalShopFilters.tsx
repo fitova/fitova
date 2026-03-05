@@ -1,7 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useStyleHub } from "@/app/context/StyleHubContext";
-import { getCategoryHierarchy, type CategoryWithChildren } from "@/lib/queries/categories";
+import { getCategoryHierarchy, type CategoryWithChildren, type Category } from "@/lib/queries/categories";
+import { type ShopFilters } from "@/hooks/useShopFilters";
+import { Product } from "@/types/product";
 
 /* ── tiny helpers ──────────────────────────────────────────── */
 const ChevronIcon = ({ open }: { open: boolean }) => (
@@ -47,7 +49,7 @@ const FilterSection = ({
 );
 
 /** Chip pill button */
-const Chip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+const Chip = ({ label, active, onClick, count }: { label: string; active: boolean; onClick: () => void; count?: number }) => (
     <button
         onClick={onClick}
         className={`px-3.5 py-1.5 text-xs font-light tracking-wide border transition-all duration-200 ${active
@@ -56,6 +58,7 @@ const Chip = ({ label, active, onClick }: { label: string; active: boolean; onCl
             }`}
     >
         {label}
+        {count != null && <span className="ml-1.5 opacity-60">({count})</span>}
     </button>
 );
 
@@ -88,17 +91,50 @@ const ColorChip = ({
     </button>
 );
 
+/* ── piece_type → group mapping (same as MegaMenu) ────────── */
+const PIECE_TYPE_TO_GROUP: Record<string, string> = {
+    jacket: "clothing", "t-shirt": "clothing", tshirt: "clothing", shirt: "clothing",
+    hoodie: "clothing", sweater: "clothing", pants: "clothing", jeans: "clothing",
+    shorts: "clothing", coat: "clothing", blazer: "clothing", vest: "clothing",
+    dress: "clothing", skirt: "clothing", top: "clothing", blouse: "clothing",
+    polo: "clothing", cardigan: "clothing", tracksuit: "clothing", joggers: "clothing",
+
+    sneakers: "footwear", boots: "footwear", shoes: "footwear", sandals: "footwear",
+    slippers: "footwear", loafers: "footwear", heels: "footwear", flats: "footwear",
+    mules: "footwear",
+
+    bag: "accessories", hat: "accessories", cap: "accessories", scarf: "accessories",
+    belt: "accessories", watch: "accessories", sunglasses: "accessories", jewelry: "accessories",
+    wallet: "accessories", gloves: "accessories", tie: "accessories", socks: "accessories",
+    backpack: "accessories", bracelet: "accessories", necklace: "accessories",
+    earrings: "accessories", ring: "accessories",
+
+    perfume: "fragrances", cologne: "fragrances", fragrance: "fragrances",
+    "body-spray": "fragrances", "eau-de-toilette": "fragrances",
+    "eau-de-parfum": "fragrances",
+};
+
+const GROUP_ORDER = ["clothing", "footwear", "accessories", "fragrances"];
+const GROUP_LABELS: Record<string, string> = {
+    clothing: "Clothing",
+    footwear: "Footwear",
+    accessories: "Accessories",
+    fragrances: "Fragrances",
+};
+
 /**
- * Complete shop filter sidebar with:
- *  - Gender pills
- *  - Hierarchical Category accordion (from DB)
- *  - Style, Mood, Occasion, Season, Material, Brand chips (from StyleHubContext / DB)
- *  - Color circles (from StyleHubContext / DB)
+ * Connected shop filter sidebar.
+ * Receives `filters` + `setFilters` from useShopFilters via ShopWithSidebar.
+ * Receives `products` for computing count badges.
  */
 const HierarchicalShopFilters = ({
-    onFiltersChange,
+    filters,
+    setFilters,
+    products,
 }: {
-    onFiltersChange?: (f: ShopFilterState) => void;
+    filters: ShopFilters;
+    setFilters: React.Dispatch<React.SetStateAction<ShopFilters>>;
+    products: Product[];
 }) => {
     /* ── DB data ─────────────────────────────────────────────── */
     const { filterOptions } = useStyleHub();
@@ -110,17 +146,6 @@ const HierarchicalShopFilters = ({
             .then(setHierarchy)
             .finally(() => setCatLoading(false));
     }, []);
-
-    /* ── Local filter state ──────────────────────────────────── */
-    const [gender, setGender] = useState("all");
-    const [selectedCats, setSelectedCats] = useState<string[]>([]);
-    const [selectedStyle, setSelectedStyle] = useState<string[]>([]);
-    const [selectedMood, setSelectedMood] = useState<string[]>([]);
-    const [selectedOccasion, setSelectedOccasion] = useState<string[]>([]);
-    const [selectedSeason, setSelectedSeason] = useState<string[]>([]);
-    const [selectedMaterial, setSelectedMaterial] = useState<string[]>([]);
-    const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
-    const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
     /* ── Section open state ──────────────────────────────────── */
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -138,46 +163,134 @@ const HierarchicalShopFilters = ({
     const toggleSection = (key: string) =>
         setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
-    /* ── Helper to toggle array values ──────────────────────── */
-    const toggleArr = (
-        arr: string[],
-        val: string,
-        setter: React.Dispatch<React.SetStateAction<string[]>>
-    ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
-
-    /* ── Filter options grouped by category ─────────────────── */
+    /* ── Helpers ──────────────────────────────────────────────── */
     const opts = (cat: string) => filterOptions.filter((o) => o.category === cat);
 
-    /* ── Visible categories based on selected gender ─────────── */
-    const visibleCats = hierarchy.filter((parent) => {
-        if (gender === "all") return true;
-        const g = parent.gender ?? [];
-        return g.includes(gender) || g.includes("unisex") || parent.slug === gender;
-    });
+    /* ── Group categories by piece_type_group ─────────────────── */
+    const groupedCategories = useMemo(() => {
+        // Flatten all children from hierarchy
+        const allChildren = hierarchy.flatMap((parent) => parent.children);
+
+        const groups: Record<string, Category[]> = {};
+        for (const group of GROUP_ORDER) groups[group] = [];
+
+        for (const child of allChildren) {
+            const pt = child.piece_type ?? child.slug ?? "";
+            const group = PIECE_TYPE_TO_GROUP[pt.toLowerCase()] ?? "accessories";
+            if (groups[group]) groups[group].push(child);
+        }
+
+        // Also add parent categories that have no children (standalone categories)
+        for (const parent of hierarchy) {
+            if (parent.children.length === 0) {
+                const pt = parent.piece_type ?? parent.slug ?? "";
+                const group = PIECE_TYPE_TO_GROUP[pt.toLowerCase()] ?? "accessories";
+                if (groups[group]) groups[group].push(parent);
+            }
+        }
+
+        return groups;
+    }, [hierarchy]);
+
+    /* ── Product counts per category ─────────────────────────── */
+    const categoryCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            const catId = p.category_id ?? "";
+            if (catId) counts[catId] = (counts[catId] || 0) + 1;
+
+            // Also count by piece_type
+            const pt = p.piece_type ?? "";
+            if (pt) counts[pt] = (counts[pt] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    /* ── Group counts (how many products per group) ───────────── */
+    const groupCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            const pt = p.piece_type ?? "";
+            const group = PIECE_TYPE_TO_GROUP[pt.toLowerCase()] ?? "";
+            if (group) counts[group] = (counts[group] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    /* ── Update filter helpers ────────────────────────────────── */
+    const setGender = useCallback((g: string) => {
+        setFilters((prev) => ({ ...prev, gender: g === "all" ? "" : g }));
+    }, [setFilters]);
+
+    const setPieceTypeGroup = useCallback((group: string) => {
+        setFilters((prev) => ({
+            ...prev,
+            pieceTypeGroup: prev.pieceTypeGroup === group ? "" : group,
+        }));
+    }, [setFilters]);
+
+    const setCategory = useCallback((slug: string) => {
+        setFilters((prev) => ({
+            ...prev,
+            category: prev.category === slug ? "" : slug,
+        }));
+    }, [setFilters]);
+
+    const toggleColor = useCallback((color: string) => {
+        setFilters((prev) => ({
+            ...prev,
+            colors: prev.colors.includes(color)
+                ? prev.colors.filter((c) => c !== color)
+                : [...prev.colors, color],
+        }));
+    }, [setFilters]);
+
+    const setStyle = useCallback((style: string) => {
+        setFilters((prev) => ({ ...prev, style: prev.style === style ? "" : style }));
+    }, [setFilters]);
+
+    const setSeason = useCallback((season: string) => {
+        setFilters((prev) => ({ ...prev, season: prev.season === season ? "" : season }));
+    }, [setFilters]);
+
+    const setBrand = useCallback((brand: string) => {
+        setFilters((prev) => ({ ...prev, brand: prev.brand === brand ? "" : brand }));
+    }, [setFilters]);
+
+    const setMaterial = useCallback((material: string) => {
+        setFilters((prev) => ({ ...prev, material: prev.material === material ? "" : material }));
+    }, [setFilters]);
 
     /* ── Total active filter count ───────────────────────────── */
     const activeCount =
-        (gender !== "all" ? 1 : 0) +
-        selectedCats.length +
-        selectedStyle.length +
-        selectedMood.length +
-        selectedOccasion.length +
-        selectedSeason.length +
-        selectedMaterial.length +
-        selectedBrand.length +
-        selectedColors.length;
+        (filters.gender ? 1 : 0) +
+        (filters.category ? 1 : 0) +
+        (filters.pieceTypeGroup ? 1 : 0) +
+        (filters.style ? 1 : 0) +
+        (filters.season ? 1 : 0) +
+        (filters.brand ? 1 : 0) +
+        (filters.material ? 1 : 0) +
+        filters.colors.length;
 
-    const clearAll = () => {
-        setGender("all");
-        setSelectedCats([]);
-        setSelectedStyle([]);
-        setSelectedMood([]);
-        setSelectedOccasion([]);
-        setSelectedSeason([]);
-        setSelectedMaterial([]);
-        setSelectedBrand([]);
-        setSelectedColors([]);
-    };
+    const clearAll = useCallback(() => {
+        setFilters((prev) => ({
+            ...prev,
+            gender: "",
+            category: "",
+            pieceTypeGroup: "",
+            style: "",
+            season: "",
+            brand: "",
+            material: "",
+            colors: [],
+            search: "",
+        }));
+    }, [setFilters]);
+
+    /* ── Hide Fragrances for Kids ─────────────────────────────── */
+    const visibleGroups = filters.gender === "kids"
+        ? GROUP_ORDER.filter((g) => g !== "fragrances")
+        : GROUP_ORDER;
 
     /* ────────────────────────────── render ───────────────────── */
     return (
@@ -207,83 +320,94 @@ const HierarchicalShopFilters = ({
                 title="Gender"
                 open={openSections.gender}
                 onToggle={() => toggleSection("gender")}
-                badge={gender !== "all" ? 1 : 0}
+                badge={filters.gender ? 1 : 0}
             >
                 <div className="flex flex-wrap gap-2 pt-2">
                     {["All", "Men", "Women", "Kids"].map((g) => (
                         <Chip
                             key={g}
                             label={g}
-                            active={gender === g.toLowerCase()}
+                            active={g === "All" ? !filters.gender : filters.gender === g.toLowerCase()}
                             onClick={() => setGender(g.toLowerCase())}
                         />
                     ))}
                 </div>
             </FilterSection>
 
-            {/* ── 2. CATEGORY (hierarchical from DB) ───────────── */}
+            {/* ── 2. CATEGORY (grouped by piece_type_group) ──────── */}
             <FilterSection
                 title="Category"
                 open={openSections.category}
                 onToggle={() => toggleSection("category")}
-                badge={selectedCats.length}
+                badge={(filters.pieceTypeGroup ? 1 : 0) + (filters.category ? 1 : 0)}
             >
                 {catLoading ? (
                     <div className="space-y-2 pt-2">
                         {[1, 2, 3].map((i) => <div key={i} className="h-3 bg-[#E8E4DF] rounded animate-pulse" />)}
                     </div>
                 ) : (
-                    <div className="space-y-4 pt-2">
-                        {visibleCats.map((parent) => (
-                            <div key={parent.id}>
-                                <p className="text-[10px] font-light tracking-[0.2em] uppercase text-[#8A8A8A] mb-2">
-                                    {parent.name}
-                                </p>
-                                <div className="space-y-2">
-                                    {parent.children.map((child) => {
-                                        const sel = selectedCats.includes(child.slug);
-                                        return (
-                                            <button
-                                                key={child.id}
-                                                onClick={() => toggleArr(selectedCats, child.slug, setSelectedCats)}
-                                                className="group w-full flex items-center gap-2.5 text-left"
-                                            >
-                                                <div className={`flex-shrink-0 flex items-center justify-center w-4 h-4 border transition-colors ${sel ? "border-[#0A0A0A] bg-[#0A0A0A]" : "border-[#E8E4DF] group-hover:border-[#0A0A0A]"}`}>
-                                                    {sel && (
-                                                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                                                            <path d="M8.33317 2.5L3.74984 7.08333L1.6665 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                        </svg>
+                    <div className="space-y-3 pt-2">
+                        {visibleGroups.map((group) => {
+                            const cats = groupedCategories[group] ?? [];
+                            const isActiveGroup = filters.pieceTypeGroup === group;
+                            const count = groupCounts[group] ?? 0;
+
+                            return (
+                                <div key={group}>
+                                    {/* Group header — clickable to filter by piece_type_group */}
+                                    <button
+                                        onClick={() => setPieceTypeGroup(group)}
+                                        className={`w-full flex items-center justify-between mb-2 group/header ${isActiveGroup ? "text-[#0A0A0A]" : "text-[#8A8A8A] hover:text-[#0A0A0A]"} transition-colors`}
+                                    >
+                                        <span className={`text-[10px] font-medium tracking-[0.2em] uppercase ${isActiveGroup ? "text-[#0A0A0A]" : ""}`}>
+                                            {GROUP_LABELS[group]}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                            {count > 0 && (
+                                                <span className="text-[10px] font-light text-[#8A8A8A]">({count})</span>
+                                            )}
+                                            {isActiveGroup && (
+                                                <span className="w-4 h-4 bg-[#0A0A0A] text-white text-[9px] flex items-center justify-center rounded-full">✓</span>
+                                            )}
+                                        </span>
+                                    </button>
+
+                                    {/* Subcategories */}
+                                    <div className="space-y-1.5 pl-2 border-l border-[#E8E4DF] ml-1">
+                                        {cats.map((child) => {
+                                            const sel = filters.category === child.slug;
+                                            const childCount = categoryCounts[child.id] ?? categoryCounts[child.slug] ?? 0;
+                                            return (
+                                                <button
+                                                    key={child.id}
+                                                    onClick={() => setCategory(child.slug)}
+                                                    className="group w-full flex items-center justify-between gap-2 text-left py-0.5"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`flex-shrink-0 flex items-center justify-center w-3.5 h-3.5 border transition-colors ${sel ? "border-[#0A0A0A] bg-[#0A0A0A]" : "border-[#E8E4DF] group-hover:border-[#0A0A0A]"}`}>
+                                                            {sel && (
+                                                                <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                                                                    <path d="M8.33317 2.5L3.74984 7.08333L1.6665 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-[13px] capitalize transition-colors ${sel ? "text-[#0A0A0A] font-medium" : "text-[#4A4A4A] group-hover:text-[#0A0A0A]"}`}>
+                                                            {child.name}
+                                                        </span>
+                                                    </div>
+                                                    {childCount > 0 && (
+                                                        <span className="text-[10px] text-[#8A8A8A] font-light">{childCount}</span>
                                                     )}
-                                                </div>
-                                                <span className={`text-sm capitalize transition-colors ${sel ? "text-[#0A0A0A] font-medium" : "text-[#4A4A4A] group-hover:text-[#0A0A0A]"}`}>
-                                                    {child.name}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                    {parent.children.length === 0 && (
-                                        <button
-                                            onClick={() => toggleArr(selectedCats, parent.slug, setSelectedCats)}
-                                            className="group w-full flex items-center gap-2.5 text-left"
-                                        >
-                                            <div className={`flex-shrink-0 flex items-center justify-center w-4 h-4 border transition-colors ${selectedCats.includes(parent.slug) ? "border-[#0A0A0A] bg-[#0A0A0A]" : "border-[#E8E4DF] group-hover:border-[#0A0A0A]"}`}>
-                                                {selectedCats.includes(parent.slug) && (
-                                                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                                                        <path d="M8.33317 2.5L3.74984 7.08333L1.6665 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
-                                                )}
-                                            </div>
-                                            <span className="text-sm capitalize text-[#4A4A4A] group-hover:text-[#0A0A0A] transition-colors">
-                                                {parent.name}
-                                            </span>
-                                        </button>
-                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                        {cats.length === 0 && (
+                                            <p className="text-[11px] text-[#B5B5B5] font-light italic">No subcategories</p>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {visibleCats.length === 0 && (
-                            <p className="text-sm text-[#8A8A8A] font-light">No categories found</p>
-                        )}
+                            );
+                        })}
                     </div>
                 )}
             </FilterSection>
@@ -294,133 +418,91 @@ const HierarchicalShopFilters = ({
                     title="Style"
                     open={openSections.style}
                     onToggle={() => toggleSection("style")}
-                    badge={selectedStyle.length}
+                    badge={filters.style ? 1 : 0}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("style").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={selectedStyle.includes(o.value)}
-                                onClick={() => toggleArr(selectedStyle, o.value, setSelectedStyle)}
+                                active={filters.style === o.value}
+                                onClick={() => setStyle(o.value)}
                             />
                         ))}
                     </div>
                 </FilterSection>
             )}
 
-            {/* ── 4. MOOD ──────────────────────────────────────── */}
-            {opts("mood").length > 0 && (
-                <FilterSection
-                    title="Mood"
-                    open={openSections.mood}
-                    onToggle={() => toggleSection("mood")}
-                    badge={selectedMood.length}
-                >
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        {opts("mood").map((o) => (
-                            <Chip
-                                key={o.id}
-                                label={o.label}
-                                active={selectedMood.includes(o.value)}
-                                onClick={() => toggleArr(selectedMood, o.value, setSelectedMood)}
-                            />
-                        ))}
-                    </div>
-                </FilterSection>
-            )}
-
-            {/* ── 5. OCCASION ──────────────────────────────────── */}
-            {opts("occasion").length > 0 && (
-                <FilterSection
-                    title="Occasion"
-                    open={openSections.occasion}
-                    onToggle={() => toggleSection("occasion")}
-                    badge={selectedOccasion.length}
-                >
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        {opts("occasion").map((o) => (
-                            <Chip
-                                key={o.id}
-                                label={o.label}
-                                active={selectedOccasion.includes(o.value)}
-                                onClick={() => toggleArr(selectedOccasion, o.value, setSelectedOccasion)}
-                            />
-                        ))}
-                    </div>
-                </FilterSection>
-            )}
-
-            {/* ── 6. SEASON ────────────────────────────────────── */}
+            {/* ── 4. SEASON ────────────────────────────────────── */}
             {opts("season").length > 0 && (
                 <FilterSection
                     title="Season"
                     open={openSections.season}
                     onToggle={() => toggleSection("season")}
-                    badge={selectedSeason.length}
+                    badge={filters.season ? 1 : 0}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("season").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={selectedSeason.includes(o.value)}
-                                onClick={() => toggleArr(selectedSeason, o.value, setSelectedSeason)}
+                                active={filters.season === o.value}
+                                onClick={() => setSeason(o.value)}
                             />
                         ))}
                     </div>
                 </FilterSection>
             )}
 
-            {/* ── 7. MATERIAL ──────────────────────────────────── */}
+            {/* ── 5. MATERIAL ──────────────────────────────────── */}
             {opts("material").length > 0 && (
                 <FilterSection
                     title="Material"
                     open={openSections.material}
                     onToggle={() => toggleSection("material")}
-                    badge={selectedMaterial.length}
+                    badge={filters.material ? 1 : 0}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("material").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={selectedMaterial.includes(o.value)}
-                                onClick={() => toggleArr(selectedMaterial, o.value, setSelectedMaterial)}
+                                active={filters.material === o.value}
+                                onClick={() => setMaterial(o.value)}
                             />
                         ))}
                     </div>
                 </FilterSection>
             )}
 
-            {/* ── 8. BRAND ─────────────────────────────────────── */}
+            {/* ── 6. BRAND ─────────────────────────────────────── */}
             {opts("brand").length > 0 && (
                 <FilterSection
                     title="Brand"
                     open={openSections.brand}
                     onToggle={() => toggleSection("brand")}
-                    badge={selectedBrand.length}
+                    badge={filters.brand ? 1 : 0}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("brand").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={selectedBrand.includes(o.value)}
-                                onClick={() => toggleArr(selectedBrand, o.value, setSelectedBrand)}
+                                active={filters.brand === o.value}
+                                onClick={() => setBrand(o.value)}
                             />
                         ))}
                     </div>
                 </FilterSection>
             )}
 
-            {/* ── 9. COLOR ─────────────────────────────────────── */}
+            {/* ── 7. COLOR ─────────────────────────────────────── */}
             {opts("color").length > 0 && (
                 <FilterSection
                     title="Color"
                     open={openSections.color}
                     onToggle={() => toggleSection("color")}
-                    badge={selectedColors.length}
+                    badge={filters.colors.length}
                 >
                     <div className="flex flex-wrap gap-3 pt-2">
                         {opts("color").map((o) => (
@@ -428,8 +510,8 @@ const HierarchicalShopFilters = ({
                                 key={o.id}
                                 label={o.label}
                                 value={o.value}
-                                active={selectedColors.includes(o.value)}
-                                onClick={() => toggleArr(selectedColors, o.value, setSelectedColors)}
+                                active={filters.colors.includes(o.value)}
+                                onClick={() => toggleColor(o.value)}
                             />
                         ))}
                     </div>
@@ -437,19 +519,6 @@ const HierarchicalShopFilters = ({
             )}
         </div>
     );
-};
-
-// Export the filter state type for external use
-export type ShopFilterState = {
-    gender: string;
-    categories: string[];
-    style: string[];
-    mood: string[];
-    occasion: string[];
-    season: string[];
-    material: string[];
-    brand: string[];
-    colors: string[];
 };
 
 export default HierarchicalShopFilters;

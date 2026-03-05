@@ -8,7 +8,7 @@ import ProductGridCard from "../Shop/ProductGridCard";
 import ProductFullWidthCard from "../Shop/ProductFullWidthCard";
 
 const ShopWithSidebar = () => {
-  const { productStyle, setProductStyle, products, loading, sortOptions: options } = useShopFilters();
+  const { productStyle, setProductStyle, products, loading, sortOptions: options, filters, setFilters } = useShopFilters();
   const [productSidebar, setProductSidebar] = useState(false);
   const [sort, setSort] = useState("default");
 
@@ -133,11 +133,19 @@ const ShopWithSidebar = () => {
               </div>
 
               {/* Filters */}
-              <HierarchicalShopFilters />
+              <HierarchicalShopFilters
+                filters={filters}
+                setFilters={setFilters}
+                products={products as any}
+              />
 
               {/* Price range */}
               <div className="mt-0 border-t-0">
-                <PriceDropdown />
+                <PriceDropdown
+                  minPrice={filters.minPrice}
+                  maxPrice={filters.maxPrice}
+                  onPriceChange={(min, max) => setFilters((prev) => ({ ...prev, minPrice: min, maxPrice: max }))}
+                />
               </div>
             </aside>
 

@@ -19,6 +19,13 @@ import { AuthProvider } from "../context/AuthContext";
 
 import ScrollToTop from "@/components/Common/ScrollToTop";
 import PreLoader from "@/components/Common/PreLoader";
+import { useAuthRehydrate } from "@/hooks/useAuthRehydrate";
+
+/** Invisible component that rehydrates wishlist/cart from DB on login */
+function AuthRehydrator() {
+  useAuthRehydrate();
+  return null;
+}
 
 export default function RootLayout({
   children,
@@ -41,6 +48,7 @@ export default function RootLayout({
             <ReactQueryProvider>
               <AuthProvider>
                 <ReduxProvider>
+                  <AuthRehydrator />
                   <StyleHubProvider>
                     <CartModalProvider>
                       <ModalProvider>
