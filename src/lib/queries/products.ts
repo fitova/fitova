@@ -35,6 +35,17 @@ export type Product = {
     updated_at: string;
 };
 
+// Piece-type group → individual piece_type values (mirrors MegaMenu groupChildren)
+const PIECE_TYPE_GROUPS: Record<string, string[]> = {
+    clothing: ["tshirt", "shirt", "hoodie", "jacket", "pants", "jeans", "shorts", "dress", "top",
+        "skirt", "outerwear", "blouse", "bottom", "cardigan", "sweater", "coat", "vest"],
+    footwear: ["sneakers", "boots", "sandals", "heels", "shoes", "loafers", "flats", "slippers"],
+    accessories: ["watch", "belt", "cap", "bag", "sunglasses", "wallet", "jewelry", "scarf",
+        "socks", "hat", "bracelet", "necklace", "ring", "earring", "backpack", "handbag",
+        "clutch", "tote", "accessories"],
+    fragrances: ["perfume", "fragrance"],
+};
+
 // Fetch all products (optional filtering)
 export async function getProducts({
     categoryId,
@@ -53,6 +64,7 @@ export async function getProducts({
     maxPrice,
     sortBy,
     search,
+    pieceTypeGroup,
 }: {
     categoryId?: string;
     category?: string;       // slug-based filter (joins categories table)
@@ -70,9 +82,10 @@ export async function getProducts({
     maxPrice?: number;
     sortBy?: string;
     search?: string;
+    pieceTypeGroup?: string; // 'clothing' | 'footwear' | 'accessories' | 'fragrances'
 } = {}) {
     const supabase = createClient();
-    let query = supabase.from("products").select("*, product_images(url, type, sort_order)");
+    let query = supabase.from("products").select("*, product_images(url, type, sort_order)").eq("is_hidden", false);
 
     if (categoryId) query = query.eq("category_id", categoryId);
 
@@ -89,6 +102,14 @@ export async function getProducts({
 
     // Filter by gender
     if (gender) query = query.eq("gender", gender);
+
+    // Filter by piece_type group (clothing / footwear / accessories / fragrances)
+    if (pieceTypeGroup) {
+        const pieceTypes = PIECE_TYPE_GROUPS[pieceTypeGroup.toLowerCase()];
+        if (pieceTypes && pieceTypes.length > 0) {
+            query = query.in("piece_type", pieceTypes);
+        }
+    }
 
     if (isFeatured !== undefined) query = query.eq("is_featured", isFeatured);
     if (isDeal !== undefined) query = query.eq("is_deal", isDeal);

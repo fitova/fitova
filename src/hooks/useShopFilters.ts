@@ -1,7 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
+
+// ─── Module-level cache (survives re-renders, cleared after 5 min) ────────────
+type CacheEntry = { products: Product[]; timestamp: number };
+const productCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(filters: object, sortBy: string): string {
+    return JSON.stringify({ ...filters, sortBy });
+}
+
 
 export interface ShopFilters {
     category: string;
@@ -15,6 +25,7 @@ export interface ShopFilters {
     brand: string;
     material: string;
     search: string;
+    pieceTypeGroup: string; // clothing | footwear | accessories | fragrances
 }
 
 const defaultFilters: ShopFilters = {
@@ -29,6 +40,7 @@ const defaultFilters: ShopFilters = {
     brand: "",
     material: "",
     search: "",
+    pieceTypeGroup: "",
 };
 
 function readInitialFilters(searchParams: URLSearchParams | null): ShopFilters {
@@ -41,10 +53,11 @@ function readInitialFilters(searchParams: URLSearchParams | null): ShopFilters {
         const brand = searchParams.get("brand") ?? "";
         const material = searchParams.get("material") ?? "";
         const search = searchParams.get("search") ?? "";
+        const pieceTypeGroup = searchParams.get("piece_type_group") ?? "";
         const colors = searchParams.getAll("color");
 
-        if (gender || category || style || size || brand || material || search || colors.length > 0) {
-            return { ...defaultFilters, gender, category, style, size, brand, material, search, colors };
+        if (gender || category || style || size || brand || material || search || colors.length > 0 || pieceTypeGroup) {
+            return { ...defaultFilters, gender, category, style, size, brand, material, search, colors, pieceTypeGroup };
         }
     }
 
@@ -79,9 +92,20 @@ export function useShopFilters() {
     }, [searchParams]);
 
     useEffect(() => {
+        const cacheKey = getCacheKey(filters, sortBy);
+        const cached = productCache.get(cacheKey);
+        const now = Date.now();
+        const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
+
+        // Immediately restore cached products (avoids blank flash on back-nav)
+        if (cached) {
+            setProducts(cached.products);
+            if (isFresh) { setLoading(false); return; } // still fresh — skip refetch
+        }
+
         async function load() {
             try {
-                setLoading(true);
+                if (!cached) setLoading(true); // only show spinner on first load
                 const data = await getProducts({
                     gender: filters.gender || undefined,
                     category: filters.category || undefined,
@@ -95,8 +119,11 @@ export function useShopFilters() {
                     maxPrice: filters.maxPrice < 1000 ? filters.maxPrice : undefined,
                     sortBy,
                     search: filters.search || undefined,
+                    pieceTypeGroup: filters.pieceTypeGroup || undefined,
                 });
                 const mapped = data.map((p: any) => p.imgs ? p : mapProductFromDB(p));
+                // Write to cache
+                productCache.set(cacheKey, { products: mapped, timestamp: Date.now() });
                 setProducts(mapped);
             } catch (err) {
                 console.error("Failed to fetch products:", err);

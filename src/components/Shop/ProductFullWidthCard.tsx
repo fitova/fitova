@@ -76,7 +76,7 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
     return (
         <div className="group flex gap-5 border-b border-[#E8E4DF] py-5 last:border-b-0 hover:bg-[#FAF9F7] transition-colors duration-200 rounded-lg px-3 cursor-pointer">
             {/* Image */}
-            <Link href={`/shop-details/${item.slug ?? item.id}`} className="relative flex-shrink-0 w-36 sm:w-44 rounded-lg overflow-hidden bg-[#F6F5F2]" style={{ aspectRatio: "3/4" }}>
+            <Link href={`/products/${item.slug ?? item.id}`} className="relative flex-shrink-0 w-36 sm:w-44 rounded-lg overflow-hidden bg-[#F6F5F2]" style={{ aspectRatio: "3/4" }}>
                 <Image src={thumb} alt={item.title} fill className="object-cover transition-opacity duration-300 ease-out group-hover:opacity-0" sizes="176px" loading="lazy" />
                 <Image src={hover} alt={item.title} fill className="object-cover absolute inset-0 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" sizes="176px" loading="lazy" />
                 {discountPct > 0 && (
@@ -94,7 +94,7 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
                             {item.brand && (
                                 <p className="text-[10px] uppercase tracking-widest text-[#8A8A8A] font-light mb-0.5">{item.brand}</p>
                             )}
-                            <Link href={`/shop-details/${item.slug ?? item.id}`}>
+                            <Link href={`/products/${item.slug ?? item.id}`}>
                                 <h3 className="font-medium text-dark text-sm sm:text-base hover:opacity-60 transition-opacity truncate">{item.title}</h3>
                             </Link>
                         </div>
@@ -113,11 +113,20 @@ const ProductFullWidthCard = ({ item }: { item: Product }) => {
                         </button>
                     </div>
 
-                    {/* Category label (piece type) */}
-                    {item.piece_type && (
-                        <span className="inline-block text-[10px] uppercase tracking-widest text-[#8A8A8A] border border-[#E8E4DF] px-2 py-0.5 rounded mb-2">
-                            {item.piece_type}
-                        </span>
+                    {/* Category / gender tags */}
+                    {(item.gender || item.piece_type) && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                            {item.gender && (
+                                <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                    {item.gender}
+                                </span>
+                            )}
+                            {item.piece_type && (
+                                <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                    {item.piece_type}
+                                </span>
+                            )}
+                        </div>
                     )}
 
                     {/* Tags */}

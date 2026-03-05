@@ -115,7 +115,7 @@ const ProductGridCard = ({ item }: { item: Product }) => {
 
             {/* ── Text info ── */}
             <div>
-                <Link href={`/shop-details/${item.slug ?? item.id}`} className="block">
+                <Link href={`/products/${item.slug ?? item.id}`} className="block">
                     <p className="text-[11px] text-[#8A8A8A] font-light uppercase tracking-wider mb-1">
                         {item.brand ?? ""}
                     </p>
@@ -123,7 +123,7 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                         {item.title}
                     </h3>
                 </Link>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                     {hasDiscount ? (
                         <>
                             <span className="text-sm font-semibold text-dark">${item.discountedPrice}</span>
@@ -133,6 +133,26 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                         <span className="text-sm font-semibold text-dark">${item.price}</span>
                     )}
                 </div>
+                {/* Metadata tags: gender / piece_type / main color */}
+                {(item.gender || item.piece_type || (item.colors && item.colors.length > 0)) && (
+                    <div className="flex flex-wrap gap-1">
+                        {item.gender && (
+                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                {item.gender}
+                            </span>
+                        )}
+                        {item.piece_type && (
+                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                {item.piece_type}
+                            </span>
+                        )}
+                        {item.colors && item.colors[0] && (
+                            <span className="text-[9px] font-medium tracking-[0.18em] uppercase text-[#8A8A8A] border border-[#E8E4DF] px-1.5 py-0.5">
+                                {item.colors[0]}
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

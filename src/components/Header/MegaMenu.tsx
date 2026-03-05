@@ -7,6 +7,7 @@ import { CategoryWithChildren } from "@/lib/queries/categories";
 interface MegaMenuProps {
     categories: CategoryWithChildren[];
     stickyMenu?: boolean;
+    isTransparent?: boolean;
 }
 
 // ─── Static fallback (shown when DB is empty / loading) ──────────────────────
@@ -107,6 +108,14 @@ const PIECE_ACCESSORIES = new Set([
 
 type AnyChild = { id: string | number; name: string; slug?: string | null; piece_type?: string | null };
 
+// Map column label → URL query value for piece_type_group
+const GROUP_TO_SLUG: Record<string, string> = {
+    "Clothing": "clothing",
+    "Footwear": "footwear",
+    "Accessories": "accessories",
+    "Fragrances": "fragrances",
+};
+
 // Infer piece_type from slug when piece_type is null
 // e.g. "men-jackets" → "jacket", "women-shoes" → "shoes"
 const SLUG_TO_TYPE: Record<string, string> = {
@@ -183,20 +192,40 @@ function groupChildren(children: AnyChild[]) {
 
 
 // ─── Inline auto-slider ───────────────────────────────────────────────────────
-const NavSlider = ({ images, alt }: { images: string[]; alt: string }) => {
+type SliderImage = { src: string; group?: string | null };
+
+const NavSlider = ({
+    images,
+    alt,
+    hoveredGroup,
+}: {
+    images: SliderImage[];
+    alt: string;
+    hoveredGroup: string | null;
+}) => {
     const [current, setCurrent] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Filter images: if hoveredGroup set and some images match, show only those; else show all
+    const visibleImages: SliderImage[] = (() => {
+        if (!hoveredGroup) return images;
+        const filtered = images.filter(img => img.group === hoveredGroup);
+        return filtered.length > 0 ? filtered : images;
+    })();
+
     const start = useCallback(() => {
-        timerRef.current = setInterval(() => setCurrent(p => (p + 1) % images.length), 3500);
-    }, [images.length]);
+        timerRef.current = setInterval(() => setCurrent(p => (p + 1) % visibleImages.length), 3500);
+    }, [visibleImages.length]);
 
+    // Reset to first image whenever visible set changes
     useEffect(() => {
-        if (images.length <= 1) return;
-        start();
+        setCurrent(0);
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (visibleImages.length > 1) start();
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, [images.length, start]);
+    }, [visibleImages.length, start, hoveredGroup]);
 
-    if (!images.length) return (
+    if (!visibleImages.length) return (
         <div className="w-full rounded-sm bg-[#F0EDE8] flex items-center justify-center" style={{ aspectRatio: "3/4" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" opacity="0.15">
                 <rect x="3" y="3" width="18" height="18" rx="2" stroke="#000" strokeWidth="1.5" />
@@ -209,26 +238,60 @@ const NavSlider = ({ images, alt }: { images: string[]; alt: string }) => {
         <div className="relative overflow-hidden rounded-sm" style={{ aspectRatio: "3/4" }}
             onMouseEnter={() => { if (timerRef.current) clearInterval(timerRef.current); }}
             onMouseLeave={start}>
-            {images.map((src, i) => (
+            {visibleImages.map((img, i) => (
                 <div key={i} className="absolute inset-0 transition-opacity duration-700"
                     style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}>
-                    <Image src={src} alt={`${alt} ${i + 1}`} fill className="object-cover" sizes="160px" loading="lazy" />
+                    <Image src={img.src} alt={`${alt} ${i + 1}`} fill className="object-cover" sizes="160px" loading="lazy" />
                 </div>
             ))}
+            {/* Group label overlay */}
+            {hoveredGroup && (
+                <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-black/60 to-transparent px-2 py-2">
+                    <p className="text-[8px] font-medium tracking-[0.2em] uppercase text-white/90">{hoveredGroup}</p>
+                </div>
+            )}
         </div>
     );
 };
 
 // ─── Category column ──────────────────────────────────────────────────────────
 const CategoryColumn = ({
-    label, items, genderSlug, onClose
+    label, items, genderSlug, onClose, onGroupHover
 }: {
-    label: string; items: AnyChild[]; genderSlug: string; onClose: () => void;
+    label: string;
+    items: AnyChild[];
+    genderSlug: string;
+    onClose: () => void;
+    onGroupHover: (group: string | null) => void;
 }) => {
     if (!items.length) return null;
+    const groupSlug = GROUP_TO_SLUG[label];
+    const groupHref = groupSlug ? `/outfits?gender=${genderSlug}&piece_type_group=${groupSlug}` : undefined;
+
     return (
-        <div className="min-w-0">
-            <p className="text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A]">{label}</p>
+        <div
+            className="min-w-0"
+            onMouseEnter={() => onGroupHover(groupSlug ?? null)}
+            onMouseLeave={() => onGroupHover(null)}
+        >
+            {/* Group header — clickable link if mapping exists */}
+            {groupHref ? (
+                <Link
+                    href={groupHref}
+                    onClick={onClose}
+                    className="group/lbl inline-flex items-center gap-1 text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A] hover:text-dark transition-colors duration-200 cursor-pointer"
+                >
+                    {label}
+                    <svg
+                        width="7" height="7" viewBox="0 0 24 24" fill="none"
+                        className="opacity-0 group-hover/lbl:opacity-100 transition-opacity duration-200 shrink-0"
+                    >
+                        <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </Link>
+            ) : (
+                <p className="text-[9px] font-medium tracking-[0.28em] uppercase mb-2.5 text-[#8A8A8A]">{label}</p>
+            )}
             <ul className="flex flex-col gap-1.5">
                 {items.map(sub => (
                     <li key={sub.id}>
@@ -247,8 +310,9 @@ const CategoryColumn = ({
 };
 
 // ─── Main MegaMenu ────────────────────────────────────────────────────────────
-const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
+const MegaMenu = ({ categories, stickyMenu, isTransparent = false }: MegaMenuProps) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const open = (i: number) => {
@@ -256,9 +320,9 @@ const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
         setActiveIndex(i);
     };
     const close = () => {
-        closeTimer.current = setTimeout(() => setActiveIndex(null), 200);
+        closeTimer.current = setTimeout(() => { setActiveIndex(null); setHoveredGroup(null); }, 200);
     };
-    const closeNow = () => setActiveIndex(null);
+    const closeNow = () => { setActiveIndex(null); setHoveredGroup(null); };
     useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
 
     const source: (CategoryWithChildren | StaticCat)[] =
@@ -271,15 +335,18 @@ const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
                 const { clothing, footwear, perfumes, accessories } = groupChildren(cat.children as AnyChild[]);
                 const genderRaw = Array.isArray(cat.gender) ? cat.gender[0] : (cat.gender as string | null);
                 const genderSlug = genderRaw ?? cat.slug ?? "";
-                const sliderImages: string[] = (cat as CategoryWithChildren).image_url
-                    ? [(cat as CategoryWithChildren).image_url!] : [];
 
-                // Determine columns to show (skip empty)
+                // Build slider images — include piece_type_group tag if available
+                const catTyped = cat as CategoryWithChildren & { image_url?: string | null };
+                const sliderImages: SliderImage[] = catTyped.image_url ? [{ src: catTyped.image_url }] : [];
+
+                // Determine columns to show (skip empty; Kids never shows Fragrances)
+                const isKids = genderSlug === "kids";
                 const cols = [
                     { label: "Clothing", items: clothing },
                     { label: "Footwear", items: footwear },
                     { label: "Accessories", items: accessories },
-                    { label: "Fragrances", items: perfumes },
+                    ...(!isKids ? [{ label: "Fragrances", items: perfumes }] : []),
                 ].filter(c => c.items.length > 0);
 
                 return (
@@ -293,7 +360,7 @@ const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
                         <button
                             aria-haspopup="true"
                             aria-expanded={isOpen}
-                            className={`flex items-center gap-1 text-custom-sm font-light tracking-wide text-dark hover:text-dark-2 ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
+                            className={`flex items-center gap-1 text-custom-sm font-light tracking-wide transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
                         >
                             {cat.name}
                             <svg width="10" height="6" viewBox="0 0 10 6" fill="none"
@@ -337,13 +404,14 @@ const MegaMenu = ({ categories, stickyMenu }: MegaMenuProps) => {
                                             items={col.items}
                                             genderSlug={genderSlug}
                                             onClose={closeNow}
+                                            onGroupHover={setHoveredGroup}
                                         />
                                     ))}
                                 </div>
 
                                 {/* Slider (xl only) */}
                                 <div className="hidden xl:block w-[140px] flex-shrink-0">
-                                    <NavSlider images={sliderImages} alt={cat.name} />
+                                    <NavSlider images={sliderImages} alt={cat.name} hoveredGroup={isOpen ? hoveredGroup : null} />
                                 </div>
                             </div>
                         </div>

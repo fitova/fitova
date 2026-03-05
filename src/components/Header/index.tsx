@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import CustomSelect from "./CustomSelect";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
@@ -13,15 +14,21 @@ import { useStyleHub } from "@/app/context/StyleHubContext";
 import Image from "next/image";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { getCategoryHierarchy, CategoryWithChildren } from "@/lib/queries/categories";
+import GlobalSearchDropdown from "./GlobalSearchDropdown";
 
 const Header = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [stickyMenu, setStickyMenu] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryWithChildren[]>([]);
   const { openCartModal } = useCartModalContext();
   const { openStyleHub } = useStyleHub();
   const { user } = useCurrentUser();
+  const pathname = usePathname();
+
+  // Transparent navbar only on homepage when scrolled to top
+  const isHomepage = pathname === "/";
+  const isTransparent = isHomepage && isAtTop;
 
   const product = useAppSelector((state) => state.cartReducer.items);
   const totalPrice = useSelector(selectTotalPrice);
@@ -30,17 +37,20 @@ const Header = () => {
     openCartModal();
   };
 
-  // Sticky menu
+  // Sticky menu + transparent-to-solid transition
   const handleStickyMenu = () => {
     if (window.scrollY >= 80) {
       setStickyMenu(true);
+      setIsAtTop(false);
     } else {
       setStickyMenu(false);
+      setIsAtTop(true);
     }
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", handleStickyMenu);
+    window.addEventListener("scroll", handleStickyMenu, { passive: true });
+    return () => window.removeEventListener("scroll", handleStickyMenu);
   });
 
   // Fetch category hierarchy once (Men/Women/Kids + subcategories)
@@ -63,7 +73,11 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed left-0 top-0 w-full z-50 bg-white transition-all ease-in-out duration-300 ${stickyMenu && "shadow-sm border-b border-[#E8E4DF]"
+      className={`fixed left-0 top-0 w-full z-50 transition-all duration-300 ease-in-out ${isTransparent
+        ? "bg-transparent border-transparent"
+        : stickyMenu
+          ? "bg-white/98 backdrop-blur-sm shadow-sm border-b border-[#E8E4DF]"
+          : "bg-white border-b border-[#E8E4DF]"
         }`}
     >
       <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
@@ -76,55 +90,15 @@ const Header = () => {
           <div className="xl:w-auto flex-col sm:flex-row w-full flex sm:justify-between sm:items-center gap-5 sm:gap-10">
             <Link className="flex-shrink-0" href="/">
               <img
-                src="/images/logo/logo.svg"
+                src={isTransparent ? "/images/logo/logo-white.svg" : "/images/logo/logo.svg"}
                 alt="Fitova Logo"
-                className="h-10 lg:h-14 w-auto"
+                className="h-10 lg:h-14 w-auto transition-opacity duration-300"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/images/logo/logo.svg"; }}
               />
             </Link>
 
             <div className="max-w-[475px] w-full">
-              <form className="w-full">
-                <div className="flex items-center w-full">
-                  <div className="hidden sm:block">
-                    <CustomSelect options={options} />
-                  </div>
-
-                  <div className="relative w-full sm:min-w-[333px]">
-                    {/* <!-- divider --> */}
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 inline-block w-px h-5.5 bg-gray-4"></span>
-                    <input
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      value={searchQuery}
-                      type="search"
-                      name="search"
-                      id="search"
-                      placeholder="I am shopping for..."
-                      autoComplete="off"
-                      className="custom-search w-full rounded-r-[5px] bg-gray-1 !border-l-0 border border-gray-3 py-2.5 pl-4 pr-10 outline-none ease-in duration-200"
-                    />
-
-                    <button
-                      id="search-btn"
-                      aria-label="Search"
-                      className="flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 ease-in duration-200 hover:text-dark-2"
-                    >
-                      <svg
-                        className="fill-current"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 18 18"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.2687 15.6656L12.6281 11.8969C14.5406 9.28123 14.3437 5.5406 11.9531 3.1781C10.6875 1.91248 8.99995 1.20935 7.19995 1.20935C5.39995 1.20935 3.71245 1.91248 2.44683 3.1781C-0.168799 5.79373 -0.168799 10.0687 2.44683 12.6844C3.71245 13.95 5.39995 14.6531 7.19995 14.6531C8.91558 14.6531 10.5187 14.0062 11.7843 12.8531L16.4812 16.65C16.5937 16.7344 16.7343 16.7906 16.875 16.7906C17.0718 16.7906 17.2406 16.7062 17.3531 16.5656C17.5781 16.2844 17.55 15.8906 17.2687 15.6656ZM7.19995 13.3875C5.73745 13.3875 4.38745 12.825 3.34683 11.7844C1.20933 9.64685 1.20933 6.18748 3.34683 4.0781C4.38745 3.03748 5.73745 2.47498 7.19995 2.47498C8.66245 2.47498 10.0125 3.03748 11.0531 4.0781C13.1906 6.2156 13.1906 9.67498 11.0531 11.7844C10.0406 12.825 8.66245 13.3875 7.19995 13.3875Z"
-                          fill=""
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </form>
+              <GlobalSearchDropdown isTransparent={isTransparent} />
             </div>
           </div>
 
@@ -318,7 +292,7 @@ const Header = () => {
         {/* <!-- header top end --> */}
       </div>
 
-      <div className="border-t border-gray-3">
+      <div className={`border-t transition-colors duration-300 ${isTransparent ? "border-white/20" : "border-gray-3"}`}>
         <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
           <div className="flex items-center justify-between">
             {/* <!--=== Main Nav Start ===--> */}
@@ -331,10 +305,12 @@ const Header = () => {
               <nav>
                 <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
                   {/* Home — always first */}
-                  <li className="group relative before:w-0 before:h-[2px] before:bg-dark before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full">
+                  <li className="group relative before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
+                    style={{ "--tw-before-bg": isTransparent ? "white" : "#1a1a1a" } as React.CSSProperties}
+                  >
                     <Link
                       href="/"
-                      className={`hover:text-dark-2 text-custom-sm font-light tracking-wide text-dark flex ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
+                      className={`text-custom-sm font-light tracking-wide flex transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
                     >
                       Home
                     </Link>
@@ -344,6 +320,7 @@ const Header = () => {
                   <MegaMenu
                     categories={categoryHierarchy}
                     stickyMenu={stickyMenu}
+                    isTransparent={isTransparent}
                   />
 
                   {/* Rest of menuData — skip Home (id:1) since it's already above */}
@@ -380,7 +357,8 @@ const Header = () => {
                 <li className="py-4">
                   <Link
                     href="/wishlist"
-                    className="flex items-center gap-1.5 text-custom-sm font-light tracking-wide text-dark hover:text-dark-2"
+                    className={`flex items-center gap-1.5 text-custom-sm font-light tracking-wide transition-colors duration-300 ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"
+                      }`}
                   >
                     <svg
                       className="fill-current"
@@ -402,7 +380,8 @@ const Header = () => {
                 <li className="py-4">
                   <button
                     onClick={openStyleHub}
-                    className="flex items-center gap-1.5 text-custom-sm font-light tracking-wide text-dark hover:text-dark-2"
+                    className={`flex items-center gap-1.5 text-custom-sm font-light tracking-wide transition-colors duration-300 ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"
+                      }`}
                   >
                     {/* Clean thin-stroke diamond icon for Style Hub */}
                     <svg
