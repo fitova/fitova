@@ -1,0 +1,411 @@
+
+FITOVA
+Fashion Technology Platform
+
+
+System Analysis & Technical Planning Document
+Prepared for Implementation Agent — 20 Issues & Feature Requests
+
+Total Issues
+20	System Areas
+7
+
+ 
+Executive Summary
+This document organizes 20 issues and feature requests for the FITOVA fashion technology platform into a structured technical plan. It is designed to guide an AI implementation agent through systematic codebase inspection, planning, and execution.
+
+The platform is built around product discovery, outfit browsing, lookbooks, and a social layer of user-generated content. The issues span across search architecture, UI/UX bugs, data relationships, new feature development, and mobile responsiveness.
+
+Bug Fixes
+6 issues	New Features
+8 issues	UI/UX Improvements
+4 issues	Architecture
+2 issues
+
+
+System Areas Overview
+All 20 issues are grouped into 7 logical system areas. Each area targets a specific layer of the FITOVA architecture and should be tackled in the recommended sequence.
+
+Area	Issues Covered
+A — Search System	#1 (Search returns products only)
+B — Product & Filter System	#2, #3, #14 (Visibility bug, tag counts, category filters)
+C — UI / Layout Bugs	#4, #15, #16 (Filter scroll, background, navbar)
+D — Data & Session Bugs	#5, #6 (Console error, wishlist random items)
+E — Lookbook System	#7, #8, #9, #10, #11, #12, #13 (Full lookbook overhaul)
+F — User Features	#17, #20 (User-generated coupons, profile redesign)
+G — Mobile Navigation	#18, #19 (Navbar redesign, slider menu)
+
+ 
+Area A — Search System
+Issue #1: Search Only Returns Products
+Problem Description
+The live search feature currently queries only the products table/collection. When users search for a term, coupons, deals, and lookbooks that match the query are silently excluded from results.
+What the Implementation Agent Must Inspect
+•	Locate the search component (likely SearchBar.jsx or similar) and identify what API endpoint or function it calls
+•	Locate the backend search handler — check if it queries a single entity type or uses a union/multi-collection approach
+•	Inspect the database: are there separate tables for products, coupons, deals, and lookbooks? Are they indexed for text search?
+•	Determine if the platform uses a search service (e.g., Algolia, Meilisearch, Supabase full-text search) or raw SQL/NoSQL queries
+•	Check if the search results UI has slots for multiple result types or only renders product cards
+Implementation Tasks
+1.	Audit the search query function — identify the exact WHERE clause or filter being applied
+2.	Design a multi-entity search query that fetches products, coupons, deals, and lookbooks in parallel or via union
+3.	Update the search results UI to render different card types per entity (ProductCard, CouponCard, LookbookCard, DealCard)
+4.	Add category labels in results (e.g., 'Products', 'Deals', 'Lookbooks') for visual separation
+5.	Ensure the search modal on mobile (Issue #18) also supports this multi-entity output
+Technical Considerations
+•	If using Supabase: use ilike or full-text search (to_tsvector) per table and merge results in the service layer
+•	If using Algolia or similar: configure a multi-index search or federated search setup
+•	Rate-limit or debounce the expanded search to avoid overloading with 4x the queries per keystroke
+•	Consider a result limit per entity type (e.g., 3 products, 2 deals, 2 lookbooks, 2 coupons) for clean UX
+
+
+ 
+Area B — Product & Filter System
+Issue #2: Product Visibility Bug
+Problem Description
+The product listing intermittently shows zero products even when products exist in the database. This is a data-fetching or filter-state bug that must be diagnosed before any other filter work proceeds.
+What the Implementation Agent Must Inspect
+•	Locate the product fetch function (e.g., getProducts, fetchProducts) and trace every condition applied to the query
+•	Check all active filter states at page load — are default filters inadvertently excluding all products?
+•	Inspect pagination logic — does page 1 always load, or can an invalid page number cause empty results?
+•	Check for race conditions: is the product list reset to empty before the fetch completes, causing a visible flash of zero results?
+•	Inspect the API response structure — is the product array nested incorrectly and arriving as undefined?
+•	Check if any category/gender filter defaults to a value that has no products
+Implementation Tasks
+6.	Add console logging at every stage of the product fetch lifecycle to trace the failure path
+7.	Audit all filter default values — ensure they are either 'all' or properly initialized before the first fetch
+8.	Fix any race conditions by ensuring the empty state is only shown after fetch completes with confirmed zero results
+9.	Add a loading skeleton state that persists until the fetch either resolves or rejects
+10.	Validate API response parsing and add defensive fallback (e.g., data?.products ?? [])
+
+Issue #3: Outfit Filters — Show Tag Counts
+Problem Description
+Filters on the Outfits page should display the number of outfits associated with each tag next to the tag label. For example: Streetwear (12), Minimal (5).
+What the Implementation Agent Must Inspect
+•	Inspect the outfits database table — does it have a tags column, or is there a separate outfit_tags junction table?
+•	Check if tag counts are pre-computed anywhere or if they must be aggregated on each request
+•	Inspect current filter rendering code — does it already support a count prop, or must the component be updated?
+Implementation Tasks
+11.	Write an aggregation query: GROUP BY tag, COUNT(*) on the outfits or outfit_tags table
+12.	Return the counts alongside the tag list from the API endpoint that provides filter options
+13.	Update the filter sidebar component to display counts in a muted style (e.g., gray text in parentheses)
+14.	Cache or memoize counts to avoid recalculating on every filter toggle
+
+Issue #14: Category Filters Not Updating Correctly
+Problem Description
+When toggling between Men, Women, and Kids gender category filters, the product list does not update correctly. This may be a state management bug or a filter query not re-executing on category change.
+What the Implementation Agent Must Inspect
+•	Locate the gender/category filter state — is it managed in local component state, a context, or a URL param?
+•	Trace whether changing the gender filter triggers a new API call or just re-filters client-side data
+•	Check for stale closure issues — is the filter value captured correctly in the async fetch function?
+•	Inspect whether the filter values passed to the query match the exact values stored in the database (case sensitivity, enum values)
+Implementation Tasks
+15.	Ensure filter state change triggers a re-fetch with the new category value as a parameter
+16.	Confirm database values for category (men, women, kids vs. Men, Women, Kids — case must match)
+17.	Add a useEffect or equivalent that depends on the category filter state and re-executes the product query
+18.	Test all three category combinations and verify URL params update if the system uses URL-based filters
+
+
+ 
+Area C — UI & Layout Bugs
+Issue #4: Filter Sidebar Overlaps Navbar on Scroll
+Problem Description
+When scrolling down the page, the filter sidebar (which is likely position: sticky) enters the navbar z-index layer and causes visual overlap.
+Investigation Steps
+•	Inspect the CSS/Tailwind class on the filter sidebar — confirm it uses sticky positioning
+•	Check the top value set on the sticky sidebar — it must be equal to or greater than the navbar height
+•	Inspect z-index values on both the navbar and sidebar — the navbar must be higher
+•	Check if any overflow: hidden on a parent container is clipping the sticky behavior
+Fix Instructions
+•	Set top: [navbar-height]px on the sticky sidebar so it stops below the navbar
+•	Ensure the navbar has a higher z-index than the sidebar (e.g., navbar z-50, sidebar z-10)
+•	If a parent has overflow: hidden, remove it or restructure the container hierarchy
+
+Issue #15: Global Background System
+Problem Description
+All pages except the homepage should share the same background visual style currently used on the lookbook page. This requires a global layout change.
+Investigation Steps
+•	Identify the root layout component that wraps all pages (e.g., _app.tsx, RootLayout, Layout.jsx)
+•	Inspect the lookbook page background — is it a CSS gradient, background image, or a component?
+•	Identify how the homepage is differentiated in the layout (route check or layout variant)
+Fix Instructions
+•	Extract the lookbook background style into a shared CSS class or component
+•	Apply it in the root layout wrapper, conditionally excluding the homepage route
+•	Ensure the background does not interfere with page-specific content containers
+
+Issue #16: Navbar Layout Behavior
+Problem Description
+The navbar must not visually overlap or interfere with background visuals. This is likely a z-index or position interaction between the navbar and the new global background.
+Investigation Steps
+•	Check if the navbar uses position: fixed or position: sticky
+•	Inspect the background implementation — is it a fixed pseudo-element, body background, or a positioned div?
+•	Confirm padding-top on the main content area accounts for navbar height
+Fix Instructions
+•	Ensure content wrapper has padding-top equal to navbar height to avoid content hiding behind navbar
+•	If the background is a fixed element, set its z-index below the navbar
+•	Test on all major pages after the global background (Issue #15) is applied
+
+
+ 
+Area D — Data & Session Bugs
+Issue #5: Console Error in getCartItems
+Problem Description
+A console error appears on certain pages originating from a getCartItems function. The error likely results from a failed database query — possibly a missing join, a deleted relation, or a malformed query condition.
+Investigation Steps
+•	Locate getCartItems in the codebase — note the full query including joins and conditions
+•	Check what relationships are joined (e.g., cart_items joined to products) — verify those foreign keys exist and are consistent
+•	Test the query directly in the database client to reproduce the error
+•	Check if the error occurs when the cart is empty, when a user is not logged in, or when a product has been deleted but the cart item remains
+Fix Instructions
+•	Add proper null-safety and error boundaries around the cart query
+•	If a product is deleted, either cascade-delete cart items or handle orphaned items gracefully
+•	Wrap the error with a user-friendly fallback (empty cart state) rather than letting it propagate to console
+•	Remove debug console.error calls or replace them with proper error tracking
+
+Issue #6: Wishlist Shows Random Default Items
+Problem Description
+The wishlist page displays placeholder or default items instead of the actual products added by the user. This indicates either placeholder data is hardcoded in the UI, or the wishlist query is not fetching user-specific records.
+Investigation Steps
+•	Inspect the wishlist component — look for any hardcoded mock data arrays or placeholder product lists
+•	Locate the wishlist data fetching function — confirm it filters by the current authenticated user ID
+•	Check the wishlist database table — does it have a user_id foreign key that is being applied in the query?
+•	Inspect the relationship between wishlist items and products — ensure product details are joined correctly
+•	Check if the wishlist hook/context initializes with mock data before the real fetch completes
+Fix Instructions
+•	Remove all hardcoded placeholder/mock data from the wishlist component and its data providers
+•	Ensure the wishlist query always filters by WHERE user_id = auth.user.id
+•	Show a proper loading state while fetch is in progress, and an empty state if no items are found
+•	Test with multiple users to confirm data isolation
+
+
+ 
+Area E — Lookbook System (Full Overhaul)
+The lookbook system requires the most substantial work in this document. It touches the database schema, creation flow, discovery UI, cart integration, and modification architecture. All sub-issues (#7–#13) should be planned and executed together after a thorough schema inspection.
+
+Issue #7: Lookbook System — Database & Category Hierarchy
+Schema Investigation Required
+•	Inspect the lookbooks table — what columns exist? (id, user_id, name, description, cover_image, created_at are expected minimum)
+•	Inspect how products relate to lookbooks — is there a lookbook_products junction table? Does it include a category field per product slot?
+•	Check if categories exist as a table or enum — verify: top, pants, shoes, accessories, perfumes
+•	Determine if the 'Top' category has sub-categories (T-shirts, shirts, jackets, hoodies) — if not, design whether this sub-category layer is needed for filtering during product selection
+Proposed Schema
+If the schema does not support the lookbook system as described, the agent should propose the following additions:
+•	lookbooks table: id, user_id, name, description, cover_image, is_copy, original_lookbook_id, tags[], colors[], mood, occasion, season, created_at
+•	lookbook_products table: id, lookbook_id, product_id, category (enum: top/pants/shoes/accessories/perfumes), position
+•	lookbook_tags: auto-generated from product attributes at creation time
+
+Issue #8: Lookbook Creation — Multi-Step Flow
+Step 1 — Basic Information
+•	Form fields: name (required), description (optional), cover image upload
+•	Inspect existing image upload infrastructure — reuse the same pattern used in profile image upload if available
+•	Validate name uniqueness per user
+Step 2 — Product Selection
+•	UI: Show 5 sections (Top, Pants, Shoes, Accessories, Perfumes), each with an empty card and an Add button
+•	Clicking Add opens a product selection modal
+•	The modal pre-filters products by the clicked category
+•	Modal includes left-side filters identical to the Outfits page filter panel
+•	Agent must reuse or extract the Outfits filter component to avoid duplication
+•	Each category slot allows only one product selection (one product per section)
+•	Selected product is displayed in the card with image and name
+Step 3 — Tag Generation (Issue #9)
+•	After product selection, auto-generate tags from: product categories, product materials, product brands, product style attributes
+•	Auto-generate colors from the dominant color data of selected product images (check if color metadata exists per product)
+•	Display generated tags as removable chips
+•	Allow user to type and add custom tags
+•	Present color swatches — allow user to remove colors
+Navigation & Save
+•	Show step indicators at the top of the creation flow (Step 1 of 3, etc.)
+•	Allow backward navigation without losing data
+•	On submit: create lookbook record, create lookbook_products records, save tags and colors
+
+Issue #10: Lookbook Card — Hover Behavior & Information
+Hover Grid Preview
+•	On desktop hover: show a grid of product images (one per category)
+•	Each cell shows product image and product name
+•	Grid layout: 2x3 or dynamic based on number of populated categories
+•	Animate in smoothly on hover — use CSS transition or Framer Motion if already installed
+Card Information Display
+•	Creator name and profile image (circular avatar)
+•	Style tags displayed as small badges
+•	Color indicators displayed as filled circles (translate hex codes to color swatches — do not show raw hex strings)
+•	Lookbook name and description preview
+
+Issue #11: Add Lookbook to Cart
+Implementation Plan
+•	Add an 'Add Lookbook To Cart' button to the lookbook card (visible on hover or always visible on mobile)
+•	On click: fetch all products in the lookbook via lookbook_products, then call addToCart for each product
+•	Handle partial failures — if some products are out of stock, notify the user which items were skipped
+•	Show a confirmation toast or modal listing all added products
+
+Issue #12: Lookbook Details Page
+Page Structure
+•	Header section: lookbook name, creator info (avatar, name, link to profile), cover image
+•	Metadata section: tags, mood, occasion, season, materials, brands, sizes, colors used
+•	Product sections: one section per category (Top, Pants, Shoes, Accessories, Perfumes)
+•	Each product section shows: product image, name, price, brand, Add to Cart button
+Mobile Behavior
+•	Product sections become horizontal scroll sliders on screens below md breakpoint
+•	Swipeable cards with visible overflow hint (partial card visible at right edge)
+•	Inspector must check if a carousel/slider library is already installed (e.g., Swiper, Embla) or if one needs to be added
+
+Issue #13: Lookbook Modification — Fork Architecture
+Design Principle
+Users should be able to modify existing lookbooks without altering the original. This is a 'fork' pattern — creating a personal copy when edits are made.
+Proposed Architecture
+•	When a user clicks 'Modify' on any lookbook (their own or another user's), do not open the original for editing
+•	Instead, silently create a copy: INSERT INTO lookbooks ... (original_lookbook_id = original.id, is_copy = true, user_id = current_user.id)
+•	Copy all lookbook_products records for the new lookbook ID
+•	Open the creation flow in 'Edit Mode' pre-populated with the copied data
+•	Save the copy to the user's profile under 'My Lookbooks'
+•	Display a notice: 'This is your personal copy of [Original Name] by [Creator]' with a link back to the original
+•	The is_copy and original_lookbook_id fields enable attribution and discovery linking
+
+
+ 
+Area F — User Features
+Issue #17: User-Generated Coupons
+Feature Description
+Users should be able to create discount coupons, similar to how they create lookbooks. A Create Coupon button triggers a form-based flow.
+Investigation Steps
+•	Inspect the existing coupons table schema — understand what fields exist and which are user-editable vs. system-managed
+•	Determine if coupons have validation rules (min order value, expiry date, usage limit, discount type)
+•	Check how existing coupons are applied at checkout — the same logic must apply to user-created coupons
+•	Determine if user-created coupons need approval (moderation) or can be published directly
+Form Fields (Proposed)
+•	Coupon code (auto-generated with option to customize)
+•	Discount type: percentage or fixed amount
+•	Discount value
+•	Minimum order value (optional)
+•	Expiry date (optional)
+•	Usage limit per user (optional)
+•	Description / title visible to recipients
+UI Integration
+•	Add a 'Create Coupon' button near the 'Create Lookbook' entry point (Style Hub or profile page)
+•	Show the user's created coupons in their profile under a 'My Coupons' section
+•	Allow users to share coupon codes via copy link
+
+Issue #20: Profile Page Redesign
+Changes Required
+•	REMOVE: Address section and Orders section
+•	ADD: Recently Viewed Products section — requires a recently_viewed table or localStorage tracking
+•	Redesign layout to match platform visual style (dark/gradient aesthetic from lookbook page)
+Recently Viewed Implementation
+•	Check if a recently_viewed table exists with (user_id, product_id, viewed_at)
+•	If not, create it and write a product_view event whenever a user visits a product detail page
+•	Show the last 10 viewed products in a horizontal scroll row on the profile page
+Mobile Responsiveness
+•	Inspect current profile page layout — identify all elements that break on small screens
+•	Convert multi-column sections to single-column stacks on mobile
+•	Ensure avatar, name, and action buttons are properly sized for touch targets
+•	Test at 375px, 390px, and 430px widths
+
+
+ 
+Area G — Mobile Navigation
+Issue #18: Mobile Navbar Redesign
+New Layout Specification
+Left Side	Center	Right Side
+Search Button (opens modal)
+Slider Menu Button	Logo	Cart Icon
+Wishlist Icon
+Style Hub Icon
+
+Search Modal (Mobile)
+•	Tapping the Search button should open a full-screen or bottom-sheet modal
+•	The modal must contain all search features available on desktop (search input, filters, live results)
+•	Reuse the same multi-entity search logic from Issue #1
+•	The modal should be dismissible via swipe down or a close button
+Investigation Steps
+•	Locate the current mobile navbar component — identify which icons/buttons currently exist
+•	Check if a search modal component already exists — if so, expand it to full desktop feature parity
+•	Verify Style Hub icon/route and confirm it should appear in the mobile right side
+
+Issue #19: Mobile Slider Menu — Redesign
+Problem Description
+The current slide-out menu has overlapping text, elements appearing/disappearing unexpectedly, and poor visual organization. A full redesign is needed.
+New Structure
+•	SECTION 1 — Main Navigation: Home, Shop, Outfits, Lookbooks, Deals, Coupons
+•	SECTION 2 — Discover: New Arrivals, Trending, Style Hub, Collections
+•	SECTION 3 — Help: About, Contact, FAQ
+•	BOTTOM AREA (always visible): User avatar + name (if logged in), Profile button, OR Sign In / Sign Up buttons (if not logged in)
+Investigation Steps
+•	Locate the slider menu component — identify the animation library used (CSS transitions, Framer Motion, etc.)
+•	Check if the overlap and disappearing text bugs are animation timing issues or z-index stacking issues
+•	Inspect the auth state integration — confirm the component has access to current user context
+Fix Instructions
+•	Fix z-index stacking — ensure the menu panel renders above all page content when open
+•	Fix animation: ensure items are rendered only after the panel is fully open, or use opacity transitions that avoid the appearing/disappearing bug
+•	Reorganize into clear sections with dividers and section headers
+•	Implement the account area at the bottom with conditional rendering based on auth state
+
+
+ 
+Implementation Roadmap
+The following sequence is recommended to minimize conflicts between changes. Bug fixes should precede new features. Layout changes should be coordinated with new feature UI to avoid double work.
+
+Phase	Area	Tasks	Priority
+1	D — Data Bugs	#5 Cart error fix, #6 Wishlist fix	CRITICAL
+2	B — Products	#2 Visibility bug, #14 Category filters	HIGH
+3	C — UI Bugs	#4 Scroll/sidebar, #16 Navbar layout	HIGH
+4	A — Search	#1 Multi-entity search	HIGH
+5	B — Products	#3 Tag counts on outfit filters	MEDIUM
+6	C — Layout	#15 Global background system	MEDIUM
+7	E — Lookbooks	#7 Schema audit & design	HIGH
+8	E — Lookbooks	#8 Creation flow (Steps 1–2)	HIGH
+9	E — Lookbooks	#9 Tag generation (Step 3)	MEDIUM
+10	E — Lookbooks	#10 Card hover behavior	MEDIUM
+11	E — Lookbooks	#11 Add to cart button	MEDIUM
+12	E — Lookbooks	#12 Details page + mobile sliders	HIGH
+13	E — Lookbooks	#13 Fork/modify architecture	MEDIUM
+14	G — Mobile	#18 Mobile navbar redesign	HIGH
+15	G — Mobile	#19 Slider menu redesign	HIGH
+16	F — Features	#20 Profile page redesign	MEDIUM
+17	F — Features	#17 User-generated coupons	LOW
+
+
+ 
+Instructions for the Implementation Agent
+Before writing any code, the implementation agent must complete the following inspection steps in order.
+
+Step 1: Codebase Structure Inspection
+•	Map the full directory structure — identify: /components, /pages (or /app), /lib, /hooks, /api, /services, /store, /styles
+•	Identify the frontend framework (Next.js, React, Vite, etc.) and styling system (Tailwind, CSS Modules, Styled Components)
+•	Identify the backend: is it a Next.js API routes, a separate Express/Fastify server, or Supabase Edge Functions?
+•	Identify state management: Context API, Zustand, Redux, Jotai, or none
+
+Step 2: Database Schema Inspection
+•	List all tables/collections and their columns
+•	Map all foreign key relationships and junction tables
+•	Identify: products, outfits, outfit_tags, lookbooks, lookbook_products, wishlist, cart_items, coupons, users, recently_viewed tables
+•	Note any missing tables that must be created for the features in this document
+•	Check for any existing text search indexes or full-text search configuration
+
+Step 3: Component Inventory
+•	List all page-level components and their routes
+•	Identify shared layout components (Navbar, Sidebar, Footer, Layout wrapper)
+•	Identify reusable UI components (ProductCard, LookbookCard, FilterPanel, Modal, etc.)
+•	Note any component that could be reused or extracted during feature development
+
+Step 4: API & Data Layer Audit
+•	List all API route handlers or service functions
+•	For each service function: note what table it queries, what parameters it accepts, and what it returns
+•	Identify the search-related functions specifically
+•	Identify cart, wishlist, and product fetch functions
+
+Step 5: Create Implementation Plan
+After completing the inspection, the agent must document its findings and create a detailed implementation plan that:
+•	Confirms or corrects the assumptions made in this planning document
+•	Lists the exact files that will be modified for each issue
+•	Identifies any dependencies between tasks (e.g., schema must be updated before a feature can be built)
+•	Estimates risk level per task (low/medium/high)
+
+Step 6: Execute Tasks One by One
+•	Follow the Implementation Roadmap sequence (Phase 1 through 17)
+•	After each task: run available tests, verify the change works, then proceed
+•	Do not batch unrelated changes into a single commit — one issue per implementation unit
+•	Document any deviations from this plan with clear reasoning
+
+
+
+FITOVA Platform — Technical Planning Document
+Prepared for AI Implementation Agent | Do not implement without prior codebase inspection

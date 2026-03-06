@@ -253,6 +253,7 @@ export type Database = {
           gender_id: number
           id: number
           image_url: string
+          piece_type_group: string | null
           sort_order: number | null
         }
         Insert: {
@@ -261,6 +262,7 @@ export type Database = {
           gender_id: number
           id?: number
           image_url: string
+          piece_type_group?: string | null
           sort_order?: number | null
         }
         Update: {
@@ -269,6 +271,7 @@ export type Database = {
           gender_id?: number
           id?: number
           image_url?: string
+          piece_type_group?: string | null
           sort_order?: number | null
         }
         Relationships: [
