@@ -60,6 +60,7 @@ export async function getProducts({
     material,
     colors,
     size,
+    sizes,
     minPrice,
     maxPrice,
     sortBy,
@@ -67,8 +68,8 @@ export async function getProducts({
     pieceTypeGroup,
 }: {
     categoryId?: string;
-    category?: string;       // slug-based filter (joins categories table)
-    gender?: string;         // 'men' | 'women' | 'kids' | 'unisex'
+    category?: string;
+    gender?: string;
     isFeatured?: boolean;
     isDeal?: boolean;
     limit?: number;
@@ -77,12 +78,13 @@ export async function getProducts({
     brand?: string;
     material?: string;
     colors?: string[];
-    size?: string;
+    size?: string;           // legacy single (kept for URL compat)
+    sizes?: string[];        // multi-select
     minPrice?: number;
     maxPrice?: number;
     sortBy?: string;
     search?: string;
-    pieceTypeGroup?: string; // 'clothing' | 'footwear' | 'accessories' | 'fragrances'
+    pieceTypeGroup?: string;
 } = {}) {
     const supabase = createClient();
     let query = supabase.from("products").select("*, product_images(url, type, sort_order)").eq("is_hidden", false);
@@ -100,8 +102,8 @@ export async function getProducts({
         if (catData?.id) query = query.eq("category_id", catData.id);
     }
 
-    // Filter by gender
-    if (gender) query = query.eq("gender", gender);
+    // Filter by gender — normalize to lowercase to handle DB case inconsistencies
+    if (gender) query = query.eq("gender", gender.toLowerCase());
 
     // Filter by piece_type group (clothing / footwear / accessories / fragrances)
     if (pieceTypeGroup) {
@@ -113,12 +115,14 @@ export async function getProducts({
 
     if (isFeatured !== undefined) query = query.eq("is_featured", isFeatured);
     if (isDeal !== undefined) query = query.eq("is_deal", isDeal);
-    if (season) query = query.ilike("season", season);
+    if (style) query = query.ilike("season", season);
     if (brand) query = query.ilike("brand", `%${brand}%`);
     if (material) query = query.ilike("material", `%${material}%`);
     if (style) query = query.contains("styles", [style]);
     if (colors && colors.length > 0) query = query.overlaps("colors", colors);
-    if (size) query = query.contains("size", [size]);
+    // Multi-select sizes: overlaps with the product's size array
+    if (sizes && sizes.length > 0) query = query.overlaps("size", sizes);
+    else if (size) query = query.contains("size", [size]);
     if (minPrice !== undefined) query = query.gte("price", minPrice);
     if (maxPrice !== undefined) query = query.lte("price", maxPrice);
     if (search) query = query.ilike("name", `%${search}%`);

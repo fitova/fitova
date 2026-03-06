@@ -352,3 +352,28 @@ input[type='search']::-webkit-search-results-decoration {
   animation: ornamentDrift 20s ease-in-out infinite;
   will-change: transform;
 }
+
+/* ── Global Background (Issue #15) ────────────────────────────────────── */
+.page-bg {
+  background-color: #F6F5F2;
+  position: relative;
+}
+
+.page-bg::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image:
+    repeating-linear-gradient(-45deg,
+      #1A1A1A 0px,
+      #1A1A1A 1px,
+      transparent 1px,
+      transparent 60px);
+  animation: ornamentDrift 20s ease-in-out infinite;
+  will-change: transform;
+}

@@ -103,8 +103,11 @@ export const Wishlist = () => {
           price: item.product?.price,
           discountedPrice: item.product?.discounted_price ?? undefined,
           brand: item.product?.brand ?? undefined,
-          imageUrl: item.product?.product_images?.find((i: any) => i.is_primary)?.url
-            ?? item.product?.product_images?.[0]?.url,
+          imageUrl: (() => {
+            const imgs = item.product?.product_images ?? [];
+            const sorted = [...imgs].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+            return sorted.find((i: any) => i.type === "main")?.url ?? sorted[0]?.url ?? undefined;
+          })(),
           affiliateLink: item.product?.affiliate_link ?? undefined,
           // Lookbook fields
           collectionName: item.collection?.name,

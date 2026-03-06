@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import "../css/euclid-circular-a-font.css";
 import "../css/style.css";
 import Header from "../../components/Header";
@@ -25,6 +26,21 @@ import { useAuthRehydrate } from "@/hooks/useAuthRehydrate";
 function AuthRehydrator() {
   useAuthRehydrate();
   return null;
+}
+
+/**
+ * Wrapper that adds padding-top on all pages EXCEPT the homepage.
+ * The homepage uses a transparent hero that starts at top:0 intentionally.
+ * All other pages need clearance for the fixed two-row header (~140px).
+ */
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
+  return (
+    <main className={isHomepage ? "" : "pt-[140px] page-bg min-h-screen"}>
+      {children}
+    </main>
+  );
 }
 
 export default function RootLayout({
@@ -54,7 +70,7 @@ export default function RootLayout({
                       <ModalProvider>
                         <PreviewSliderProvider>
                           <Header />
-                          {children}
+                          <PageWrapper>{children}</PageWrapper>
 
                           <QuickViewModal />
                           <CartSidebarModal />

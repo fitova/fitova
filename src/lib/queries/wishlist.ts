@@ -9,7 +9,7 @@ export type WishlistProduct = {
     discounted_price: number | null;
     brand: string | null;
     affiliate_link: string | null;
-    product_images?: { url: string; is_primary: boolean }[];
+    product_images?: { url: string; type: string; sort_order: number }[];
 };
 
 export type WishlistCollection = {
@@ -57,7 +57,7 @@ export async function getWishlist(): Promise<WishlistItem[]> {
         productIds.length > 0
             ? supabase
                 .from("products")
-                .select("id, name, price, discounted_price, brand, affiliate_link, product_images(url, is_primary)")
+                .select("id, name, price, discounted_price, brand, affiliate_link, product_images(url, type, sort_order)")
                 .in("id", productIds)
             : Promise.resolve({ data: [] }),
         lookbookIds.length > 0

@@ -7,7 +7,7 @@ export type CartItem = {
     quantity: number;
     size: string | null;
     color: string | null;
-    created_at: string;
+    added_at: string;
     products?: {
         id: string;
         name: string;
@@ -19,6 +19,11 @@ export type CartItem = {
     };
 };
 
+/** Type guard — item has valid product data */
+function hasProduct(item: CartItem): item is CartItem & { products: NonNullable<CartItem['products']> } {
+    return !!item.products;
+}
+
 /** Fetch all cart items for the authenticated user */
 export async function getCartItems(): Promise<CartItem[]> {
     const supabase = createClient();
@@ -29,24 +34,35 @@ export async function getCartItems(): Promise<CartItem[]> {
         .from("cart_items")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("added_at", { ascending: false });
 
-    if (error) { console.error("getCartItems error:", error); return []; }
+    if (error) {
+        // Log silently — do not throw, return empty cart gracefully
+        console.warn("[getCartItems] Query failed:", error.message);
+        return [];
+    }
     if (!data || data.length === 0) return [];
 
     // Fetch products explicitly to avoid inner-join foreign key relationship errors
     const productIds = Array.from(new Set(data.map(item => item.product_id)));
-    const { data: productsData } = await supabase
+    const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select("id, name, slug, price, discounted_price, brand, product_images(url, type, sort_order)")
         .in("id", productIds);
 
+    if (productsError) {
+        console.warn("[getCartItems] Failed to fetch products:", productsError.message);
+    }
+
     const productMap = new Map((productsData ?? []).map((p: any) => [p.id, p]));
 
-    return data.map(item => ({
-        ...item,
-        products: productMap.get(item.product_id)
-    })) as CartItem[];
+    return data
+        .map(item => ({
+            ...item,
+            products: productMap.get(item.product_id) ?? undefined,
+        }))
+        // Filter out orphaned cart items (product was deleted)
+        .filter(hasProduct) as CartItem[];
 }
 
 /** Add or update a cart item (upsert on user_id + product_id + size + color) */

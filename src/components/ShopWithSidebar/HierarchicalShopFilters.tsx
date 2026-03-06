@@ -157,6 +157,7 @@ const HierarchicalShopFilters = ({
         season: false,
         material: false,
         brand: false,
+        size: false,
         color: false,
     });
 
@@ -166,7 +167,7 @@ const HierarchicalShopFilters = ({
     /* ── Helpers ──────────────────────────────────────────────── */
     const opts = (cat: string) => filterOptions.filter((o) => o.category === cat);
 
-    /* ── Group categories by piece_type_group ─────────────────── */
+    /* ── Group categories by piece_type_group, filtered by gender ─── */
     const groupedCategories = useMemo(() => {
         // Flatten all children from hierarchy
         const allChildren = hierarchy.flatMap((parent) => parent.children);
@@ -175,6 +176,15 @@ const HierarchicalShopFilters = ({
         for (const group of GROUP_ORDER) groups[group] = [];
 
         for (const child of allChildren) {
+            // Gender filter: only include if category has no gender restriction,
+            // or if the selected gender is in the category's gender array
+            if (filters.gender && child.gender && child.gender.length > 0) {
+                const genderMatch = child.gender.some(
+                    (g) => g.toLowerCase() === filters.gender.toLowerCase()
+                );
+                if (!genderMatch) continue;
+            }
+
             const pt = child.piece_type ?? child.slug ?? "";
             const group = PIECE_TYPE_TO_GROUP[pt.toLowerCase()] ?? "accessories";
             if (groups[group]) groups[group].push(child);
@@ -183,6 +193,13 @@ const HierarchicalShopFilters = ({
         // Also add parent categories that have no children (standalone categories)
         for (const parent of hierarchy) {
             if (parent.children.length === 0) {
+                // Apply same gender filter
+                if (filters.gender && parent.gender && parent.gender.length > 0) {
+                    const genderMatch = parent.gender.some(
+                        (g) => g.toLowerCase() === filters.gender.toLowerCase()
+                    );
+                    if (!genderMatch) continue;
+                }
                 const pt = parent.piece_type ?? parent.slug ?? "";
                 const group = PIECE_TYPE_TO_GROUP[pt.toLowerCase()] ?? "accessories";
                 if (groups[group]) groups[group].push(parent);
@@ -190,7 +207,7 @@ const HierarchicalShopFilters = ({
         }
 
         return groups;
-    }, [hierarchy]);
+    }, [hierarchy, filters.gender]);
 
     /* ── Product counts per category ─────────────────────────── */
     const categoryCounts = useMemo(() => {
@@ -217,9 +234,75 @@ const HierarchicalShopFilters = ({
         return counts;
     }, [products]);
 
-    /* ── Update filter helpers ────────────────────────────────── */
+    /* ── Per-option product counts ────────────────────────────── */
+    const styleCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            for (const s of (p.styles ?? [])) counts[s] = (counts[s] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    const seasonCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            if (p.season) counts[p.season] = (counts[p.season] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    const brandCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            if (p.brand) counts[p.brand] = (counts[p.brand] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    const materialCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            if (p.material) counts[p.material] = (counts[p.material] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    const sizeCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const p of products) {
+            for (const s of (p.size ?? [])) counts[s] = (counts[s] || 0) + 1;
+        }
+        return counts;
+    }, [products]);
+
+    /* ── Update filter helpers (all multi-select now) ─────────── */
+
+    /** Toggle a value in/out of an array filter */
+    function toggleArr<K extends keyof typeof filters>(key: K, value: string) {
+        setFilters((prev) => {
+            const arr = (prev[key] as string[]);
+            return {
+                ...prev,
+                [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
+            };
+        });
+    }
+
     const setGender = useCallback((g: string) => {
-        setFilters((prev) => ({ ...prev, gender: g === "all" ? "" : g }));
+        setFilters((prev) => ({
+            ...prev,
+            gender: g === "all" ? "" : g,
+            category: [],
+            pieceTypeGroup: "",
+        }));
+    }, [setFilters]);
+
+    const setSize = useCallback((size: string) => {
+        toggleArr("size", size);
+    }, [setFilters]);
+
+    const toggleCustomColor = useCallback((color: string) => {
+        toggleArr("colors", color);
     }, [setFilters]);
 
     const setPieceTypeGroup = useCallback((group: string) => {
@@ -230,67 +313,89 @@ const HierarchicalShopFilters = ({
     }, [setFilters]);
 
     const setCategory = useCallback((slug: string) => {
-        setFilters((prev) => ({
-            ...prev,
-            category: prev.category === slug ? "" : slug,
-        }));
+        toggleArr("category", slug);
     }, [setFilters]);
 
     const toggleColor = useCallback((color: string) => {
-        setFilters((prev) => ({
-            ...prev,
-            colors: prev.colors.includes(color)
-                ? prev.colors.filter((c) => c !== color)
-                : [...prev.colors, color],
-        }));
+        toggleArr("colors", color);
     }, [setFilters]);
 
     const setStyle = useCallback((style: string) => {
-        setFilters((prev) => ({ ...prev, style: prev.style === style ? "" : style }));
+        toggleArr("style", style);
     }, [setFilters]);
 
     const setSeason = useCallback((season: string) => {
-        setFilters((prev) => ({ ...prev, season: prev.season === season ? "" : season }));
+        toggleArr("season", season);
     }, [setFilters]);
 
     const setBrand = useCallback((brand: string) => {
-        setFilters((prev) => ({ ...prev, brand: prev.brand === brand ? "" : brand }));
+        toggleArr("brand", brand);
     }, [setFilters]);
 
     const setMaterial = useCallback((material: string) => {
-        setFilters((prev) => ({ ...prev, material: prev.material === material ? "" : material }));
+        toggleArr("material", material);
     }, [setFilters]);
 
     /* ── Total active filter count ───────────────────────────── */
     const activeCount =
         (filters.gender ? 1 : 0) +
-        (filters.category ? 1 : 0) +
+        filters.category.length +
         (filters.pieceTypeGroup ? 1 : 0) +
-        (filters.style ? 1 : 0) +
-        (filters.season ? 1 : 0) +
-        (filters.brand ? 1 : 0) +
-        (filters.material ? 1 : 0) +
+        filters.style.length +
+        filters.season.length +
+        filters.brand.length +
+        filters.material.length +
+        filters.size.length +
         filters.colors.length;
 
     const clearAll = useCallback(() => {
         setFilters((prev) => ({
             ...prev,
             gender: "",
-            category: "",
+            category: [],
             pieceTypeGroup: "",
-            style: "",
-            season: "",
-            brand: "",
-            material: "",
+            style: [],
+            season: [],
+            brand: [],
+            material: [],
+            size: [],
             colors: [],
             search: "",
         }));
     }, [setFilters]);
 
-    /* ── Hide Fragrances for Kids ─────────────────────────────── */
     const visibleGroups = filters.gender === "kids"
         ? GROUP_ORDER.filter((g) => g !== "fragrances")
         : GROUP_ORDER;
+
+    /* ── Available sizes ──────────────────────────────────────── */
+    const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL",
+        "36", "37", "38", "39", "40", "41", "42", "43", "44",
+        "One Size"];
+
+    /* ── Extended color palette (20 colors) ───────────────────── */
+    const EXTENDED_COLORS = [
+        { label: "Black", value: "#000000" },
+        { label: "White", value: "#FFFFFF" },
+        { label: "Navy", value: "#1E3A5F" },
+        { label: "Red", value: "#C0392B" },
+        { label: "Green", value: "#27AE60" },
+        { label: "Beige", value: "#F5E6D3" },
+        { label: "Grey", value: "#718096" },
+        { label: "Brown", value: "#6B4423" },
+        { label: "Blue", value: "#2980B9" },
+        { label: "Pink", value: "#E91E8C" },
+        { label: "Purple", value: "#8E44AD" },
+        { label: "Orange", value: "#E67E22" },
+        { label: "Yellow", value: "#F1C40F" },
+        { label: "Olive", value: "#5D5916" },
+        { label: "Teal", value: "#16A085" },
+        { label: "Maroon", value: "#7B241C" },
+        { label: "Camel", value: "#C19A6B" },
+        { label: "Mint", value: "#A8E6CF" },
+        { label: "Lavender", value: "#B39DDB" },
+        { label: "Coral", value: "#FF6B6B" },
+    ];
 
     /* ────────────────────────────── render ───────────────────── */
     return (
@@ -375,7 +480,7 @@ const HierarchicalShopFilters = ({
                                     {/* Subcategories */}
                                     <div className="space-y-1.5 pl-2 border-l border-[#E8E4DF] ml-1">
                                         {cats.map((child) => {
-                                            const sel = filters.category === child.slug;
+                                            const sel = filters.category.includes(child.slug);
                                             const childCount = categoryCounts[child.id] ?? categoryCounts[child.slug] ?? 0;
                                             return (
                                                 <button
@@ -418,14 +523,15 @@ const HierarchicalShopFilters = ({
                     title="Style"
                     open={openSections.style}
                     onToggle={() => toggleSection("style")}
-                    badge={filters.style ? 1 : 0}
+                    badge={filters.style.length}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("style").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={filters.style === o.value}
+                                active={filters.style.includes(o.value)}
+                                count={styleCounts[o.value]}
                                 onClick={() => setStyle(o.value)}
                             />
                         ))}
@@ -439,14 +545,15 @@ const HierarchicalShopFilters = ({
                     title="Season"
                     open={openSections.season}
                     onToggle={() => toggleSection("season")}
-                    badge={filters.season ? 1 : 0}
+                    badge={filters.season.length}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("season").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={filters.season === o.value}
+                                active={filters.season.includes(o.value)}
+                                count={seasonCounts[o.value]}
                                 onClick={() => setSeason(o.value)}
                             />
                         ))}
@@ -460,14 +567,15 @@ const HierarchicalShopFilters = ({
                     title="Material"
                     open={openSections.material}
                     onToggle={() => toggleSection("material")}
-                    badge={filters.material ? 1 : 0}
+                    badge={filters.material.length}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("material").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={filters.material === o.value}
+                                active={filters.material.includes(o.value)}
+                                count={materialCounts[o.value]}
                                 onClick={() => setMaterial(o.value)}
                             />
                         ))}
@@ -481,14 +589,15 @@ const HierarchicalShopFilters = ({
                     title="Brand"
                     open={openSections.brand}
                     onToggle={() => toggleSection("brand")}
-                    badge={filters.brand ? 1 : 0}
+                    badge={filters.brand.length}
                 >
                     <div className="flex flex-wrap gap-2 pt-2">
                         {opts("brand").map((o) => (
                             <Chip
                                 key={o.id}
                                 label={o.label}
-                                active={filters.brand === o.value}
+                                active={filters.brand.includes(o.value)}
+                                count={brandCounts[o.value]}
                                 onClick={() => setBrand(o.value)}
                             />
                         ))}
@@ -496,27 +605,78 @@ const HierarchicalShopFilters = ({
                 </FilterSection>
             )}
 
-            {/* ── 7. COLOR ─────────────────────────────────────── */}
-            {opts("color").length > 0 && (
-                <FilterSection
-                    title="Color"
-                    open={openSections.color}
-                    onToggle={() => toggleSection("color")}
-                    badge={filters.colors.length}
-                >
-                    <div className="flex flex-wrap gap-3 pt-2">
-                        {opts("color").map((o) => (
+            {/* ── 7. SIZE ──────────────────────────────────────── */}
+            <FilterSection
+                title="Size"
+                open={openSections.size ?? false}
+                onToggle={() => toggleSection("size")}
+                badge={filters.size.length}
+            >
+                <div className="flex flex-wrap gap-2 pt-2">
+                    {ALL_SIZES.map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setSize(s)}
+                            className={`px-3 py-1.5 text-xs font-light border transition-all duration-200 ${filters.size.includes(s)
+                                ? "bg-[#0A0A0A] border-[#0A0A0A] text-white"
+                                : "border-[#E8E4DF] text-[#4A4A4A] hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
+                                }`}
+                        >
+                            {s}{sizeCounts[s] ? <span className="ml-1 opacity-50 text-[10px]">({sizeCounts[s]})</span> : null}
+                        </button>
+                    ))}
+                </div>
+            </FilterSection>
+
+            {/* ── 8. COLOR ─────────────────────────────────────── */}
+            <FilterSection
+                title="Color"
+                open={openSections.color}
+                onToggle={() => toggleSection("color")}
+                badge={filters.colors.length}
+            >
+                {/* Color circles grid — 20 preset colors */}
+                <div className="flex flex-wrap gap-2.5 pt-2 mb-4">
+                    {EXTENDED_COLORS.map((c) => (
+                        <ColorChip
+                            key={c.value}
+                            label={c.label}
+                            value={c.value}
+                            active={filters.colors.includes(c.value)}
+                            onClick={() => toggleColor(c.value)}
+                        />
+                    ))}
+                </div>
+                {/* Custom color wheel */}
+                <div className="flex items-center gap-3 pt-2 border-t border-[#E8E4DF]">
+                    <span className="text-[11px] font-light text-[#8A8A8A] tracking-wide">Custom</span>
+                    <label className="relative cursor-pointer" title="Pick a custom color">
+                        <input
+                            type="color"
+                            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                            onChange={(e) => toggleCustomColor(e.target.value)}
+                        />
+                        <span
+                            className="block w-8 h-8 rounded-full border-2 border-dashed border-[#C8C8C8] hover:border-[#0A0A0A] transition-colors duration-200 flex items-center justify-center"
+                            style={{
+                                background: "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)",
+                            }}
+                        />
+                    </label>
+                    {/* Show custom-selected colors */}
+                    {filters.colors
+                        .filter((c) => !EXTENDED_COLORS.find((ec) => ec.value === c))
+                        .map((c) => (
                             <ColorChip
-                                key={o.id}
-                                label={o.label}
-                                value={o.value}
-                                active={filters.colors.includes(o.value)}
-                                onClick={() => toggleColor(o.value)}
+                                key={c}
+                                label={c}
+                                value={c}
+                                active
+                                onClick={() => toggleColor(c)}
                             />
                         ))}
-                    </div>
-                </FilterSection>
-            )}
+                </div>
+            </FilterSection>
         </div>
     );
 };

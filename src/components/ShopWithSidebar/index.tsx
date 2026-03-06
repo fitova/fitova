@@ -113,14 +113,14 @@ const ShopWithSidebar = () => {
             {/* ── Mobile Scrim ───────────────────────────────── */}
             {productSidebar && (
               <div
-                className="fixed inset-0 bg-black/50 z-40 xl:hidden"
+                className="fixed inset-0 bg-black/50 z-30 xl:hidden"
                 onClick={() => setProductSidebar(false)}
               />
             )}
 
             {/* ── Sidebar ─────────────────────────────────── */}
             <aside
-              className={`shop-sidebar-content fixed xl:static z-50 left-0 top-0 h-full xl:h-auto w-[300px] xl:w-[270px] flex-shrink-0 bg-[#F6F5F2] xl:bg-transparent overflow-y-auto xl:overflow-visible ease-out duration-300 ${productSidebar ? "translate-x-0 shadow-2xl" : "-translate-x-full xl:translate-x-0"}`}
+              className={`shop-sidebar-content fixed xl:static z-40 left-0 top-[73px] h-[calc(100%-73px)] xl:h-auto xl:top-auto w-[300px] xl:w-[270px] flex-shrink-0 bg-[#F6F5F2] xl:bg-transparent overflow-y-auto xl:overflow-visible ease-out duration-300 ${productSidebar ? "translate-x-0 shadow-2xl" : "-translate-x-full xl:translate-x-0"}`}
             >
               {/* Mobile drawer header */}
               <div className="xl:hidden flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] bg-white sticky top-0 z-10">

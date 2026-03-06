@@ -20,6 +20,7 @@ const MyAccount = () => {
   const [userLookbooks, setUserLookbooks] = useState<any[]>([]);
   const [sectionLoading, setSectionLoading] = useState(false);
   const [savedWorlds, setSavedWorlds] = useState<any[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
 
   // Profile forms state
   const [firstName, setFirstName] = useState("");
@@ -74,7 +75,7 @@ const MyAccount = () => {
       const [ordersRes, wishlistRes, lookbooksRes] = await Promise.all([
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
         supabase.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-        supabase.from("collections").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("lookbooks").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
       ]);
       setStats({
         orders: ordersRes.count ?? 0,
@@ -102,8 +103,8 @@ const MyAccount = () => {
     } else if (activeTab === "lookbooks-tab") {
       setSectionLoading(true);
       supabase
-        .from("collections")
-        .select("id, name, slug, cover_image, created_at")
+        .from("lookbooks")
+        .select("id, title, slug, cover_image, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20)
@@ -117,6 +118,15 @@ const MyAccount = () => {
         .order("created_at", { ascending: false })
         .limit(20)
         .then(({ data }) => { setSavedWorlds(data ?? []); setSectionLoading(false); });
+    } else if (activeTab === "recent-tab") {
+      setSectionLoading(true);
+      supabase
+        .from("product_views")
+        .select("product_id, viewed_at, products(id, name, slug, price, discounted_price, imgs)")
+        .eq("user_id", user.id)
+        .order("viewed_at", { ascending: false })
+        .limit(12)
+        .then(({ data }) => { setRecentlyViewed(data ?? []); setSectionLoading(false); });
     }
   }, [activeTab, user, supabase]);
 
@@ -414,6 +424,21 @@ const MyAccount = () => {
                       Saved Worlds
                     </button>
 
+                    {/* Recently Viewed Tab */}
+                    <button
+                      onClick={() => setActiveTab("recent-tab")}
+                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "recent-tab"
+                        ? "text-white bg-blue"
+                        : "text-dark-2 bg-gray-1"
+                        }`}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Recently Viewed
+                    </button>
+
                     {/* Admin Dashboard — only for is_admin users — shown BEFORE logout */}
                     {isAdmin && (
                       <>
@@ -616,14 +641,14 @@ const MyAccount = () => {
                     <a key={lb.id} href={`/lookbook/${lb.slug}`} className="flex items-center gap-4 p-3 border border-gray-3 rounded-lg hover:border-dark ease-out duration-200">
                       {lb.cover_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={lb.cover_image} alt={lb.name} className="w-16 h-16 object-cover border border-gray-3" referrerPolicy="no-referrer" />
+                        <img src={lb.cover_image} alt={lb.title} className="w-16 h-16 object-cover border border-gray-3" referrerPolicy="no-referrer" />
                       ) : (
                         <div className="w-16 h-16 bg-gray-1 flex items-center justify-center">
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="14" y="3" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="3" y="14" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /><rect x="14" y="14" width="7" height="7" stroke="#BCBCBC" strokeWidth="1.5" /></svg>
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-dark line-clamp-1">{lb.name}</p>
+                        <p className="text-sm font-medium text-dark line-clamp-1">{lb.title}</p>
                         <p className="text-xs text-dark-4">{new Date(lb.created_at).toLocaleDateString()}</p>
                       </div>
                     </a>

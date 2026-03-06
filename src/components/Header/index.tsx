@@ -107,6 +107,7 @@ function AllCategoriesDropdown({
 
 const Header = () => {
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [stickyMenu, setStickyMenu] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryWithChildren[]>([]);
@@ -170,12 +171,85 @@ const Header = () => {
         }`}
     >
       <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
-        {/* <!-- header top start --> */}
+        {/* ── Mobile Top Bar (xl:hidden) ─────────────────────────────── */}
+        <div className="relative flex xl:hidden items-center justify-between py-3">
+          {/* Left: Search + Menu */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="w-9 h-9 flex items-center justify-center"
+              aria-label="Search"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setNavigationOpen(true)}
+              className="w-9 h-9 flex items-center justify-center"
+              aria-label="Menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          {/* Center: Logo — absolute centered */}
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+            <img
+              src={isTransparent ? "/images/logo/logo-white.svg" : "/images/logo/logo.svg"}
+              alt="Fitova"
+              className="h-8 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/images/logo/logo.svg"; }}
+            />
+          </Link>
+          {/* Right: Cart + Wishlist + StyleHub */}
+          <div className="flex items-center gap-1">
+            <Link href="/wishlist" className="w-9 h-9 flex items-center justify-center" aria-label="Wishlist">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+            <button onClick={handleOpenCartModal} className="relative w-9 h-9 flex items-center justify-center" aria-label="Cart">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" strokeLinecap="round" />
+              </svg>
+              {product.length > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-[#0A0A0A] text-white text-[9px] flex items-center justify-center font-medium">
+                  {product.length}
+                </span>
+              )}
+            </button>
+            <button onClick={openStyleHub} className="w-9 h-9 flex items-center justify-center" aria-label="Style Hub">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search Full-Screen Overlay */}
+        {mobileSearchOpen && (
+          <div className="fixed inset-0 z-[200] bg-white xl:hidden flex flex-col">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E8E4DF]">
+              <div className="flex-1">
+                <GlobalSearchDropdown isTransparent={false} />
+              </div>
+              <button onClick={() => setMobileSearchOpen(false)} className="p-1 text-[#8A8A8A] flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Desktop Top Row (hidden on mobile) ───────────────────────── */}
         <div
-          className={`flex flex-col lg:flex-row gap-5 items-end lg:items-center xl:justify-between ease-out duration-200 ${stickyMenu ? "py-4" : "py-6"
-            }`}
+          className={`hidden xl:flex items-center xl:justify-between ease-out duration-200 ${stickyMenu ? "py-4" : "py-6"}`}
         >
-          {/* <!-- header top left --> */}
+          {/* Desktop left: Logo + Search */}
           <div className="xl:w-auto flex-col sm:flex-row w-full flex sm:justify-between sm:items-center gap-5 sm:gap-10">
             <Link className="flex-shrink-0" href="/">
               <img
@@ -185,13 +259,8 @@ const Header = () => {
                 onError={(e) => { (e.target as HTMLImageElement).src = "/images/logo/logo.svg"; }}
               />
             </Link>
-
-            {/* Search + All Categories row */}
             <div className="flex items-center gap-2 max-w-[550px] w-full">
-              <AllCategoriesDropdown
-                categories={categoryHierarchy}
-                isTransparent={isTransparent}
-              />
+              <AllCategoriesDropdown categories={categoryHierarchy} isTransparent={isTransparent} />
               <div className="flex-1 min-w-0">
                 <GlobalSearchDropdown isTransparent={isTransparent} />
               </div>
@@ -433,57 +502,122 @@ const Header = () => {
                 </button>
               </div>
 
-              {/* <!-- Main Nav Start --> */}
-              <nav className="h-[calc(100%-80px)] overflow-y-auto xl:h-auto xl:overflow-visible">
-                <ul className="flex xl:items-center flex-col xl:flex-row gap-0 xl:gap-8 px-5 py-4 xl:px-0 xl:py-0">
-                  {/* Home — always first */}
-                  <li className="group relative border-b border-[#E8E4DF] xl:border-none before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
+              {/* ── Desktop Nav (xl only) ─────────────────────── */}
+              <nav className="hidden xl:block">
+                <ul className="flex items-center gap-8">
+                  <li className="group relative before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
                     style={{ "--tw-before-bg": isTransparent ? "white" : "#1a1a1a" } as React.CSSProperties}
                   >
-                    <Link
-                      href="/"
-                      onClick={() => setNavigationOpen(false)}
-                      className={`text-custom-sm font-light tracking-wide flex py-3 xl:py-0 transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "xl:text-white xl:hover:text-white/70 text-dark hover:text-dark-2" : "text-dark hover:text-dark-2"}`}
-                    >
-                      Home
-                    </Link>
+                    <Link href="/" onClick={() => setNavigationOpen(false)}
+                      className={`text-custom-sm font-light tracking-wide flex transition-colors duration-300 ${stickyMenu ? "py-4" : "py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
+                    >Home</Link>
                   </li>
-
-                  {/* Mega Menu: Men / Women / Kids — always shown (has static fallback) */}
-                  <MegaMenu
-                    categories={categoryHierarchy}
-                    categoryImages={categoryImages}
-                    stickyMenu={stickyMenu}
-                    isTransparent={isTransparent}
-                  />
-
-                  {/* Rest of menuData — skip Home (id:1) since it's already above */}
+                  <MegaMenu categories={categoryHierarchy} categoryImages={categoryImages} stickyMenu={stickyMenu} isTransparent={isTransparent} />
                   {menuData.filter(m => m.id !== 1).map((menuItem, i) =>
                     menuItem.submenu ? (
-                      <Dropdown
-                        key={i}
-                        menuItem={menuItem}
-                        stickyMenu={stickyMenu}
-                        isTransparent={isTransparent}
-                      />
+                      <Dropdown key={i} menuItem={menuItem} stickyMenu={stickyMenu} isTransparent={isTransparent} />
                     ) : (
-                      <li
-                        key={i}
-                        className="group relative before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
+                      <li key={i} className="group relative before:w-0 before:h-[2px] before:absolute before:left-0 before:top-0 before:rounded-b-[2px] before:ease-out before:duration-200 hover:before:w-full"
                         style={{ "--tw-before-bg": isTransparent ? "white" : "#1a1a1a" } as React.CSSProperties}
                       >
-                        <Link
-                          href={menuItem.path}
-                          onClick={() => setNavigationOpen(false)}
-                          className={`text-custom-sm font-light tracking-wide flex py-3 border-b border-[#E8E4DF] xl:border-none transition-colors duration-300 ${stickyMenu ? "xl:py-4" : "xl:py-6"} ${isTransparent ? "xl:text-white xl:hover:text-white/70 text-dark hover:text-dark-2" : "text-dark hover:text-dark-2"}`}
-                        >
-                          {menuItem.title}
-                        </Link>
+                        <Link href={menuItem.path} onClick={() => setNavigationOpen(false)}
+                          className={`text-custom-sm font-light tracking-wide flex transition-colors duration-300 ${stickyMenu ? "py-4" : "py-6"} ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"}`}
+                        >{menuItem.title}</Link>
                       </li>
-                    ),
+                    )
                   )}
                 </ul>
               </nav>
+
+              {/* ── Mobile Drawer Nav (3 sections) ─────────────── */}
+              <div className="xl:hidden flex flex-col h-[calc(100%-73px)] overflow-y-auto">
+                {/* Section 1: Main Navigation */}
+                <div className="px-5 pt-5 pb-2">
+                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Navigation</p>
+                  {[
+                    { title: "Home", path: "/" },
+                    { title: "Shop", path: "/shop-with-sidebar" },
+                    { title: "Outfits", path: "/outfits" },
+                    { title: "Lookbooks", path: "/lookbook" },
+                    { title: "Deals", path: "/deals" },
+                    { title: "Coupons", path: "/coupons" },
+                  ].map(({ title, path }) => (
+                    <Link key={path} href={path} onClick={() => setNavigationOpen(false)}
+                      className="flex items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors"
+                    >
+                      {title}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Section 2: Discover */}
+                <div className="px-5 pt-5 pb-2">
+                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Discover</p>
+                  {[
+                    { title: "New Arrivals", path: "/shop-with-sidebar?sort=newest" },
+                    { title: "Trending", path: "/shop-with-sidebar?sort=popular" },
+                    { title: "Collections", path: "/collections" },
+                  ].map(({ title, path }) => (
+                    <Link key={path} href={path} onClick={() => setNavigationOpen(false)}
+                      className="flex items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors"
+                    >
+                      {title}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
+                    </Link>
+                  ))}
+                  <button onClick={() => { setNavigationOpen(false); openStyleHub(); }}
+                    className="flex w-full items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors text-left"
+                  >
+                    Style Hub
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
+                  </button>
+                </div>
+
+                {/* Section 3: Help */}
+                <div className="px-5 pt-5 pb-2">
+                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Help</p>
+                  {[
+                    { title: "About", path: "/about" },
+                    { title: "Contact", path: "/contact" },
+                  ].map(({ title, path }) => (
+                    <Link key={path} href={path} onClick={() => setNavigationOpen(false)}
+                      className="flex items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors"
+                    >
+                      {title}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Bottom: Auth */}
+                <div className="mt-auto px-5 py-6 border-t border-[#E8E4DF]">
+                  {user ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#0A0A0A] text-white flex items-center justify-center text-sm font-medium flex-shrink-0 overflow-hidden">
+                        {user.user_metadata?.avatar_url ? (
+                          <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{(user.user_metadata?.full_name || user.email || "U").charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-light text-[#0A0A0A] truncate">{user.user_metadata?.full_name || user.email?.split("@")[0]}</p>
+                        <Link href="/my-account" onClick={() => setNavigationOpen(false)} className="text-[11px] text-[#8A8A8A] font-light underline">My Account →</Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-3">
+                      <Link href="/signin" onClick={() => setNavigationOpen(false)}
+                        className="flex-1 py-3 text-center text-xs font-light tracking-[0.15em] uppercase border border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition"
+                      >Sign In</Link>
+                      <Link href="/signup" onClick={() => setNavigationOpen(false)}
+                        className="flex-1 py-3 text-center text-xs font-light tracking-[0.15em] uppercase bg-[#0A0A0A] text-white hover:bg-[#2C2C2C] transition"
+                      >Sign Up</Link>
+                    </div>
+                  )}
+                </div>
+              </div>
               {/* //   <!-- Main Nav End --> */}
             </div>
             {/* // <!--=== Main Nav End ===--> */}
