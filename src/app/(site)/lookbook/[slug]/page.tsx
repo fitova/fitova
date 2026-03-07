@@ -1,33 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "../../../../lib/supabase/client";
+import { getLookbookBySlug, Lookbook, LookbookProduct } from "@/lib/queries/lookbooks";
 import { tracking } from "@/lib/queries/tracking";
-
-type ProductImage = { url: string; type: string; sort_order: number };
-
-type Product = {
-    id: string;
-    name: string;
-    slug: string;
-    price: number;
-    discounted_price?: number | null;
-    brand?: string | null;
-    affiliate_link: string;
-    deal_tag?: string | null;
-    product_images?: ProductImage[];
-};
-
-type Collection = {
-    id: string;
-    name: string;
-    slug: string;
-    description?: string;
-    tag?: string;
-    styles?: string[];
-    cover_image?: string;
-    collection_products?: { product_id: string; products: Product }[];
-};
 
 export default function LookbookDetailPage({
     params,
@@ -35,57 +10,37 @@ export default function LookbookDetailPage({
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = React.use(params);
-    const [collection, setCollection] = useState<Collection | null>(null);
-    const [products, setProducts] = useState<Product[]>([]);
+    const [lookbook, setLookbook] = useState<Lookbook | null>(null);
+    const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        const supabase = createClient();
-
         async function fetchData() {
-            const { data, error } = await supabase
-                .from("collections")
-                .select(
-                    `*, collection_products(product_id, products(*, product_images(url, type, sort_order)))`
-                )
-                .eq("slug", slug)
-                .single();
-
-            if (error || !data) {
-                setNotFound(true);
-            } else {
-                setCollection(data as Collection);
-                const prods = (
-                    (data as Collection).collection_products || []
-                )
+            try {
+                const data = await getLookbookBySlug(slug);
+                setLookbook(data);
+                const prods = data.lookbook_products
                     .map((cp) => cp.products)
-                    .filter(Boolean) as Product[];
+                    .filter(Boolean);
                 setProducts(prods);
+                setLoading(false);
+            } catch (err) {
+                setNotFound(true);
+                setLoading(false);
             }
-            setLoading(false);
         }
-
         fetchData();
     }, [slug]);
 
     /* ── Loading ─────────────────────────────────────── */
     if (loading) {
         return (
-            <main
-                className="min-h-screen flex items-center justify-center"
-                style={{ background: "#F6F5F2" }}
-            >
+            <main className="min-h-screen flex items-center justify-center p-4 bg-[#F6F5F2]">
                 <div className="text-center">
-                    <div
-                        className="w-8 h-8 rounded-full animate-spin mx-auto mb-4"
-                        style={{ border: "1px solid #E8E4DF", borderTopColor: "#0A0A0A" }}
-                    />
-                    <p
-                        className="text-sm font-light tracking-[0.1em]"
-                        style={{ color: "#8A8A8A" }}
-                    >
-                        Loading collection...
+                    <div className="w-8 h-8 rounded-full animate-spin mx-auto mb-4 border border-[#E8E4DF] border-t-[#0A0A0A]" />
+                    <p className="text-sm font-light tracking-[0.1em] text-[#8A8A8A]">
+                        Loading lookbook...
                     </p>
                 </div>
             </main>
@@ -93,25 +48,15 @@ export default function LookbookDetailPage({
     }
 
     /* ── Not found ───────────────────────────────────── */
-    if (notFound || !collection) {
+    if (notFound || !lookbook) {
         return (
-            <main
-                className="min-h-screen flex items-center justify-center"
-                style={{ background: "#F6F5F2" }}
-            >
+            <main className="min-h-screen flex items-center justify-center p-4 bg-[#F6F5F2]">
                 <div className="text-center">
-                    <h1
-                        className="font-playfair text-3xl mb-4"
-                        style={{ color: "#0A0A0A" }}
-                    >
-                        Collection not found
+                    <h1 className="font-playfair text-3xl mb-4 text-[#0A0A0A]">
+                        Lookbook not found
                     </h1>
-                    <Link
-                        href="/lookbook"
-                        className="text-sm font-light tracking-[0.1em] underline"
-                        style={{ color: "#8A8A8A" }}
-                    >
-                        ← Back to Lookbook
+                    <Link href="/lookbook" className="text-sm font-light tracking-[0.1em] underline text-[#8A8A8A]">
+                        ← Back to Lookbooks
                     </Link>
                 </div>
             </main>
@@ -119,19 +64,20 @@ export default function LookbookDetailPage({
     }
 
     return (
-        <main style={{ background: "#F6F5F2", minHeight: "100vh" }}>
+        <main className="bg-[#F6F5F2] min-h-screen">
             {/* ── Hero ─────────────────────────────────────── */}
-            <section className="relative overflow-hidden" style={{ minHeight: 420 }}>
+            <section className="relative overflow-hidden min-h-[420px]">
                 {/* Background image or dark fallback */}
-                {collection.cover_image ? (
+                {lookbook.cover_image ? (
                     <img
-                        src={collection.cover_image}
-                        alt={collection.name}
+                        src={lookbook.cover_image}
+                        alt={lookbook.title}
                         className="absolute inset-0 w-full h-full object-cover"
                         style={{ filter: "brightness(0.55)" }}
+                        referrerPolicy="no-referrer"
                     />
                 ) : (
-                    <div className="absolute inset-0" style={{ background: "#0A0A0A" }} />
+                    <div className="absolute inset-0 bg-[#0A0A0A]" />
                 )}
 
                 {/* Gradient overlay for readability */}
@@ -159,16 +105,16 @@ export default function LookbookDetailPage({
                                 strokeLinecap="round"
                             />
                         </svg>
-                        Lookbook
+                        Lookbooks
                     </Link>
 
                     {/* Tag */}
-                    {collection.tag && (
+                    {lookbook.tag && (
                         <span
                             className="block text-[10px] font-light tracking-[0.35em] uppercase mb-3"
                             style={{ color: "rgba(246,245,242,0.5)" }}
                         >
-                            {collection.tag === "AI" ? "AI Generated" : collection.tag}
+                            {lookbook.tag === "AI" ? "AI Generated" : lookbook.tag}
                         </span>
                     )}
 
@@ -177,23 +123,23 @@ export default function LookbookDetailPage({
                         className="font-playfair text-4xl sm:text-5xl md:text-6xl font-normal mb-4"
                         style={{ color: "#F6F5F2", letterSpacing: "-0.03em", lineHeight: 1.1 }}
                     >
-                        {collection.name}
+                        {lookbook.title}
                     </h1>
 
                     {/* Description */}
-                    {collection.description && (
+                    {lookbook.description && (
                         <p
                             className="text-sm font-light leading-relaxed max-w-lg mb-6"
                             style={{ color: "rgba(246,245,242,0.65)" }}
                         >
-                            {collection.description}
+                            {lookbook.description}
                         </p>
                     )}
 
                     {/* Style tags */}
-                    {collection.styles && collection.styles.length > 0 && (
+                    {lookbook.tags && lookbook.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                            {collection.styles.map((s) => (
+                            {lookbook.tags.map((s) => (
                                 <span
                                     key={s}
                                     className="text-[10px] font-light tracking-[0.12em] uppercase px-3 py-1.5"
@@ -215,29 +161,19 @@ export default function LookbookDetailPage({
                 <div className="max-w-[1170px] mx-auto px-4 sm:px-8 xl:px-0">
                     {/* Section header */}
                     <div
-                        className="flex items-center justify-between pb-8 mb-10"
-                        style={{ borderBottom: "1px solid #E8E4DF" }}
+                        className="flex items-center justify-between pb-8 mb-10 border-b border-[#E8E4DF]"
                     >
                         <div>
-                            <p
-                                className="text-[10px] font-light tracking-[0.25em] uppercase mb-1"
-                                style={{ color: "#8A8A8A" }}
-                            >
+                            <p className="text-[10px] font-light tracking-[0.25em] uppercase mb-1 text-[#8A8A8A]">
                                 Shop The Look
                             </p>
-                            <h2
-                                className="font-playfair text-2xl font-normal"
-                                style={{ color: "#0A0A0A" }}
-                            >
-                                {products.length}{" "}
-                                {products.length === 1 ? "Item" : "Items"} in this
-                                Collection
+                            <h2 className="font-playfair text-2xl font-normal text-[#0A0A0A]">
+                                {products.length} {products.length === 1 ? "Item" : "Items"} in this Lookbook
                             </h2>
                         </div>
                         <Link
                             href="/lookbook"
-                            className="hidden sm:inline-flex items-center gap-2 text-xs font-light tracking-[0.1em] uppercase py-2.5 px-5 ease-out duration-200"
-                            style={{ border: "1px solid #C8C4BF", color: "#6A6A6A" }}
+                            className="hidden sm:inline-flex items-center gap-2 text-xs font-light tracking-[0.1em] uppercase py-2.5 px-5 border border-[#C8C4BF] text-[#6A6A6A] ease-out duration-200"
                         >
                             ← All Lookbooks
                         </Link>
@@ -245,39 +181,25 @@ export default function LookbookDetailPage({
 
                     {/* Products grid */}
                     {products.length === 0 ? (
-                        <div
-                            className="text-center py-24 border"
-                            style={{ borderColor: "#E8E4DF" }}
-                        >
-                            <p
-                                className="font-playfair text-2xl mb-3"
-                                style={{ color: "#0A0A0A" }}
-                            >
+                        <div className="text-center py-24 border border-[#E8E4DF]">
+                            <p className="font-playfair text-2xl mb-3 text-[#0A0A0A]">
                                 No products yet
                             </p>
-                            <p
-                                className="text-sm font-light"
-                                style={{ color: "#8A8A8A" }}
-                            >
-                                Products from this collection will appear here.
+                            <p className="text-sm font-light text-[#8A8A8A]">
+                                Products from this lookbook will appear here.
                             </p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                             {products.map((product) => {
-                                const thumbnail =
-                                    product.product_images?.find(
-                                        (img) => img.type === "thumbnail"
-                                    ) || product.product_images?.[0];
-
+                                const thumbnail = product.imgs?.previews?.[0];
                                 const hasDiscount =
                                     product.discounted_price != null &&
                                     product.discounted_price < product.price;
 
                                 const discountPct = hasDiscount
                                     ? Math.round(
-                                        ((product.price -
-                                            product.discounted_price!) /
+                                        ((product.price - product.discounted_price!) /
                                             product.price) *
                                         100
                                     )
@@ -286,51 +208,23 @@ export default function LookbookDetailPage({
                                 return (
                                     <div
                                         key={product.id}
-                                        className="group flex flex-col"
-                                        style={{
-                                            border: "1px solid #E8E4DF",
-                                            background: "#FFFFFF",
-                                        }}
+                                        className="group flex flex-col bg-white border border-[#E8E4DF]"
                                     >
                                         {/* Image */}
-                                        <div
-                                            className="relative w-full overflow-hidden flex-shrink-0"
-                                            style={{
-                                                paddingTop: "133%",
-                                                background: "#F0EDE8",
-                                            }}
-                                        >
+                                        <div className="relative w-full overflow-hidden flex-shrink-0 bg-[#F0EDE8]" style={{ paddingTop: "133%" }}>
                                             <div className="absolute inset-0">
                                                 {thumbnail ? (
                                                     <img
-                                                        src={thumbnail.url}
+                                                        src={thumbnail}
                                                         alt={product.name}
                                                         className="w-full h-full object-cover ease-out duration-500 group-hover:scale-[1.04]"
+                                                        referrerPolicy="no-referrer"
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
-                                                        <svg
-                                                            width="28"
-                                                            height="28"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            style={{ color: "#D8D4CF" }}
-                                                        >
-                                                            <rect
-                                                                x="3"
-                                                                y="3"
-                                                                width="18"
-                                                                height="18"
-                                                                rx="2"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.5"
-                                                            />
-                                                            <path
-                                                                d="M3 9l4-4 4 4 4-6 6 6"
-                                                                stroke="currentColor"
-                                                                strokeWidth="1.5"
-                                                                strokeLinejoin="round"
-                                                            />
+                                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#D8D4CF]">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                                                            <path d="M3 9l4-4 4 4 4-6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                                                         </svg>
                                                     </div>
                                                 )}
@@ -338,27 +232,8 @@ export default function LookbookDetailPage({
 
                                             {/* Discount badge */}
                                             {discountPct && (
-                                                <div
-                                                    className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[9px] font-medium tracking-wide"
-                                                    style={{
-                                                        background: "#0A0A0A",
-                                                        color: "#F6F5F2",
-                                                    }}
-                                                >
+                                                <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[9px] font-medium tracking-wide bg-[#0A0A0A] text-[#F6F5F2]">
                                                     −{discountPct}%
-                                                </div>
-                                            )}
-
-                                            {/* Deal badge */}
-                                            {product.deal_tag && (
-                                                <div
-                                                    className="absolute top-2.5 right-2.5 px-2 py-0.5 text-[9px] font-light tracking-wide"
-                                                    style={{
-                                                        background: "#C0392B",
-                                                        color: "#FFFFFF",
-                                                    }}
-                                                >
-                                                    {product.deal_tag}
                                                 </div>
                                             )}
                                         </div>
@@ -366,17 +241,11 @@ export default function LookbookDetailPage({
                                         {/* Body */}
                                         <div className="p-3 sm:p-4 flex flex-col flex-1">
                                             {product.brand && (
-                                                <p
-                                                    className="text-[9px] sm:text-[10px] font-light tracking-[0.18em] uppercase mb-1"
-                                                    style={{ color: "#A0A0A0" }}
-                                                >
+                                                <p className="text-[9px] sm:text-[10px] font-light tracking-[0.18em] uppercase mb-1 text-[#A0A0A0]">
                                                     {product.brand}
                                                 </p>
                                             )}
-                                            <h3
-                                                className="text-xs sm:text-sm font-light leading-snug mb-3 flex-1"
-                                                style={{ color: "#1A1A1A" }}
-                                            >
+                                            <h3 className="text-xs sm:text-sm font-light leading-snug mb-3 flex-1 text-[#1A1A1A]">
                                                 {product.name}
                                             </h3>
 
@@ -384,61 +253,27 @@ export default function LookbookDetailPage({
                                             <div className="flex items-baseline gap-2 mb-3">
                                                 {hasDiscount ? (
                                                     <>
-                                                        <span
-                                                            className="text-sm font-medium"
-                                                            style={{ color: "#0A0A0A" }}
-                                                        >
-                                                            $
-                                                            {product.discounted_price!.toFixed(
-                                                                2
-                                                            )}
+                                                        <span className="text-sm font-medium text-[#0A0A0A]">
+                                                            ${product.discounted_price!.toFixed(2)}
                                                         </span>
-                                                        <span
-                                                            className="text-[11px] font-light line-through"
-                                                            style={{ color: "#C0BAB3" }}
-                                                        >
+                                                        <span className="text-[11px] font-light line-through text-[#C0BAB3]">
                                                             ${product.price.toFixed(2)}
                                                         </span>
                                                     </>
                                                 ) : (
-                                                    <span
-                                                        className="text-sm font-medium"
-                                                        style={{ color: "#0A0A0A" }}
-                                                    >
+                                                    <span className="text-sm font-medium text-[#0A0A0A]">
                                                         ${product.price.toFixed(2)}
                                                     </span>
                                                 )}
                                             </div>
 
                                             {/* Shop button */}
-                                            <a
-                                                href={product.affiliate_link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="block w-full py-2.5 text-center text-[10px] sm:text-xs font-light tracking-[0.12em] uppercase ease-out duration-200"
-                                                onClick={() => {
-                                                    if (product.id) {
-                                                        tracking.trackAffiliateClick(product.id as string);
-                                                    }
-                                                }}
-                                                style={{
-                                                    background: "#0A0A0A",
-                                                    color: "#F6F5F2",
-                                                    border: "1px solid #0A0A0A",
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    (
-                                                        e.currentTarget as HTMLElement
-                                                    ).style.background = "#2C2C2C";
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    (
-                                                        e.currentTarget as HTMLElement
-                                                    ).style.background = "#0A0A0A";
-                                                }}
+                                            <Link
+                                                href={`/products/${product.slug}`}
+                                                className="block w-full py-2.5 text-center text-[10px] sm:text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 bg-[#0A0A0A] text-[#F6F5F2] hover:bg-[#2C2C2C] border border-[#0A0A0A]"
                                             >
                                                 Shop Now →
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 );

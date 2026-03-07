@@ -23,12 +23,12 @@ export default function Step1BasicInfo({ data, onChange, onNext }: Step1Props) {
         const fileName = `lookbook-covers/${Date.now()}.${ext}`;
 
         const { data: uploaded, error } = await supabase.storage
-            .from("product-images")
+            .from("lookbook-images")
             .upload(fileName, file, { upsert: true });
 
         if (!error && uploaded) {
             const { data: urlData } = supabase.storage
-                .from("product-images")
+                .from("lookbook-images")
                 .getPublicUrl(uploaded.path);
             const url = urlData.publicUrl;
             setPreview(url);

@@ -33,7 +33,7 @@
 | 12 | #12 | Lookbook Details Page | ✅ |
 | 13 | #13 | Lookbook Fork/Modify | ✅ |
 | 14 | #18 | Mobile Navbar Redesign | ✅ |
-| 15 | #19 | Mobile Slider Menu Redesign | ✅ |
+| 15 | #19 | Mobile Slider Menu Redesign | ✅|
 | 16 | #20 | Profile Page Redesign | ⏳ |
 | 17 | #17 | User-Generated Coupons | ⏳ |
 

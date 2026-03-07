@@ -22,12 +22,48 @@ interface Step2Props {
     onBack: () => void;
 }
 
-const CATEGORIES: { key: LookbookCategory; label: string; icon: string }[] = [
-    { key: "top", label: "Top", icon: "👕" },
-    { key: "pants", label: "Pants", icon: "👖" },
-    { key: "shoes", label: "Shoes", icon: "👟" },
-    { key: "accessories", label: "Accessories", icon: "👜" },
-    { key: "perfumes", label: "Perfume", icon: "🧴" },
+const CATEGORIES: { key: LookbookCategory; label: string; icon: React.ReactNode }[] = [
+    {
+        key: "top", label: "Top", icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.38 3.46L16 2a8.96 8.96 0 0 0-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />
+            </svg>
+        )
+    },
+    {
+        key: "pants", label: "Pants", icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16v1.5a2 2 0 0 1-2 2h-1l-3 14.5H8l-3-14.5H4z" />
+                <path d="M12 7.5v14" />
+            </svg>
+        )
+    },
+    {
+        key: "shoes", label: "Shoes", icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 16v-2.38C4 11.5 5.92 9 8.5 9h7c2.58 0 4.5 2.5 4.5 4.62V16" />
+                <path d="M2 16h20v4H2z" />
+            </svg>
+        )
+    },
+    {
+        key: "accessories", label: "Accessories", icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+        )
+    },
+    {
+        key: "perfumes", label: "Perfume", icon: (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 10h12v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10z" />
+                <path d="M9 10V6a3 3 0 0 1 6 0v4" />
+                <rect x="10" y="2" width="4" height="2" rx="1" />
+            </svg>
+        )
+    },
 ];
 
 export default function Step2ProductSelection({ slots, onChange, onNext, onBack }: Step2Props) {
@@ -61,11 +97,13 @@ export default function Step2ProductSelection({ slots, onChange, onNext, onBack 
                         className="flex items-center gap-4 border border-[#E8E4DF] p-3 hover:border-[#0A0A0A] transition-colors group"
                     >
                         {/* Slot Image */}
-                        <div className="flex-shrink-0 w-14 h-14 border border-[#E8E4DF] overflow-hidden bg-[#F6F5F2] flex items-center justify-center">
+                        <div className="flex-shrink-0 w-14 h-14 border border-[#E8E4DF] overflow-hidden bg-[#F6F5F2] flex items-center justify-center text-[#8A8A8A]">
                             {img ? (
                                 <img src={img} alt={selected!.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                                <span className="text-xl">{icon}</span>
+                                <span className="flex items-center justify-center w-full h-full">
+                                    {icon}
+                                </span>
                             )}
                         </div>
 
