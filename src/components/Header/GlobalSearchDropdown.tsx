@@ -7,6 +7,7 @@ import { globalSearch, GlobalSearchResults } from "@/lib/queries/search";
 
 interface GlobalSearchDropdownProps {
     isTransparent?: boolean;
+    autoFocus?: boolean;
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -18,7 +19,7 @@ function useDebounce<T>(value: T, delay: number): T {
     return debounced;
 }
 
-const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownProps) => {
+const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: GlobalSearchDropdownProps) => {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<GlobalSearchResults | null>(null);
     const [loading, setLoading] = useState(false);
@@ -100,6 +101,14 @@ const GlobalSearchDropdown = ({ isTransparent = false }: GlobalSearchDropdownPro
     }, [query, activeIndex, totalItems, results, router]);
 
     const handleClose = () => { setOpen(false); setQuery(""); setResults(null); };
+
+    // Auto focus on mount if requested
+    useEffect(() => {
+        if (autoFocus && inputRef.current) {
+            // Slight delay to ensure modal animation has started/completed
+            setTimeout(() => inputRef.current?.focus(), 100);
+        }
+    }, [autoFocus]);
 
     const inputColor = isTransparent
         ? "bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30"

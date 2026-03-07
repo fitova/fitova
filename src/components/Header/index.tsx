@@ -174,22 +174,22 @@ const Header = () => {
         {/* ── Mobile Top Bar (xl:hidden) ─────────────────────────────── */}
         <div className="relative flex xl:hidden items-center justify-between py-3">
           {/* Left: Search + Menu */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="w-9 h-9 flex items-center justify-center"
+              className="w-9 h-9 flex items-center justify-center -ml-2"
               aria-label="Search"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
               </svg>
             </button>
             <button
               onClick={() => setNavigationOpen(true)}
-              className="w-9 h-9 flex items-center justify-center"
+              className="w-9 h-9 flex items-center justify-center -ml-1"
               aria-label="Menu"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" />
               </svg>
             </button>
@@ -205,24 +205,24 @@ const Header = () => {
           </Link>
           {/* Right: Cart + Wishlist + StyleHub */}
           <div className="flex items-center gap-1">
-            <Link href="/wishlist" className="w-9 h-9 flex items-center justify-center" aria-label="Wishlist">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
             <button onClick={handleOpenCartModal} className="relative w-9 h-9 flex items-center justify-center" aria-label="Cart">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
-                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" strokeLinecap="round" />
+                <circle cx="9" cy="21" r="1.5" /><circle cx="20" cy="21" r="1.5" />
               </svg>
               {product.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-[#0A0A0A] text-white text-[9px] flex items-center justify-center font-medium">
+                <span className="absolute top-0 right-0 w-4.5 h-4.5 rounded-full bg-[#0A0A0A] text-white text-[9px] flex items-center justify-center font-medium">
                   {product.length}
                 </span>
               )}
             </button>
-            <button onClick={openStyleHub} className="w-9 h-9 flex items-center justify-center" aria-label="Style Hub">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+            <Link href="/wishlist" className="w-9 h-9 flex items-center justify-center" aria-label="Wishlist">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+            <button onClick={openStyleHub} className="w-9 h-9 flex items-center justify-center mr-[-4px]" aria-label="Style Hub">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -231,17 +231,19 @@ const Header = () => {
 
         {/* Mobile Search Full-Screen Overlay */}
         {mobileSearchOpen && (
-          <div className="fixed inset-0 z-[200] bg-white xl:hidden flex flex-col">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E8E4DF]">
+          <div className="fixed inset-0 z-[200] bg-white xl:hidden flex flex-col animate-in slide-in-from-top-2 duration-300 w-screen h-screen">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E8E4DF] bg-white">
               <div className="flex-1">
-                <GlobalSearchDropdown isTransparent={false} />
+                <GlobalSearchDropdown isTransparent={false} autoFocus={true} />
               </div>
-              <button onClick={() => setMobileSearchOpen(false)} className="p-1 text-[#8A8A8A] flex-shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+              <button onClick={() => setMobileSearchOpen(false)} className="p-2 -mr-2 text-[#4A4A4A] flex-shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
+            {/* Dark opaque area to close when clicking below the results */}
+            <div className="flex-1 bg-black/5" onClick={() => setMobileSearchOpen(false)} />
           </div>
         )}
 

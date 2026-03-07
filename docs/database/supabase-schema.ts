@@ -582,16 +582,19 @@ export type Database = {
       }
       lookbook_products: {
         Row: {
+          category: string | null
           lookbook_id: string
           product_id: string
           sort_order: number | null
         }
         Insert: {
+          category?: string | null
           lookbook_id: string
           product_id: string
           sort_order?: number | null
         }
         Update: {
+          category?: string | null
           lookbook_id?: string
           product_id?: string
           sort_order?: number | null
@@ -615,27 +618,69 @@ export type Database = {
       }
       lookbooks: {
         Row: {
+          colors: string[] | null
           cover_image: string | null
           created_at: string | null
+          description: string | null
           id: string
+          is_copy: boolean | null
+          mood: string | null
+          occasion: string | null
+          original_lookbook_id: string | null
+          season: string | null
           slug: string | null
+          tags: string[] | null
           title: string
+          user_id: string | null
         }
         Insert: {
+          colors?: string[] | null
           cover_image?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
+          is_copy?: boolean | null
+          mood?: string | null
+          occasion?: string | null
+          original_lookbook_id?: string | null
+          season?: string | null
           slug?: string | null
+          tags?: string[] | null
           title: string
+          user_id?: string | null
         }
         Update: {
+          colors?: string[] | null
           cover_image?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
+          is_copy?: boolean | null
+          mood?: string | null
+          occasion?: string | null
+          original_lookbook_id?: string | null
+          season?: string | null
           slug?: string | null
+          tags?: string[] | null
           title?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lookbooks_original_lookbook_id_fkey"
+            columns: ["original_lookbook_id"]
+            isOneToOne: false
+            referencedRelation: "lookbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lookbooks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       newsletter_subscribers: {
         Row: {
@@ -1250,6 +1295,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_addresses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_type: string | null
+          discount_value: number
+          expiry_date: string | null
+          id: string
+          is_active: boolean | null
+          min_order_value: number | null
+          title: string | null
+          usage_limit: number | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type?: string | null
+          discount_value: number
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_order_value?: number | null
+          title?: string | null
+          usage_limit?: number | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type?: string | null
+          discount_value?: number
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_order_value?: number | null
+          title?: string | null
+          usage_limit?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_coupons_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

@@ -14,9 +14,16 @@ export default function Step1BasicInfo({ data, onChange, onNext }: Step1Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
 
+    const [fileNameState, setFileNameState] = useState<string | null>(null);
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Show local preview immediately and store file name
+        setFileNameState(file.name);
+        const localPreview = URL.createObjectURL(file);
+        setPreview(localPreview);
 
         setUploading(true);
         const ext = file.name.split(".").pop();
@@ -31,6 +38,7 @@ export default function Step1BasicInfo({ data, onChange, onNext }: Step1Props) {
                 .from("lookbook-images")
                 .getPublicUrl(uploaded.path);
             const url = urlData.publicUrl;
+            // Update to real URL after upload
             setPreview(url);
             onChange({ ...data, coverImage: url });
         }
@@ -76,12 +84,22 @@ export default function Step1BasicInfo({ data, onChange, onNext }: Step1Props) {
                     Cover Image (optional)
                 </label>
                 <div
-                    className="relative border-2 border-dashed border-[#E8E4DF] hover:border-[#0A0A0A] transition-colors cursor-pointer overflow-hidden"
+                    className="group relative border-2 border-dashed border-[#E8E4DF] hover:border-[#0A0A0A] transition-colors cursor-pointer overflow-hidden rounded-md"
                     style={{ height: 180 }}
                     onClick={() => fileInputRef.current?.click()}
                 >
                     {preview ? (
-                        <img src={preview} alt="Cover" className="w-full h-full object-cover" />
+                        <>
+                            <img src={preview} alt="Cover" className="w-full h-full object-cover" />
+                            {fileNameState && (
+                                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs px-3 py-2 truncate transition-opacity duration-300">
+                                    {fileNameState}
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                                <span className="text-white text-sm font-medium">Change Image</span>
+                            </div>
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full gap-2 text-[#C8C8C8]">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
@@ -93,7 +111,7 @@ export default function Step1BasicInfo({ data, onChange, onNext }: Step1Props) {
                         </div>
                     )}
                     {uploading && (
-                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
                             <div className="w-6 h-6 border-2 border-[#0A0A0A] border-t-transparent rounded-full animate-spin" />
                         </div>
                     )}

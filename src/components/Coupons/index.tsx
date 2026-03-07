@@ -8,13 +8,19 @@ type Coupon = {
     id: number;
     code: string;
     store_name: string;
-    discount_percent: number;
+    discount_percent: number; // legacy
+    discount_type?: "percentage" | "fixed" | null;
+    discount_value?: number | null;
+    max_discount_value?: number | null;
+    min_order_value?: number | null;
     affiliate_link: string | null;
     image_url: string | null;
     start_date: string;
     end_date: string;
     is_active: boolean | null;
     created_at: string | null;
+    user_id?: string | null;
+    profiles?: { full_name: string | null } | null;
 };
 
 // ─── Countdown per coupon ─────────────────────────────────────────────────────
@@ -72,12 +78,25 @@ const CouponCard = ({ coupon }: { coupon: Coupon }) => {
                                 className="h-5 object-contain opacity-70 mb-1"
                                 loading="lazy" />
                         )}
+                        {coupon.profiles?.full_name && (
+                            <span className="inline-block mt-1 text-[9px] font-medium tracking-widest uppercase bg-[#F6F5F2] text-[#4A4A4A] px-2 py-0.5 border border-[#E8E4DF]">
+                                Added by {coupon.profiles.full_name}
+                            </span>
+                        )}
                     </div>
-                    <span className="flex-shrink-0 font-playfair text-3xl font-normal text-dark"
-                        style={{ letterSpacing: "-0.03em" }}>
-                        {coupon.discount_percent}%
-                        <span className="text-sm font-light ml-0.5 text-[#8A8A8A]">off</span>
-                    </span>
+                    <div className="flex flex-col items-end">
+                        <span className="flex-shrink-0 font-playfair text-3xl font-normal text-dark leading-none"
+                            style={{ letterSpacing: "-0.03em" }}>
+                            {coupon.discount_type === "fixed" ? `$${coupon.discount_value || coupon.discount_percent}` : `${coupon.discount_value || coupon.discount_percent}%`}
+                            <span className="text-sm font-light ml-0.5 text-[#8A8A8A]">off</span>
+                        </span>
+                        {(coupon.max_discount_value || coupon.min_order_value) && (
+                            <span className="text-[9px] text-[#8A8A8A] mt-1 text-right">
+                                {coupon.max_discount_value && `Up to $${coupon.max_discount_value} `}
+                                {coupon.min_order_value && `(Min $${coupon.min_order_value})`}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Countdown timer */}
@@ -136,12 +155,12 @@ const CouponCard = ({ coupon }: { coupon: Coupon }) => {
 
 // ─── Fallback data ─────────────────────────────────────────────────────────────
 const MOCK_COUPONS: Coupon[] = [
-    { id: 1, code: "FITOVA20", store_name: "Fitova", discount_percent: 20, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-12-31", is_active: true, created_at: null },
-    { id: 2, code: "ZARA15", store_name: "Zara", discount_percent: 15, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-06-30", is_active: true, created_at: null },
-    { id: 3, code: "HM30", store_name: "H&M", discount_percent: 30, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-05-31", is_active: true, created_at: null },
-    { id: 4, code: "UNIQLO10", store_name: "Uniqlo", discount_percent: 10, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-03-10", is_active: true, created_at: null },
-    { id: 5, code: "NIKE25", store_name: "Nike", discount_percent: 25, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-04-15", is_active: true, created_at: null },
-    { id: 6, code: "LEVIS35", store_name: "Levi's", discount_percent: 35, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-08-31", is_active: true, created_at: null },
+    { id: 1, code: "FITOVA20", store_name: "Fitova", discount_percent: 20, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-12-31", is_active: true, created_at: null, profiles: { full_name: "Admin" } },
+    { id: 2, code: "ZARA15", store_name: "Zara", discount_percent: 15, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-06-30", is_active: true, created_at: null, profiles: null },
+    { id: 3, code: "HM30", store_name: "H&M", discount_percent: 30, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-05-31", is_active: true, created_at: null, profiles: { full_name: "John Doe" } },
+    { id: 4, code: "UNIQLO10", store_name: "Uniqlo", discount_percent: 10, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-03-10", is_active: true, created_at: null, profiles: null },
+    { id: 5, code: "NIKE25", store_name: "Nike", discount_percent: 25, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-04-15", is_active: true, created_at: null, profiles: null },
+    { id: 6, code: "LEVIS35", store_name: "Levi's", discount_percent: 35, affiliate_link: "#", image_url: null, start_date: "2026-01-01", end_date: "2026-08-31", is_active: true, created_at: null, profiles: null },
 ];
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -154,18 +173,59 @@ export default function Coupons() {
         async function load() {
             try {
                 const supabase = createClient();
+
+                // 1. Fetch coupons
                 const { data, error } = await supabase
                     .from("coupons")
                     .select("*")
                     .eq("is_active", true)
                     .order("end_date", { ascending: true });
 
-                if (error || !data || data.length === 0) {
+                if (error) {
+                    console.error("Error fetching coupons:", error.message, error.details);
                     setCoupons(MOCK_COUPONS);
-                } else {
-                    setCoupons(data as Coupon[]);
+                    setLoading(false);
+                    return;
                 }
-            } catch {
+
+                if (!data || data.length === 0) {
+                    setCoupons([]);
+                    setLoading(false);
+                    return;
+                }
+
+                let couponsData = data as Coupon[];
+
+                // 2. Extract unique user IDs
+                const userIds = Array.from(new Set(couponsData.map(c => c.user_id).filter(Boolean))) as string[];
+
+                // 3. Fetch profiles for those user IDs manually to avoid PostgREST relationship cache issues
+                if (userIds.length > 0) {
+                    const { data: profilesData, error: profilesError } = await supabase
+                        .from("profiles")
+                        .select("id, full_name")
+                        .in("id", userIds);
+
+                    if (!profilesError && profilesData) {
+                        // Create a map for fast lookup
+                        const profileMap = profilesData.reduce((acc, profile) => {
+                            acc[profile.id] = profile.full_name;
+                            return acc;
+                        }, {} as Record<string, string | null>);
+
+                        // Attach profile names to coupons
+                        couponsData = couponsData.map(coupon => ({
+                            ...coupon,
+                            profiles: coupon.user_id && profileMap[coupon.user_id]
+                                ? { full_name: profileMap[coupon.user_id] }
+                                : null
+                        }));
+                    }
+                }
+
+                setCoupons(couponsData);
+            } catch (err) {
+                console.error("Exception fetching coupons:", err);
                 setCoupons(MOCK_COUPONS);
             } finally {
                 setLoading(false);
@@ -196,10 +256,15 @@ export default function Coupons() {
                     style={{ color: "#F6F5F2", letterSpacing: "-0.03em" }}>
                     Discount Coupons
                 </h1>
-                <p className="font-light text-sm max-w-md leading-relaxed"
+                <p className="font-light text-sm max-w-md leading-relaxed mb-6"
                     style={{ color: "rgba(246,245,242,0.5)" }}>
                     Copy a code and apply it at checkout. All codes are verified and updated regularly.
                 </p>
+                <a href="/my-account?tab=coupons-tab"
+                    className="inline-block px-6 py-3 border border-[rgba(246,245,242,0.3)] text-xs font-light tracking-[0.15em] uppercase transition-colors duration-200 hover:bg-[#F6F5F2] hover:text-[#0A0A0A]"
+                    style={{ color: "#F6F5F2" }}>
+                    + Share a Coupon
+                </a>
             </section>
 
             {/* Filters + count */}
