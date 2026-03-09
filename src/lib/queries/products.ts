@@ -151,7 +151,7 @@ export async function getProductBySlug(slug: string) {
     const supabase = createClient();
     const { data, error } = await supabase
         .from("products")
-        .select("*, product_images(*), product_reviews(*)")
+        .select("*, product_images(*), product_reviews(*), categories(id, name, slug)")
         .eq("slug", slug)
         .single();
 
@@ -180,19 +180,120 @@ export async function getNewArrivals(limit = 12) {
     return data as (Product & { product_images: { url: string; type: string; sort_order: number }[] })[];
 }
 
-// Fetch related products (same category, exclude current product)
-export async function getRelatedProducts(categoryId: string, excludeId: string, limit = 6) {
+// Map of complementary piece types for "Complete Your Look"
+const COMPLEMENTARY_MAP: Record<string, string[]> = {
+    "top": ["pants", "shorts", "shoes", "accessories"],
+    "tshirt": ["pants", "shorts", "shoes", "accessories"],
+    "shirt": ["pants", "shoes", "accessories"],
+    "hoodie": ["pants", "shoes"],
+    "sweater": ["pants", "shoes"],
+    "jacket": ["tshirt", "pants", "shoes"],
+    "pants": ["top", "tshirt", "shirt", "hoodie", "shoes"],
+    "shorts": ["top", "tshirt", "shoes"],
+    "shoes": ["pants", "shorts", "accessories", "top"],
+    "accessories": ["top", "pants", "shoes"],
+    "bag": ["top", "pants", "shoes", "dress"],
+    "dress": ["shoes", "accessories", "bag"],
+};
+
+// Fetch "Complete Your Look" products
+export async function getCompleteYourLookProducts(currentProduct: any, limit = 4) {
     const supabase = createClient();
-    const { data, error } = await supabase
+    const pt = currentProduct.piece_type?.toLowerCase() || "";
+    const complements = COMPLEMENTARY_MAP[pt] || ["accessories", "shoes", "bag", "fragrances"]; // fallback
+    const styles = currentProduct.styles || [];
+
+    // Build query
+    let query = supabase
         .from("products")
         .select("*, product_images(url, type, sort_order)")
-        .eq("category_id", categoryId)
-        .neq("id", excludeId)
-        .eq("is_hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(limit);
+        .neq("id", currentProduct.id)
+        .eq("is_hidden", false);
+
+    // Filter by gender if available
+    if (currentProduct.gender && currentProduct.gender !== 'unisex') {
+        query = query.in("gender", [currentProduct.gender, "unisex"]);
+    }
+
+    // Filter by complementary piece types
+    if (complements.length > 0) {
+        query = query.in("piece_type", complements);
+    }
+
+    // Primary fetch
+    const { data: primaryData, error } = await query.limit(20);
     if (error) throw error;
-    return data as (Product & { product_images: { url: string; type: string; sort_order: number }[] })[];
+
+    let candidates = (primaryData ?? []) as any[];
+
+    // Sort candidates by style match score
+    candidates.sort((a, b) => {
+        const aStyles = a.styles || [];
+        const bStyles = b.styles || [];
+        const aMatch = aStyles.filter((s: string) => styles.includes(s)).length;
+        const bMatch = bStyles.filter((s: string) => styles.includes(s)).length;
+        return bMatch - aMatch; // descending score
+    });
+
+    // If we don't have enough, fill with new arrivals
+    if (candidates.length < limit) {
+        const fillCount = limit - candidates.length;
+        const fallback = await getNewArrivals(fillCount + 4);
+        const filteredFallback = fallback.filter((p) => p.id !== currentProduct.id && !candidates.some(c => c.id === p.id)).slice(0, fillCount);
+        candidates = [...candidates, ...filteredFallback];
+    }
+
+    // Return the top N
+    return candidates.slice(0, limit);
+}
+
+// Fetch related products (Similar Items algorithm)
+export async function getRelatedProducts(currentProduct: any, limit = 4) {
+    const supabase = createClient();
+
+    if (!currentProduct.category_id) return [];
+
+    // Query same category
+    let query = supabase
+        .from("products")
+        .select("*, product_images(url, type, sort_order)")
+        .eq("category_id", currentProduct.category_id)
+        .neq("id", currentProduct.id)
+        .eq("is_hidden", false);
+
+    const { data, error } = await query.limit(30);
+    if (error) throw error;
+
+    let candidates = (data ?? []) as any[];
+
+    // Score candidates based on similarity
+    const targetStyles = currentProduct.styles || [];
+    const targetBrand = currentProduct.brand;
+    const targetMaterial = currentProduct.material;
+
+    candidates.sort((a, b) => {
+        let scoreA = 0;
+        let scoreB = 0;
+
+        // Brand match = +3
+        if (targetBrand && a.brand === targetBrand) scoreA += 3;
+        if (targetBrand && b.brand === targetBrand) scoreB += 3;
+
+        // Material match = +2
+        if (targetMaterial && a.material === targetMaterial) scoreA += 2;
+        if (targetMaterial && b.material === targetMaterial) scoreB += 2;
+
+        // Style overlap = +1 per style
+        const aStyles = a.styles || [];
+        scoreA += aStyles.filter((s: string) => targetStyles.includes(s)).length;
+
+        const bStyles = b.styles || [];
+        scoreB += bStyles.filter((s: string) => targetStyles.includes(s)).length;
+
+        return scoreB - scoreA;
+    });
+
+    return candidates.slice(0, limit);
 }
 
 // Fetch a single product by ID

@@ -35,12 +35,19 @@ const AddToLookbookModal = ({ productId, onClose }: AddToLookbookModalProps) => 
     const fetchLookbooks = () => {
         if (!user) { setLoading(false); return; }
         supabase
-            .from("collections")
-            .select("id, name, cover_image")
+            .from("lookbooks")
+            .select("id, title, cover_image")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .then(({ data, error }) => {
-                if (!error) setLookbooks((data ?? []) as Lookbook[]);
+                if (!error) {
+                    const mapped = data.map((lb: any) => ({
+                        id: lb.id,
+                        name: lb.title, // map title to name for UI
+                        cover_image: lb.cover_image
+                    }));
+                    setLookbooks(mapped);
+                }
                 setLoading(false);
             });
     };
@@ -52,8 +59,8 @@ const AddToLookbookModal = ({ productId, onClose }: AddToLookbookModalProps) => 
         setAdding(lookbookId);
         setError(null);
         const { error } = await supabase
-            .from("collection_products")
-            .upsert({ collection_id: lookbookId, product_id: productId }, { onConflict: "collection_id,product_id" });
+            .from("lookbook_products")
+            .upsert({ lookbook_id: lookbookId, product_id: productId }, { onConflict: "lookbook_id,product_id" });
         if (error) {
             setError("Failed to add to lookbook. Please try again.");
         } else {
@@ -73,9 +80,9 @@ const AddToLookbookModal = ({ productId, onClose }: AddToLookbookModalProps) => 
         const slug = newName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-" + Date.now();
 
         const { data, error: createErr } = await supabase
-            .from("collections")
-            .insert({ name: newName.trim(), slug, user_id: user.id })
-            .select("id, name, cover_image")
+            .from("lookbooks")
+            .insert({ title: newName.trim(), slug, user_id: user.id, tag: "User" })
+            .select("id, title, cover_image")
             .single();
 
         if (createErr || !data) {
@@ -86,15 +93,16 @@ const AddToLookbookModal = ({ productId, onClose }: AddToLookbookModalProps) => 
 
         // Automatically add the current product to the new lookbook
         await supabase
-            .from("collection_products")
-            .upsert({ collection_id: data.id, product_id: productId }, { onConflict: "collection_id,product_id" });
+            .from("lookbook_products")
+            .upsert({ lookbook_id: data.id, product_id: productId }, { onConflict: "lookbook_id,product_id" });
 
-        setLookbooks((prev) => [data as Lookbook, ...prev]);
+        const newLb: Lookbook = { id: data.id, name: data.title, cover_image: data.cover_image };
+        setLookbooks((prev) => [newLb, ...prev]);
         setAdded((prev) => ({ ...prev, [data.id]: true }));
         setNewName("");
         setShowCreateForm(false);
         setCreating(false);
-        toast.success(`Lookbook "${data.name}" created and product added!`);
+        toast.success(`Lookbook "${data.title}" created and product added!`);
     };
 
     /* ── Backdrop close ─────────────────────────────────────────── */

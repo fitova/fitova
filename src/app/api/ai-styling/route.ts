@@ -182,32 +182,26 @@ export async function POST(req: Request) {
             if (!products || products.length === 0) return null;
 
             const product = products[0];
-            const thumbnail = (product.product_images || []).find((img: any) => img.type === "thumbnail");
-
-            // Map to the color gradient for fallback visual
-            const colorGradients: Record<string, string> = {
-                Black: "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)",
-                White: "linear-gradient(135deg, #F0F0F0 0%, #E0E0E0 100%)",
-                Navy: "linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%)",
-                Grey: "linear-gradient(135deg, #4A4A4A 0%, #787878 100%)",
-                Beige: "linear-gradient(135deg, #C8B99A 0%, #E8D8C0 100%)",
-                Brown: "linear-gradient(135deg, #3B1F0A 0%, #7B4A2A 100%)",
-                Red: "linear-gradient(135deg, #8B0000 0%, #C0392B 100%)",
-                Green: "linear-gradient(135deg, #1A3A1A 0%, #27AE60 100%)",
-            };
-            const dominantColor = (product.colors?.[0]) || "Black";
-            const gradient = colorGradients[dominantColor] || "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)";
+            const thumbnails = (product.product_images || []).filter((img: any) => img.type === "thumbnail").map((i: any) => i.url);
+            const previews = (product.product_images || []).filter((img: any) => img.type === "preview").map((i: any) => i.url);
 
             return {
                 id: product.id,
-                name: product.name,
+                title: product.name,
                 category: pieceType,
-                price: product.discounted_price || product.price,
+                price: product.price,
+                discountedPrice: product.discounted_price,
                 matchReason,
-                gradient,
-                imageUrl: thumbnail?.url || null,
-                affiliateLink: product.affiliate_link || null,
+                imgs: {
+                    thumbnails: thumbnails.length > 0 ? thumbnails : ["/images/products/product-1-bg-1.png"],
+                    previews: previews.length > 0 ? previews : ["/images/products/product-1-bg-1.png"]
+                },
                 slug: product.slug,
+                brand: product.brand,
+                colors: product.colors,
+                tags: product.tags,
+                gender: product.gender,
+                piece_type: product.piece_type
             };
         });
 

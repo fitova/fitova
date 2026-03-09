@@ -123,7 +123,7 @@ const QuickViewModal = () => {
               >
                 <Image
                   src={currentImage}
-                  alt={product.title}
+                  alt={product?.title || (product as any)?.name || "Product Image"}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width:640px) 100vw, 55vw"

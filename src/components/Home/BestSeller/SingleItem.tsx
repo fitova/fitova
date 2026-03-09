@@ -31,7 +31,7 @@ const SingleItem = ({ item }: { item: Product }) => {
           </div>
 
           <h3 className="font-light tracking-wide text-dark ease-out duration-200 hover:opacity-70 mb-1.5">
-            <Link href={item.slug ? `/products/${item.slug}` : "/shop-details"}>
+            <Link href={item.slug ? `/products/${item.slug}` : `/products/${item.id}`}>
               {item.title}
             </Link>
           </h3>

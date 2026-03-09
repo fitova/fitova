@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import SingleItem from "./SingleItem";
 import { useTypingAnimation } from "@/hooks/useTypingAnimation";
-import { Product } from "@/types/product";
 import { getBestSellers } from "@/lib/queries/bestSellers";
+import { Product } from "@/types/product";
+import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode } from "swiper/modules";
 import "swiper/css";
@@ -70,32 +71,48 @@ const BestSeller = () => {
         )}
 
         {/* Tablet + desktop grid */}
-        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-7.5">
-          {loading ? (
-            <>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="animate-pulse border border-[#E8E4DF]" style={{ minHeight: "403px", backgroundColor: "#F6F5F2" }}>
-                  <div className="px-4 py-7.5 text-center">
-                    <div className="flex justify-center gap-1 mb-3">
-                      {Array.from({ length: 5 }).map((_, s) => (
-                        <div key={s} className="w-3.5 h-3.5 rounded-full bg-[#E8E4DF]" />
-                      ))}
-                    </div>
-                    <div className="h-3 w-1/2 bg-[#E8E4DF] rounded mx-auto mb-2" />
-                    <div className="h-4 w-1/3 bg-[#E8E4DF] rounded mx-auto" />
+        {loading ? (
+          <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-7.5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="animate-pulse border border-[#E8E4DF]" style={{ minHeight: "403px", backgroundColor: "#F6F5F2" }}>
+                <div className="px-4 py-7.5 text-center">
+                  <div className="flex justify-center gap-1 mb-3">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <div key={s} className="w-3.5 h-3.5 rounded-full bg-[#E8E4DF]" />
+                    ))}
                   </div>
-                  <div className="flex justify-center items-center mt-4">
-                    <div className="w-[280px] h-[280px] bg-[#E8E4DF]" />
-                  </div>
+                  <div className="h-3 w-1/2 bg-[#E8E4DF] rounded mx-auto mb-2" />
+                  <div className="h-4 w-1/3 bg-[#E8E4DF] rounded mx-auto" />
                 </div>
-              ))}
-            </>
-          ) : (
-            products.map((item, key) => (
-              <SingleItem item={item as any} key={key} />
-            ))
-          )}
-        </div>
+                <div className="flex justify-center items-center mt-4">
+                  <div className="w-[280px] h-[280px] bg-[#E8E4DF]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-7.5" // Reverted to original grid classes as per instruction, but applied motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+            variants={{
+              visible: { transition: { staggerChildren: 0.1 } }
+            }}
+          >
+            {products.map((item, key) => (
+              <motion.div
+                key={key}
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } }
+                }}
+              >
+                <SingleItem item={item as any} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         <div className="text-center mt-14">
           <a

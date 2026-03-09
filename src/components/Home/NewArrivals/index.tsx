@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode } from "swiper/modules";
 import "swiper/css";
+import { motion } from "framer-motion";
 import ProductItem from "@/components/Common/ProductItem";
 import { getNewArrivals, getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
@@ -37,7 +38,7 @@ const NewArrival = () => {
   }, []);
 
   return (
-    <section className="overflow-hidden pt-20">
+    <section className="overflow-hidden">
       <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
 
         {/* Section header */}
@@ -96,11 +97,27 @@ const NewArrival = () => {
             </div>
 
             {/* Tablet + desktop grid */}
-            <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+            <motion.div
+              className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.1 }}
+              variants={{
+                visible: { transition: { staggerChildren: 0.1 } }
+              }}
+            >
               {products.map((item, key) => (
-                <ProductItem item={mapProductFromDB(item) as any} key={key} />
+                <motion.div
+                  key={key}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } }
+                  }}
+                >
+                  <ProductItem item={mapProductFromDB(item) as any} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </>
         )}
 

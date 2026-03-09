@@ -29,7 +29,11 @@ const Signin = () => {
     setLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Incorrect email or password. Please try again.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
 
@@ -160,15 +164,15 @@ const Signin = () => {
                 {loading ? "Signing In..." : "Sign In"}
               </button>
 
-              <a
-                href="#"
+              <Link
+                href="/forgot-password"
                 className="block text-center text-xs font-light mt-4 ease-out duration-200"
                 style={{ color: "#8A8A8A" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#1A1A1A"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "#8A8A8A"; }}
               >
                 Forgot your password?
-              </a>
+              </Link>
 
               {/* Divider */}
               <div className="relative my-7">

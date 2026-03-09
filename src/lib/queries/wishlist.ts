@@ -5,6 +5,7 @@ export type ItemType = "product" | "lookbook";
 export type WishlistProduct = {
     id: string;
     name: string;
+    slug: string;
     price: number;
     discounted_price: number | null;
     brand: string | null;
@@ -57,7 +58,7 @@ export async function getWishlist(): Promise<WishlistItem[]> {
         productIds.length > 0
             ? supabase
                 .from("products")
-                .select("id, name, price, discounted_price, brand, affiliate_link, product_images(url, type, sort_order)")
+                .select("id, name, slug, price, discounted_price, brand, affiliate_link, imgs, product_images(url, type, sort_order)")
                 .in("id", productIds)
             : Promise.resolve({ data: [] }),
         lookbookIds.length > 0

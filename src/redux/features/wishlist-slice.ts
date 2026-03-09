@@ -10,6 +10,7 @@ export type WishlistEntry = {
 
   // Product fields (populated when item_type === 'product')
   title?: string;
+  itemSlug?: string;
   price?: number;
   discountedPrice?: number;
   brand?: string;

@@ -56,7 +56,11 @@ const Signup = () => {
 
     if (error) {
       console.error("SUPABASE SIGNUP ERROR:", error);
-      toast.error(error.message);
+      if (error.message.includes("User already registered")) {
+        toast.error("This email is already registered. Try signing in.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
 

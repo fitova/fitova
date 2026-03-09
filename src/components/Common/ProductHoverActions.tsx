@@ -13,6 +13,8 @@ import { addItemToCart, removeItemFromCart, selectCartItems } from "@/redux/feat
 import { tracking } from "@/lib/queries/tracking";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { Product } from "@/types/product";
+import { useModalContext } from "@/app/context/QuickViewModalContext";
+import { updateQuickView } from "@/redux/features/quickView-slice";
 
 interface ProductHoverActionsProps {
     item: Product;
@@ -22,12 +24,13 @@ interface ProductHoverActionsProps {
  * Unified right-slide hover panel used across ALL product cards.
  * Animation: translate-x-full → group-hover:translate-x-0 (right-slide).
  * Wishlist: outline heart = not wishlisted | filled heart = wishlisted (both black).
- * Eye icon navigates to /products/[slug] — no modal.
+ * Eye icon opens Quick View modal.
  */
 const ProductHoverActions = ({ item }: ProductHoverActionsProps) => {
     const router = useRouter();
     const { user } = useCurrentUser();
     const dispatch = useDispatch<AppDispatch>();
+    const { openModal } = useModalContext();
 
     const isWishlisted = useSelector(
         selectIsWishlisted(String(item.id), "product")
@@ -36,11 +39,11 @@ const ProductHoverActions = ({ item }: ProductHoverActionsProps) => {
     const cartItems = useSelector(selectCartItems);
     const isInCart = cartItems.some((ci) => ci.id === String(item.id));
 
-    /* ── Navigate to product details page ──────────────────────── */
-    const handleViewProduct = () => {
-        if (item.slug) {
-            router.push(`/products/${item.slug}`);
-        }
+    /* ── Open Quick View Modal ──────────────────────── */
+    const handleViewProduct = (e?: React.MouseEvent) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        openModal();
+        dispatch(updateQuickView({ ...item }));
     };
 
     /* ── Cart toggle ─────────────────────────────────────────────── */

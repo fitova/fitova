@@ -10,7 +10,7 @@ import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { updateQuickView } from "@/redux/features/quickView-slice";
 import { useCurrentUser } from "@/app/context/AuthContext";
 import { tracking } from "@/lib/queries/tracking";
-import { Product } from "@/types/product";
+import { Product, mapProductFromDB } from "@/types/product";
 
 const ProductGridCard = ({ item }: { item: Product }) => {
     const { openModal } = useModalContext();
@@ -24,11 +24,13 @@ const ProductGridCard = ({ item }: { item: Product }) => {
         state.wishlistReducer.items.some((w) => w.id === item.id)
     );
 
-    const thumb = item.imgs?.thumbnails?.[0] ?? item.imgs?.previews?.[0] ?? "/images/products/product-1-bg-1.png";
-    const hover = item.imgs?.previews?.[1] ?? item.imgs?.previews?.[0] ?? thumb;
-    const hasDiscount = item.discountedPrice && item.discountedPrice < item.price;
-    const discountPct = hasDiscount
-        ? Math.round(((item.price - item.discountedPrice!) / item.price) * 100)
+    const mapped = item.imgs ? item : mapProductFromDB(item as any);
+    const thumb = mapped.imgs?.thumbnails?.[0] ?? mapped.imgs?.previews?.[0] ?? "/images/products/product-1-bg-1.png";
+    const hover = mapped.imgs?.previews?.[1] ?? mapped.imgs?.previews?.[0] ?? thumb;
+
+    const hasDiscount = mapped.discountedPrice && mapped.discountedPrice < mapped.price;
+    const discountPct = hasDiscount && mapped.price > 0
+        ? Math.round(((mapped.price - mapped.discountedPrice!) / mapped.price) * 100)
         : 0;
 
     const handleAddToCart = (e?: React.MouseEvent) => {
@@ -55,23 +57,25 @@ const ProductGridCard = ({ item }: { item: Product }) => {
     return (
         <div className="group relative flex flex-col">
             {/* ── Image container ── */}
-            <Link href={`/products/${item.slug ?? item.id}`} scroll={false} className="relative overflow-hidden rounded-lg bg-[#F6F5F2] aspect-[3/4] mb-3 block">
+            <Link href={`/products/${item.slug ?? item.id}`} scroll={false} className="relative overflow-hidden bg-[#F6F5F2] aspect-[3/4] mb-3 block">
 
                 {/* Slide-in second image from the right on hover */}
                 <Image
-                    src={thumb}
-                    alt={item.title}
-                    fill
-                    sizes="(max-width:640px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 ease-out group-hover:-translate-x-full"
-                    loading="lazy"
-                />
-                <Image
                     src={hover}
-                    alt={item.title}
+                    alt={mapped.title || "Product"}
                     fill
                     sizes="(max-width:640px) 50vw, 25vw"
                     className="object-cover absolute inset-0 translate-x-full transition-transform duration-500 ease-out group-hover:translate-x-0"
+                    loading="lazy"
+                />
+
+                {/* Base Image */}
+                <Image
+                    src={thumb}
+                    alt={mapped.title || "Product"}
+                    fill
+                    sizes="(max-width:640px) 50vw, 25vw"
+                    className="object-cover transition-opacity duration-500 ease-out group-hover:opacity-0"
                     loading="lazy"
                 />
 
@@ -86,31 +90,45 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                 <button
                     onClick={handleWishlist}
                     aria-label="Wishlist"
-                    className="absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm transition-all duration-300"
+                    className="absolute top-2.5 right-2.5 z-10 w-8 h-8 flex items-center justify-center shadow-none transition-all duration-300 bg-transparent text-[#0A0A0A] hover:opacity-75"
                     style={{ transform: wishlistAnimating ? "scale(1.3)" : "scale(1)" }}
                 >
                     {isInWishlist ? (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="#ef4444"><path d="M8 13.4s-6.3-4-6.3-7.5C1.7 3.6 3.2 2 5 2c1 0 2.1.6 3 1.7C8.9 2.6 10 2 11 2c1.8 0 3.3 1.6 3.3 3.9C14.3 9.4 8 13.4 8 13.4z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
                     ) : (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M3.74949 2.94946C2.6435 3.45502 1.83325 4.65749 1.83325 6.0914C1.83325 7.55633 2.43273 8.68549 3.29211 9.65318C4.0004 10.4507 4.85781 11.1118 5.694 11.7564C5.89261 11.9095 6.09002 12.0617 6.28395 12.2146C6.63464 12.491 6.94747 12.7337 7.24899 12.9099C7.55068 13.0862 7.79352 13.1667 7.99992 13.1667C8.20632 13.1667 8.44916 13.0862 8.75085 12.9099C9.05237 12.7337 9.3652 12.491 9.71589 12.2146C9.90982 12.0617 10.1072 11.9095 10.3058 11.7564C11.142 11.1118 11.9994 10.4507 12.7077 9.65318C13.5671 8.68549 14.1666 7.55633 14.1666 6.0914C14.1666 4.65749 13.3563 3.45502 12.2503 2.94946C11.1759 2.45832 9.73214 2.58839 8.36016 4.01382C8.2659 4.11175 8.13584 4.16709 7.99992 4.16709C7.864 4.16709 7.73393 4.11175 7.63967 4.01382C6.26769 2.58839 4.82396 2.45832 3.74949 2.94946Z" fill="#1a1a1a" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
                     )}
                 </button>
 
                 {/* Bottom quick actions (slide up on hover) */}
-                <div className="absolute bottom-0 left-0 right-0 flex gap-2 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-                    <button
-                        onClick={handleAddToCart}
-                        className="flex-1 py-2 text-[11px] font-medium tracking-wide rounded text-white transition-all duration-200"
-                        style={{ background: addedToCart ? "#16a34a" : "#0A0A0A" }}
-                    >
-                        {addedToCart ? "✓ Added" : "Add to Cart"}
-                    </button>
+                <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 ease-linear duration-200 group-hover:translate-y-0">
                     <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); openModal(); dispatch(updateQuickView({ ...item })); }}
-                        className="w-9 h-9 rounded bg-white/90 backdrop-blur-sm flex items-center justify-center text-dark hover:bg-white transition-colors"
+                        className="flex items-center justify-center w-9 h-9 rounded-[5px] shadow-1 ease-out duration-200 text-dark bg-white hover:text-blue"
                         aria-label="Quick view"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                        <svg className="fill-current" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fillRule="evenodd" clipRule="evenodd" d="M8.00016 5.5C6.61945 5.5 5.50016 6.61929 5.50016 8C5.50016 9.38071 6.61945 10.5 8.00016 10.5C9.38087 10.5 10.5002 9.38071 10.5002 8C10.5002 6.61929 9.38087 5.5 8.00016 5.5ZM6.50016 8C6.50016 7.17157 7.17174 6.5 8.00016 6.5C8.82859 6.5 9.50016 7.17157 9.50016 8C9.50016 8.82842 8.82859 9.5 8.00016 9.5C7.17174 9.5 6.50016 8.82842 6.50016 8Z" fill="" />
+                            <path fillRule="evenodd" clipRule="evenodd" d="M8.00016 2.16666C4.99074 2.16666 2.96369 3.96946 1.78721 5.49791L1.76599 5.52546C1.49992 5.87102 1.25487 6.18928 1.08862 6.5656C0.910592 6.96858 0.833496 7.40779 0.833496 8C0.833496 8.5922 0.910592 9.03142 1.08862 9.4344C1.25487 9.81072 1.49992 10.129 1.76599 10.4745L1.78721 10.5021C2.96369 12.0305 4.99074 13.8333 8.00016 13.8333C11.0096 13.8333 13.0366 12.0305 14.2131 10.5021L14.2343 10.4745C14.5004 10.129 14.7455 9.81072 14.9117 9.4344C15.0897 9.03142 15.1668 8.5922 15.1668 8C15.1668 7.40779 15.0897 6.96858 14.9117 6.5656C14.7455 6.18927 14.5004 5.87101 14.2343 5.52545L14.2131 5.49791C13.0366 3.96946 11.0096 2.16666 8.00016 2.16666ZM2.57964 6.10786C3.66592 4.69661 5.43374 3.16666 8.00016 3.16666C10.5666 3.16666 12.3344 4.69661 13.4207 6.10786C13.7131 6.48772 13.8843 6.7147 13.997 6.9697C14.1023 7.20801 14.1668 7.49929 14.1668 8C14.1668 8.50071 14.1023 8.79199 13.997 9.0303C13.8843 9.28529 13.7131 9.51227 13.4207 9.89213C12.3344 11.3034 10.5666 12.8333 8.00016 12.8333C5.43374 12.8333 3.66592 11.3034 2.57964 9.89213C2.28725 9.51227 2.11599 9.28529 2.00334 9.0303C1.89805 8.79199 1.8335 8.50071 1.8335 8C1.8335 7.49929 1.89805 7.20801 2.00334 6.9697C2.11599 6.7147 2.28725 6.48772 2.57964 6.10786Z" fill="" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={handleAddToCart}
+                        className="inline-flex items-center gap-1.5 font-medium text-custom-sm py-[7px] px-5 rounded-[5px] ease-out duration-300 hover:opacity-80"
+                        style={{
+                            background: addedToCart ? "#16a34a" : "#1a1a1a",
+                            color: "#fff",
+                            transform: addedToCart ? "scale(1.08)" : "scale(1)",
+                        }}
+                    >
+                        {addedToCart ? (
+                            <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17l-5-5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                Added!
+                            </>
+                        ) : "Add to cart"}
                     </button>
                 </div>
             </Link>
@@ -206,16 +224,16 @@ const ProductGridCard = ({ item }: { item: Product }) => {
                         {item.title}
                     </h3>
                 </Link>
-                <div className="flex items-center gap-2 mb-2">
+                <span className="flex items-center gap-2 font-medium text-lg mb-2">
                     {hasDiscount ? (
                         <>
-                            <span className="text-sm font-semibold text-dark">${item.discountedPrice}</span>
-                            <span className="text-xs text-[#8A8A8A] line-through">${item.price}</span>
+                            <span className="text-dark">${item.discountedPrice}</span>
+                            <span className="text-dark-4 line-through">${item.price}</span>
                         </>
                     ) : (
-                        <span className="text-sm font-semibold text-dark">${item.price}</span>
+                        <span className="text-dark">${item.price}</span>
                     )}
-                </div>
+                </span>
             </div>
         </div>
     );

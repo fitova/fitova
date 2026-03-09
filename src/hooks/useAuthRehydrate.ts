@@ -36,21 +36,27 @@ export function useAuthRehydrate() {
             try {
                 const { getWishlist } = await import("@/lib/queries/wishlist");
                 const items = await getWishlist();
+                const validItems = items.filter((i: any) => i.item_type === "product" ? !!i.product : !!i.collection);
                 dispatch(
                     setWishlistItems(
-                        items.map((w: any) => ({
+                        validItems.map((w: any) => ({
                             id: w.id,
-                            item_id: w.item_id ?? w.product_id ?? w.collection_id ?? "",
+                            item_id: w.item_id ?? w.product?.id ?? w.collection?.id ?? "",
                             item_type: w.item_type ?? "product",
                             created_at: w.created_at ?? new Date().toISOString(),
-                            title: w.products?.name ?? w.collections?.name,
-                            price: w.products?.price,
-                            discountedPrice: w.products?.discounted_price,
-                            brand: w.products?.brand,
-                            imageUrl: w.products?.product_images?.[0]?.url,
-                            collectionName: w.collections?.name,
-                            collectionSlug: w.collections?.slug,
-                            coverImage: w.collections?.thumbnail_url,
+                            itemSlug: w.product?.slug ?? w.collection?.slug,
+                            title: w.product?.name ?? w.collection?.name,
+                            price: w.product?.price,
+                            discountedPrice: w.product?.discounted_price,
+                            brand: w.product?.brand,
+                            imageUrl: (() => {
+                                const imgs = w.product?.product_images ?? [];
+                                const sorted = [...imgs].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+                                return sorted.find((i: any) => i.type === "thumbnail")?.url ?? sorted[0]?.url ?? undefined;
+                            })(),
+                            collectionName: w.collection?.name,
+                            collectionSlug: w.collection?.slug,
+                            coverImage: w.collection?.cover_image,
                         }))
                     )
                 );

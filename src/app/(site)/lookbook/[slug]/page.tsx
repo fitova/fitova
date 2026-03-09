@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getLookbookBySlug, Lookbook, LookbookProduct } from "@/lib/queries/lookbooks";
 import { tracking } from "@/lib/queries/tracking";
-
+import ProductGridCard from "@/components/Shop/ProductGridCard";
 export default function LookbookDetailPage({
     params,
 }: {
@@ -191,93 +191,9 @@ export default function LookbookDetailPage({
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                            {products.map((product) => {
-                                const thumbnail = product.imgs?.previews?.[0];
-                                const hasDiscount =
-                                    product.discounted_price != null &&
-                                    product.discounted_price < product.price;
-
-                                const discountPct = hasDiscount
-                                    ? Math.round(
-                                        ((product.price - product.discounted_price!) /
-                                            product.price) *
-                                        100
-                                    )
-                                    : null;
-
-                                return (
-                                    <div
-                                        key={product.id}
-                                        className="group flex flex-col bg-white border border-[#E8E4DF]"
-                                    >
-                                        {/* Image */}
-                                        <div className="relative w-full overflow-hidden flex-shrink-0 bg-[#F0EDE8]" style={{ paddingTop: "133%" }}>
-                                            <div className="absolute inset-0">
-                                                {thumbnail ? (
-                                                    <img
-                                                        src={thumbnail}
-                                                        alt={product.name}
-                                                        className="w-full h-full object-cover ease-out duration-500 group-hover:scale-[1.04]"
-                                                        referrerPolicy="no-referrer"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-[#D8D4CF]">
-                                                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                                                            <path d="M3 9l4-4 4 4 4-6 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Discount badge */}
-                                            {discountPct && (
-                                                <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[9px] font-medium tracking-wide bg-[#0A0A0A] text-[#F6F5F2]">
-                                                    −{discountPct}%
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Body */}
-                                        <div className="p-3 sm:p-4 flex flex-col flex-1">
-                                            {product.brand && (
-                                                <p className="text-[9px] sm:text-[10px] font-light tracking-[0.18em] uppercase mb-1 text-[#A0A0A0]">
-                                                    {product.brand}
-                                                </p>
-                                            )}
-                                            <h3 className="text-xs sm:text-sm font-light leading-snug mb-3 flex-1 text-[#1A1A1A]">
-                                                {product.name}
-                                            </h3>
-
-                                            {/* Price */}
-                                            <div className="flex items-baseline gap-2 mb-3">
-                                                {hasDiscount ? (
-                                                    <>
-                                                        <span className="text-sm font-medium text-[#0A0A0A]">
-                                                            ${product.discounted_price!.toFixed(2)}
-                                                        </span>
-                                                        <span className="text-[11px] font-light line-through text-[#C0BAB3]">
-                                                            ${product.price.toFixed(2)}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-sm font-medium text-[#0A0A0A]">
-                                                        ${product.price.toFixed(2)}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Shop button */}
-                                            <Link
-                                                href={`/products/${product.slug}`}
-                                                className="block w-full py-2.5 text-center text-[10px] sm:text-xs font-light tracking-[0.12em] uppercase ease-out duration-200 bg-[#0A0A0A] text-[#F6F5F2] hover:bg-[#2C2C2C] border border-[#0A0A0A]"
-                                            >
-                                                Shop Now →
-                                            </Link>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            {products.map((product) => (
+                                <ProductGridCard key={product.id} item={product as any} />
+                            ))}
                         </div>
                     )}
                 </div>

@@ -262,7 +262,7 @@ const ShopDetails = () => {
   const [related, setRelated] = useState<any[]>([]);
   useEffect(() => {
     if (!product?.category_id || !product?.id) return;
-    getRelatedProducts(product.category_id, product.id, 6)
+    getRelatedProducts(product, 6)
       .then((data) => setRelated(data))
       .catch(() => { });
   }, [product?.category_id, product?.id]);
@@ -421,12 +421,11 @@ const ShopDetails = () => {
                 )}
 
                 {/* Price */}
-                <div className="flex items-baseline gap-3 mb-7">
-                  <span className="text-2xl font-light text-dark">SAR {currentPrice}</span>
+                <div className="flex items-center gap-2 font-medium text-lg mb-7">
+                  <span className="text-dark">SAR {currentPrice}</span>
                   {hasDiscount && (
                     <span
-                      className="text-base font-light line-through"
-                      style={{ color: "#B0A99A" }}
+                      className="text-dark-4 line-through"
                     >
                       SAR {originalPrice}
                     </span>

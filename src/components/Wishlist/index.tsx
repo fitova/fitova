@@ -93,20 +93,22 @@ export const Wishlist = () => {
     setLoading(true);
     getWishlist()
       .then((items) => {
-        const entries: WishlistEntry[] = items.map(item => ({
+        const validItems = items.filter((i) => i.item_type === "product" ? !!i.product : !!i.collection);
+        const entries: WishlistEntry[] = validItems.map(item => ({
           id: item.id,
           item_id: item.item_id,
           item_type: item.item_type,
           created_at: item.created_at,
           // Product fields
           title: item.product?.name,
+          itemSlug: item.product?.slug,
           price: item.product?.price,
           discountedPrice: item.product?.discounted_price ?? undefined,
           brand: item.product?.brand ?? undefined,
           imageUrl: (() => {
             const imgs = item.product?.product_images ?? [];
             const sorted = [...imgs].sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-            return sorted.find((i: any) => i.type === "main")?.url ?? sorted[0]?.url ?? undefined;
+            return sorted.find((i: any) => i.type === "thumbnail")?.url ?? sorted[0]?.url ?? undefined;
           })(),
           affiliateLink: item.product?.affiliate_link ?? undefined,
           // Lookbook fields
@@ -148,8 +150,8 @@ export const Wishlist = () => {
             Wishlist
           </h1>
           <span className="text-sm font-light pb-1" style={{ color: "#8A8A8A" }}>
-            {productCount + lookbookCount}{" "}
-            {productCount + lookbookCount === 1 ? "item" : "items"} saved
+            {currentItems.length}{" "}
+            {currentItems.length === 1 ? "item" : "items"} saved
           </span>
         </div>
         <div className="w-full h-px mt-6" style={{ backgroundColor: "#E8E4DF" }} />

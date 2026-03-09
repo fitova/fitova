@@ -139,7 +139,7 @@ function Scene({ progress, modelScale, isMobile }: { progress: number; modelScal
     return (
         <Canvas
             gl={{ antialias: !isMobile, alpha: true, powerPreference: "high-performance" }}
-            dpr={isMobile ? [1, 1] : [1, 1.5]}
+            dpr={isMobile ? [1, 1.5] : [1, 1.5]}
             style={{ background: "transparent", width: "100%", height: "100%" }}
             frameloop={isMobile ? "demand" : "always"}
         >
@@ -210,7 +210,7 @@ const ThreeDSection = () => {
             const w = window.innerWidth;
             setIsMobile(w < 768);
             setIsTablet(w >= 768 && w < 1024);
-            if (w < 640) setModelScale(0.65);
+            if (w < 640) setModelScale(0.85);
             else if (w < 1024) setModelScale(0.90);
             else setModelScale(1.25);
         };
@@ -366,8 +366,8 @@ const ThreeDSection = () => {
                 <div
                     className="w-full lg:w-[58%] relative flex-1"
                     style={{
-                        height: isMobile ? "320px" : isTablet ? "480px" : "100%",
-                        minHeight: isMobile ? "320px" : isTablet ? "480px" : undefined,
+                        height: isMobile ? "480px" : isTablet ? "480px" : "100%",
+                        minHeight: isMobile ? "480px" : isTablet ? "480px" : undefined,
                     }}
                 >
                     <Scene progress={progress} modelScale={modelScale} isMobile={isMobile} />

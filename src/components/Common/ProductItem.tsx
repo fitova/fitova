@@ -3,15 +3,16 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Product } from "@/types/product";
+import { Product, mapProductFromDB } from "@/types/product";
 import ProductHoverActions from "@/components/Common/ProductHoverActions";
 
 const ProductItem = ({ item }: { item: Product }) => {
   const router = useRouter();
+  const mapped = item.imgs ? item : mapProductFromDB(item as any);
 
   const handleImageClick = () => {
-    if (item.slug) {
-      router.push(`/products/${item.slug}`);
+    if (mapped.slug) {
+      router.push(`/products/${mapped.slug}`);
     }
   };
 
@@ -23,14 +24,14 @@ const ProductItem = ({ item }: { item: Product }) => {
         onClick={handleImageClick}
         role="button"
         tabIndex={0}
-        aria-label={`View ${item.title}`}
+        aria-label={`View ${mapped.title}`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") handleImageClick();
         }}
       >
         <Image
-          src={item?.imgs?.previews?.[0] || "/images/products/product-1-bg-1.png"}
-          alt={item?.title || "Product"}
+          src={mapped.imgs?.previews?.[0] || "/images/products/product-1-bg-1.png"}
+          alt={mapped.title || "Product"}
           width={250}
           height={250}
           loading="lazy"
@@ -38,7 +39,7 @@ const ProductItem = ({ item }: { item: Product }) => {
         />
 
         {/* Unified right-slide hover panel */}
-        <ProductHoverActions item={item} />
+        <ProductHoverActions item={mapped} />
       </div>
 
       {/* Stars */}
@@ -53,8 +54,8 @@ const ProductItem = ({ item }: { item: Product }) => {
 
       {/* Title */}
       <h3 className="font-medium text-dark ease-out duration-200 hover:opacity-70 mb-1.5">
-        <Link href={item.slug ? `/products/${item.slug}` : "/shop-details"}>
-          {item.title}
+        <Link href={mapped.slug ? `/products/${mapped.slug}` : `/products/${mapped.id}`}>
+          {mapped.title}
         </Link>
       </h3>
 

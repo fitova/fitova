@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCollections, Collection } from "@/lib/queries/collections";
+import { motion } from "framer-motion";
 
 /* ─── Skeleton card ─────────────────────────────────────────── */
 const SkeletonCard = () => (
@@ -54,7 +55,7 @@ const LookbookPreview = () => {
     }, []);
 
     return (
-        <section className="py-20" style={{ borderBottom: "1px solid #E8E4DF" }}>
+        <section style={{ borderBottom: "1px solid #E8E4DF" }}>
             <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
 
                 {/* Section header */}
@@ -91,69 +92,84 @@ const LookbookPreview = () => {
                 </div>
 
                 {/* Collections grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <motion.div
+                    className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                    variants={{
+                        visible: { transition: { staggerChildren: 0.1 } }
+                    }}
+                >
                     {!loaded
                         ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                         : collections.map((col, i) => (
-                            <Link
+                            <motion.div
                                 key={col.id}
-                                href={`/lookbook/${col.slug}`}
-                                className="group relative overflow-hidden block"
+                                variants={{
+                                    hidden: { opacity: 0, y: 30 },
+                                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } }
+                                }}
                             >
-                                {/* Creator badge */}
-                                <CreatorBadge creator={col.creator} />
-
-                                {/* Image or gradient bg */}
-                                <div
-                                    className="aspect-[3/4] w-full relative overflow-hidden"
-                                    style={{
-                                        background: col.cover_image
-                                            ? undefined
-                                            : [
-                                                "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)",
-                                                "linear-gradient(135deg, #2C1810 0%, #7A4028 100%)",
-                                                "linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%)",
-                                                "linear-gradient(135deg, #1A1A1A 0%, #404040 100%)",
-                                            ][i % 4],
-                                    }}
+                                <Link
+                                    href={`/lookbook/${col.slug}`}
+                                    className="group relative overflow-hidden block"
                                 >
-                                    {col.cover_image && (
-                                        <Image
-                                            src={col.cover_image}
-                                            alt={col.name}
-                                            fill
-                                            className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
-                                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
-                                        />
-                                    )}
-                                </div>
+                                    {/* Creator badge */}
+                                    <CreatorBadge creator={col.creator} />
 
-                                {/* Text overlay at bottom */}
-                                <div
-                                    className="absolute inset-0 flex flex-col justify-end p-5"
-                                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)" }}
-                                >
-                                    {col.tag && (
-                                        <span
-                                            className="block text-[9px] font-light tracking-[0.25em] uppercase mb-1.5"
-                                            style={{ color: "rgba(246,245,242,0.55)" }}
-                                        >
-                                            {col.generated_by_ai ? "AI Curated" : col.tag}
-                                        </span>
-                                    )}
-                                    <h3
-                                        className="font-playfair text-base font-normal group-hover:opacity-80 transition-opacity duration-200"
-                                        style={{ color: "#F6F5F2" }}
+                                    {/* Image or gradient bg */}
+                                    <div
+                                        className="aspect-[3/4] w-full relative overflow-hidden"
+                                        style={{
+                                            background: col.cover_image
+                                                ? undefined
+                                                : [
+                                                    "linear-gradient(135deg, #0A0A0A 0%, #2C2C2C 100%)",
+                                                    "linear-gradient(135deg, #2C1810 0%, #7A4028 100%)",
+                                                    "linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%)",
+                                                    "linear-gradient(135deg, #1A1A1A 0%, #404040 100%)",
+                                                ][i % 4],
+                                        }}
                                     >
-                                        {col.name}
-                                    </h3>
-                                </div>
+                                        {col.cover_image && (
+                                            <Image
+                                                src={col.cover_image}
+                                                alt={col.name}
+                                                fill
+                                                className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+                                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
+                                            />
+                                        )}
+                                    </div>
 
-                                {/* Border hover */}
-                                <div className="absolute inset-0 border border-white/0 ease-out duration-300 group-hover:border-white/30" />
-                            </Link>
+                                    {/* Text overlay at bottom */}
+                                    <div
+                                        className="absolute inset-0 flex flex-col justify-end p-5"
+                                        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)" }}
+                                    >
+                                        {col.tag && (
+                                            <span
+                                                className="block text-[9px] font-light tracking-[0.25em] uppercase mb-1.5"
+                                                style={{ color: "rgba(246,245,242,0.55)" }}
+                                            >
+                                                {col.generated_by_ai ? "AI Curated" : col.tag}
+                                            </span>
+                                        )}
+                                        <h3
+                                            className="font-playfair text-base font-normal group-hover:opacity-80 transition-opacity duration-200"
+                                            style={{ color: "#F6F5F2" }}
+                                        >
+                                            {col.name}
+                                        </h3>
+                                    </div>
+
+                                    {/* Border hover */}
+                                    <div className="absolute inset-0 border border-white/0 ease-out duration-300 group-hover:border-white/30" />
+                                </Link>
+                            </motion.div>
                         ))}
-                </div>
+                </motion.div>
 
                 {/* Mobile view all */}
                 <div className="text-center mt-8 sm:hidden">

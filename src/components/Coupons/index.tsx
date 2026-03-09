@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import Breadcrumb from "@/components/Common/Breadcrumb";
+import PageCoverHeader from "@/components/Common/PageCoverHeader";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── DB type (matches actual Supabase schema) ─────────────────────────────────
@@ -243,29 +243,18 @@ export default function Coupons() {
 
     return (
         <main style={{ background: "#F6F5F2" }}>
-            <Breadcrumb title="Coupons" pages={["coupons"]} />
-
-            {/* Hero */}
-            <section className="flex flex-col items-center justify-center text-center pt-12 pb-14 px-4"
-                style={{ background: "#0A0A0A" }}>
-                <span className="block text-xs font-light tracking-[0.35em] uppercase mb-5"
-                    style={{ color: "rgba(246,245,242,0.45)" }}>
-                    Exclusive Savings
-                </span>
-                <h1 className="font-playfair text-4xl md:text-5xl font-normal mb-4"
-                    style={{ color: "#F6F5F2", letterSpacing: "-0.03em" }}>
-                    Discount Coupons
-                </h1>
-                <p className="font-light text-sm max-w-md leading-relaxed mb-6"
-                    style={{ color: "rgba(246,245,242,0.5)" }}>
-                    Copy a code and apply it at checkout. All codes are verified and updated regularly.
-                </p>
+            <PageCoverHeader
+                title="Discount Coupons"
+                preTitle="Exclusive Savings"
+                subtitle="Copy a code and apply it at checkout. All codes are verified and updated regularly."
+                breadcrumbPages={["coupons"]}
+            >
                 <a href="/my-account?tab=coupons-tab"
                     className="inline-block px-6 py-3 border border-[rgba(246,245,242,0.3)] text-xs font-light tracking-[0.15em] uppercase transition-colors duration-200 hover:bg-[#F6F5F2] hover:text-[#0A0A0A]"
                     style={{ color: "#F6F5F2" }}>
                     + Share a Coupon
                 </a>
-            </section>
+            </PageCoverHeader>
 
             {/* Filters + count */}
             <section className="sticky top-[72px] z-10 bg-[#F6F5F2] border-b border-[#E8E4DF]">

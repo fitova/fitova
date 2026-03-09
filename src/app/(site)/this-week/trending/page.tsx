@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Product } from "@/types/product";
 import { getTrendingProducts } from "@/lib/queries/trending";
 import SingleItem from "@/components/Home/BestSeller/SingleItem";
-import Breadcrumb from "@/components/Common/Breadcrumb";
+import PageCoverHeader from "@/components/Common/PageCoverHeader";
 
 export default function TrendingPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -27,7 +27,7 @@ export default function TrendingPage() {
 
     return (
         <main>
-            <Breadcrumb title="Trending This Week" pages={["this week", "trending"]} />
+            <PageCoverHeader title="Trending This Week" breadcrumbPages={["this week", "trending"]} />
             <section className="bg-white py-16">
                 <div className="max-w-[1170px] mx-auto px-4 sm:px-8 xl:px-0">
                     <div className="mb-10">

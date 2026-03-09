@@ -1,20 +1,26 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getRelatedProducts } from "@/lib/queries/products";
+import { getRelatedProducts, getCompleteYourLookProducts } from "@/lib/queries/products";
 import ProductDetailsClient from "./ProductDetailsClient";
-
-/* ─── Metadata ────────────────────────────────────────────── */
 export async function generateMetadata(
     { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
     const { slug } = await params;
     const supabase = await createClient();
-    const { data } = await supabase
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
+    let query = supabase
         .from("products")
-        .select("name, description, product_images(url, sort_order)")
-        .eq("slug", slug)
-        .single();
+        .select("name, description, product_images(url, sort_order)");
+
+    if (isUuid) {
+        query = query.or(`slug.eq."${slug}",id.eq."${slug}"`);
+    } else {
+        query = query.eq("slug", slug);
+    }
+
+    const { data } = await query.maybeSingle();
 
     if (!data) return { title: "Product | FITOVA" };
 
@@ -43,12 +49,20 @@ export default async function ProductDetailsPage(
     const { slug } = await params;
     const supabase = await createClient();
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
     // Fetch full product with images, reviews, and category
-    const { data: product, error } = await supabase
+    let query = supabase
         .from("products")
-        .select("*, product_images(*), product_reviews(*), categories:category_id(id, name, slug)")
-        .eq("slug", slug)
-        .single();
+        .select("*, product_images(*), product_reviews(*), categories:category_id(id, name, slug)");
+
+    if (isUuid) {
+        query = query.or(`slug.eq."${slug}",id.eq."${slug}"`);
+    } else {
+        query = query.eq("slug", slug);
+    }
+
+    const { data: product, error } = await query.maybeSingle();
 
     if (error || !product) {
         console.error("[ProductDetailsPage] slug not found:", slug, error?.message);
@@ -56,9 +70,10 @@ export default async function ProductDetailsPage(
     }
 
     // Fetch related products (same category, excluding this one)
-    const related = product.category_id
-        ? await getRelatedProducts(product.category_id, product.id, 4).catch(() => [])
-        : [];
+    const related = await getRelatedProducts(product, 4).catch(() => []);
 
-    return <ProductDetailsClient product={product} related={related} />;
+    // Fetch cross-sell products (Complete Your Look)
+    const crossSell = await getCompleteYourLookProducts(product, 4).catch(() => []);
+
+    return <ProductDetailsClient product={product} related={related} crossSell={crossSell} />;
 }

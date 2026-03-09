@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useShopFilters } from "@/hooks/useShopFilters";
-import Breadcrumb from "../Common/Breadcrumb";
+import PageCoverHeader from "../Common/PageCoverHeader";
 import HierarchicalShopFilters from "./HierarchicalShopFilters";
 import PriceDropdown from "./PriceDropdown";
 import ProductGridCard from "../Shop/ProductGridCard";
@@ -29,9 +29,9 @@ const ShopWithSidebar = () => {
 
   return (
     <>
-      <Breadcrumb
+      <PageCoverHeader
         title="Explore All Outfits"
-        pages={["outfits"]}
+        breadcrumbPages={["outfits"]}
       />
 
       <section className="bg-[#F6F5F2] min-h-screen pt-8 pb-20">

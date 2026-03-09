@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { addItemToWishlist, removeItemFromWishlist } from "@/redux/features/wishlist-slice";
-import Breadcrumb from "@/components/Common/Breadcrumb";
+import PageCoverHeader from "@/components/Common/PageCoverHeader";
 import { getProducts, Product } from "@/lib/queries/products";
 import { mapProductFromDB } from "@/types/product";
 
@@ -113,7 +113,7 @@ const DealCard = ({ item }: { item: Product & { product_images?: { url: string; 
                 </div>
 
                 <Link
-                    href={item.affiliate_link ?? `/shop-details/${item.slug ?? item.id}`}
+                    href={item.affiliate_link ?? `/products/${item.slug ?? item.id}`}
                     target={item.affiliate_link ? "_blank" : undefined}
                     rel={item.affiliate_link ? "noopener noreferrer" : undefined}
                     className="block w-full py-2.5 text-center text-xs font-light tracking-[0.15em] uppercase transition-colors duration-200 bg-[#0A0A0A] text-white hover:bg-[#2C2C2C]"
@@ -158,27 +158,15 @@ export default function Deals() {
 
     return (
         <main style={{ background: "#F6F5F2" }}>
-            <Breadcrumb title="Deals & Offers" pages={["deals"]} />
-
-            {/* ── Hero ─────────────────────────────────────────────── */}
-            <section className="flex flex-col items-center justify-center text-center pt-12 pb-16 px-4"
-                style={{ background: "#0A0A0A" }}>
-                <span className="block text-xs font-light tracking-[0.35em] uppercase mb-6"
-                    style={{ color: "rgba(246,245,242,0.45)" }}>
-                    Limited Time Offers
-                </span>
-                <h1 className="font-playfair text-4xl md:text-5xl font-normal mb-4"
-                    style={{ color: "#F6F5F2", letterSpacing: "-0.03em" }}>
-                    Deals & Offers
-                </h1>
-                <p className="font-light text-sm max-w-md mb-8 leading-relaxed"
-                    style={{ color: "rgba(246,245,242,0.5)" }}>
-                    Handpicked discounts from top fashion brands — updated daily.
-                </p>
-
+            <PageCoverHeader
+                title="Deals & Offers"
+                preTitle="Limited Time Offers"
+                subtitle="Handpicked discounts from top fashion brands — updated daily."
+                breadcrumbPages={["deals"]}
+            >
                 {/* Countdown */}
                 {!countdown.expired && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center gap-3">
                         {[
                             { label: "Days", val: countdown.d },
                             { label: "Hours", val: countdown.h },
@@ -201,7 +189,7 @@ export default function Deals() {
                         ))}
                     </div>
                 )}
-            </section>
+            </PageCoverHeader>
 
             {/* ── Category Filters ─────────────────────────────────── */}
             <section className="sticky top-[72px] z-10 bg-[#F6F5F2] border-b border-[#E8E4DF]">

@@ -31,16 +31,59 @@ interface Product {
 
 /* ─── Constants ──────────────────────────────────────────────── */
 const PIECE_TYPE_LABELS: Record<string, string> = {
+    // Tops
     tshirt: "T-Shirts",
     shirt: "Shirts",
     top: "Tops",
-    dress: "Dresses",
-    skirt: "Skirts",
+    blouse: "Blouses",
+    // Outerwear
+    hoodie: "Hoodies & Sweatshirts",
     jacket: "Jackets",
+    outerwear: "Outerwear",
+    cardigan: "Cardigans",
+    sweater: "Sweaters",
+    coat: "Coats",
+    vest: "Vests",
+    // Dresses
+    dress: "Dresses",
+    // Bottoms
     pants: "Pants",
+    jeans: "Jeans",
+    shorts: "Shorts",
+    skirt: "Skirts",
+    bottom: "Bottoms",
+    // Footwear
     shoes: "Shoes",
+    sneakers: "Sneakers",
+    boots: "Boots",
+    sandals: "Sandals",
+    heels: "Heels",
+    loafers: "Loafers",
+    flats: "Flats",
+    slippers: "Slippers",
+    // Accessories
     accessories: "Accessories",
-    perfume: "Perfume",
+    watch: "Watches",
+    belt: "Belts",
+    cap: "Hats & Caps",
+    hat: "Hats",
+    bag: "Bags",
+    sunglasses: "Sunglasses",
+    wallet: "Wallets",
+    jewelry: "Jewelry",
+    necklace: "Necklaces",
+    bracelet: "Bracelets",
+    ring: "Rings",
+    earring: "Earrings",
+    scarf: "Scarves",
+    socks: "Socks",
+    backpack: "Backpacks",
+    handbag: "Handbags",
+    clutch: "Clutches",
+    tote: "Totes",
+    // Fragrances
+    perfume: "Perfumes",
+    fragrance: "Fragrances",
 };
 
 const PRESET_COLORS = [
@@ -352,7 +395,18 @@ const Step2 = ({
         grouped[key].push(p);
     });
 
-    const pieceOrder = ["tshirt", "shirt", "top", "dress", "skirt", "jacket", "pants", "shoes", "accessories", "perfume", "other"];
+    const pieceOrder = [
+        "top", "tshirt", "shirt", "blouse",
+        "hoodie", "sweater", "cardigan", "jacket", "coat", "vest", "outerwear",
+        "dress",
+        "pants", "jeans", "skirt", "shorts", "bottom",
+        "shoes", "sneakers", "boots", "heels", "sandals", "loafers", "flats", "slippers",
+        "bag", "backpack", "handbag", "clutch", "tote",
+        "watch", "jewelry", "necklace", "bracelet", "ring", "earring",
+        "sunglasses", "belt", "wallet", "cap", "hat", "scarf", "socks", "accessories",
+        "perfume", "fragrance",
+        "other"
+    ];
     const sortedKeys = Object.keys(grouped).sort((a, b) => {
         const ai = pieceOrder.indexOf(a);
         const bi = pieceOrder.indexOf(b);

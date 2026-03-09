@@ -7,6 +7,7 @@ import "swiper/css";
 import { Product } from "@/types/product";
 import { getTrendingProducts } from "@/lib/queries/trending";
 import ProductItem from "@/components/Common/ProductItem";
+import { motion } from "framer-motion";
 
 /* ─── Skeleton ──────────────────────────────────────────────── */
 const Skeleton = () => (
@@ -41,8 +42,8 @@ const TrendingSection = () => {
     }, []);
 
     return (
-        <section className="py-17.5" style={{ backgroundColor: "#F6F5F2", borderTop: "1px solid #E8E4DF" }}>
-            <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0 pb-15">
+        <section style={{ backgroundColor: "#F6F5F2", borderTop: "1px solid #E8E4DF", margin: "0 -2rem", padding: "4rem 2rem" }}>
+            <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
                 {/* Section header */}
                 <div className="mb-10 flex items-center justify-between">
                     <div>
@@ -98,11 +99,27 @@ const TrendingSection = () => {
                         </div>
 
                         {/* Tablet + desktop grid */}
-                        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9">
+                        <motion.div
+                            className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-7.5 gap-y-9"
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true, amount: 0.1 }}
+                            variants={{
+                                visible: { transition: { staggerChildren: 0.1 } }
+                            }}
+                        >
                             {products.map((item, key) => (
-                                <ProductItem item={item as any} key={key} />
+                                <motion.div
+                                    key={key}
+                                    variants={{
+                                        hidden: { opacity: 0, y: 30 },
+                                        visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } }
+                                    }}
+                                >
+                                    <ProductItem item={item as any} />
+                                </motion.div>
                             ))}
-                        </div>
+                        </motion.div>
                     </>
                 )}
             </div>

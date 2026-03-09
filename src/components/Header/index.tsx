@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
 import MegaMenu from "./MegaMenu";
+import MobileMegaMenu from "./MobileMegaMenu";
 import { useAppSelector } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
@@ -531,36 +532,28 @@ const Header = () => {
                 </ul>
               </nav>
 
-              {/* ── Mobile Drawer Nav (3 sections) ─────────────── */}
+              {/* ── Mobile Drawer Nav ─────────────── */}
               <div className="xl:hidden flex flex-col h-[calc(100%-73px)] overflow-y-auto">
-                {/* Section 1: Main Navigation */}
-                <div className="px-5 pt-5 pb-2">
-                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Navigation</p>
-                  {[
-                    { title: "Home", path: "/" },
-                    { title: "Shop", path: "/shop-with-sidebar" },
-                    { title: "Outfits", path: "/outfits" },
-                    { title: "Lookbooks", path: "/lookbook" },
-                    { title: "Deals", path: "/deals" },
-                    { title: "Coupons", path: "/coupons" },
-                  ].map(({ title, path }) => (
-                    <Link key={path} href={path} onClick={() => setNavigationOpen(false)}
-                      className="flex items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors"
-                    >
-                      {title}
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
-                    </Link>
-                  ))}
+                <div className="pt-2">
+                  <MobileMegaMenu categories={categoryHierarchy} onClose={() => setNavigationOpen(false)} />
                 </div>
 
-                {/* Section 2: Discover */}
-                <div className="px-5 pt-5 pb-2">
-                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Discover</p>
+                {/* Section 2: Explore */}
+                <div className="px-5 pt-6 pb-2">
+                  <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Explore</p>
                   {[
-                    { title: "New Arrivals", path: "/shop-with-sidebar?sort=newest" },
-                    { title: "Trending", path: "/shop-with-sidebar?sort=popular" },
-                    { title: "Collections", path: "/collections" },
-                  ].map(({ title, path }) => (
+                    { title: "Home", path: "/" },
+                    { title: "Lookbooks", path: "/lookbook" },
+                    { title: "Outfits", path: "/outfits" },
+                    { title: "Style Hub", path: "#", onClick: () => { setNavigationOpen(false); openStyleHub(); } },
+                    { title: "Deals", path: "/deals" },
+                    { title: "Coupons", path: "/coupons" },
+                  ].map(({ title, path, onClick }) => onClick ? (
+                    <button key={title} onClick={onClick} className="flex w-full items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors text-left">
+                      {title}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  ) : (
                     <Link key={path} href={path} onClick={() => setNavigationOpen(false)}
                       className="flex items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors"
                     >
@@ -568,16 +561,10 @@ const Header = () => {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
                     </Link>
                   ))}
-                  <button onClick={() => { setNavigationOpen(false); openStyleHub(); }}
-                    className="flex w-full items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors text-left"
-                  >
-                    Style Hub
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5"><path d="M9 18l6-6-6-6" /></svg>
-                  </button>
                 </div>
 
                 {/* Section 3: Help */}
-                <div className="px-5 pt-5 pb-2">
+                <div className="px-5 pt-6 pb-2">
                   <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Help</p>
                   {[
                     { title: "About", path: "/about" },

@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import CreateCouponForm from "../Coupons/CreateCouponForm";
 import MyCouponsList from "../Coupons/MyCouponsList";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 const MyAccount = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [addressModal, setAddressModal] = useState(false);
@@ -17,7 +19,7 @@ const MyAccount = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({ orders: 0, wishlist: 0, lookbooks: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
-  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const wishlistItems = useSelector((state: RootState) => state.wishlistReducer.items.filter(i => i.item_type === "product"));
   const [userLookbooks, setUserLookbooks] = useState<any[]>([]);
   const [sectionLoading, setSectionLoading] = useState(false);
   const [savedWorlds, setSavedWorlds] = useState<any[]>([]);
@@ -27,7 +29,12 @@ const MyAccount = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [country, setCountry] = useState("");
+  const [phone, setPhone] = useState("");
+  const [genderPreference, setGenderPreference] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Password state
   const [newPassword, setNewPassword] = useState("");
@@ -49,7 +56,7 @@ const MyAccount = () => {
     async function loadProfile() {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, country, is_admin")
+        .select("full_name, country, phone, gender_preference, is_admin")
         .eq("id", user?.id)
         .single();
 
@@ -61,6 +68,15 @@ const MyAccount = () => {
         }
         if (data.country) {
           setCountry(data.country);
+        }
+        if (data.phone) {
+          setPhone(data.phone);
+        }
+        if (data.gender_preference) {
+          setGenderPreference(data.gender_preference);
+        }
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url);
         }
         if (data.is_admin === true) {
           setIsAdmin(true);
@@ -75,7 +91,7 @@ const MyAccount = () => {
     async function loadStats() {
       const [ordersRes, wishlistRes, lookbooksRes] = await Promise.all([
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-        supabase.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", user!.id).eq("item_type", "product"),
         supabase.from("lookbooks").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
       ]);
       setStats({
@@ -91,17 +107,7 @@ const MyAccount = () => {
   // Load wishlist items and lookbooks when their tabs are activated
   useEffect(() => {
     if (!user) return;
-    if (activeTab === "wishlist-tab") {
-      setSectionLoading(true);
-      supabase
-        .from("wishlist")
-        .select("item_id, item_type, products(id, name, price, slug, imgs)")
-        .eq("user_id", user.id)
-        .eq("item_type", "product")
-        .order("created_at", { ascending: false })
-        .limit(20)
-        .then(({ data }) => { setWishlistItems(data ?? []); setSectionLoading(false); });
-    } else if (activeTab === "lookbooks-tab") {
+    if (activeTab === "lookbooks-tab") {
       setSectionLoading(true);
       supabase
         .from("lookbooks")
@@ -141,7 +147,7 @@ const MyAccount = () => {
     // Update profiles table
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, country })
+      .update({ full_name: fullName, country, phone, gender_preference: genderPreference })
       .eq("id", user.id);
 
     // Update user auth metadata
@@ -192,13 +198,20 @@ const MyAccount = () => {
             <div className="xl:max-w-[370px] w-full bg-white rounded-xl shadow-1">
               <div className="flex xl:flex-col">
                 <div className="hidden lg:flex flex-wrap items-center gap-5 py-6 px-4 sm:px-7.5 xl:px-9 border-r xl:border-r-0 xl:border-b border-gray-3">
-                  <div className="max-w-[64px] w-full h-16 rounded-full overflow-hidden">
-                    <Image
-                      src="/images/users/user-04.jpg"
-                      alt="user"
-                      width={64}
-                      height={64}
-                    />
+                  <div className="max-w-[64px] w-full h-16 rounded-full overflow-hidden bg-gray-1 border border-gray-3 flex items-center justify-center">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt="user"
+                        width={64}
+                        height={64}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <span className="text-xl font-medium text-dark uppercase">
+                        {displayName.charAt(0)}
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -210,12 +223,12 @@ const MyAccount = () => {
                 </div>
 
                 <div className="p-4 sm:p-7.5 xl:p-9">
-                  <div className="flex flex-wrap xl:flex-nowrap xl:flex-col gap-4">
+                  <div className="flex overflow-x-auto no-scrollbar xl:flex-col gap-4 pb-2 xl:pb-0">
                     <button
                       onClick={() => setActiveTab("dashboard")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "dashboard"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "dashboard"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg
@@ -255,9 +268,9 @@ const MyAccount = () => {
                     </button>
                     <button
                       onClick={() => setActiveTab("recent-tab")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "recent-tab"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "recent-tab"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -272,9 +285,9 @@ const MyAccount = () => {
 
                     <button
                       onClick={() => setActiveTab("downloads")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "downloads"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "downloads"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg
@@ -299,9 +312,9 @@ const MyAccount = () => {
 
                     <button
                       onClick={() => setActiveTab("account-details")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "account-details"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "account-details"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg
@@ -331,9 +344,9 @@ const MyAccount = () => {
                     {/* Wishlist Tab */}
                     <button
                       onClick={() => setActiveTab("wishlist-tab")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "wishlist-tab"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "wishlist-tab"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -345,9 +358,9 @@ const MyAccount = () => {
                     {/* My Lookbooks Tab */}
                     <button
                       onClick={() => setActiveTab("lookbooks-tab")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "lookbooks-tab"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "lookbooks-tab"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -362,9 +375,9 @@ const MyAccount = () => {
                     {/* Saved Worlds Tab */}
                     <button
                       onClick={() => setActiveTab("worlds-tab")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "worlds-tab"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "worlds-tab"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -379,9 +392,9 @@ const MyAccount = () => {
                     {/* My Coupons Tab */}
                     <button
                       onClick={() => setActiveTab("coupons-tab")}
-                      className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${activeTab === "coupons-tab"
-                        ? "text-white bg-blue"
-                        : "text-dark-2 bg-gray-1"
+                      className={`flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs ${activeTab === "coupons-tab"
+                        ? "text-white bg-[#0A0A0A]"
+                        : "text-[#8A8A8A] hover:text-[#0A0A0A] bg-transparent hover:bg-[#F6F5F2]"
                         }`}
                     >
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -399,8 +412,8 @@ const MyAccount = () => {
                         <div className="border-t border-gray-3 my-1" />
                         <a
                           href="/admin"
-                          className="flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 text-white"
-                          style={{ background: "#1A1A1A" }}
+                          className="flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs text-white"
+                          style={{ background: "#0A0A0A" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.85"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
                         >
@@ -416,7 +429,7 @@ const MyAccount = () => {
 
                     <button
                       onClick={signOut}
-                      className="flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white text-dark-2 bg-gray-1"
+                      className="flex-shrink-0 whitespace-nowrap flex items-center gap-3 py-3 px-5 ease-out duration-300 uppercase tracking-[0.15em] text-[10px] sm:text-xs text-red-500 hover:text-white hover:bg-red-600 bg-transparent transition-colors"
                     >
                       <svg
                         className="fill-current"
@@ -454,8 +467,8 @@ const MyAccount = () => {
               <div className="bg-white rounded-xl shadow-1 px-7 py-7 mb-5">
                 <p className="font-medium text-dark text-lg">
                   Welcome back, {displayName}{" "}
-                  <span className="text-custom-sm font-normal text-dark-5">
-                    (<button onClick={signOut} className="text-red hover:underline ease-out duration-200">Log Out</button>)
+                  <span className="text-custom-sm font-normal text-[#8A8A8A]">
+                    (<button onClick={signOut} className="text-red-500 hover:text-red-600 transition-colors uppercase tracking-[0.1em] text-[10px]">Log Out</button>)
                   </span>
                 </p>
                 {memberSince && (
@@ -468,7 +481,7 @@ const MyAccount = () => {
               </div>
 
               {/* Stats cards */}
-              <div className="grid grid-cols-3 gap-4 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                 {([
                   {
                     label: "Recently Viewed", value: recentlyViewed.length, tab: "recent-tab", icon: (
@@ -512,12 +525,12 @@ const MyAccount = () => {
 
               {/* Quick links */}
               <div className="bg-white rounded-xl shadow-1 px-7 py-5">
-                <p className="text-xs font-medium uppercase tracking-widest text-dark-5 mb-4">Quick Actions</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#8A8A8A] mb-4">Quick Actions</p>
                 <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setActiveTab("recent-tab")} className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">Recently Viewed</button>
-                  <button onClick={() => setActiveTab("account-details")} className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">Edit Profile</button>
-                  <a href="/wishlist" className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">My Wishlist</a>
-                  <a href="/lookbook/create" className="text-sm text-dark border border-gray-3 px-4 py-2 rounded-md hover:border-dark ease-out duration-200">+ New Lookbook</a>
+                  <button onClick={() => setActiveTab("recent-tab")} className="text-xs font-light tracking-[0.1em] uppercase border border-[#E8E4DF] px-4 py-2 text-dark hover:border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-all duration-300">Recently Viewed</button>
+                  <button onClick={() => setActiveTab("account-details")} className="text-xs font-light tracking-[0.1em] uppercase border border-[#E8E4DF] px-4 py-2 text-dark hover:border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-all duration-300">Edit Profile</button>
+                  <a href="/wishlist" className="text-xs font-light tracking-[0.1em] uppercase border border-[#E8E4DF] px-4 py-2 text-dark hover:border-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-all duration-300">My Wishlist</a>
+                  <a href="/lookbook/create" className="text-xs font-light tracking-[0.1em] uppercase border border-dark bg-dark px-4 py-2 text-white hover:bg-black transition-all duration-300">+ New Lookbook</a>
                 </div>
               </div>
             </div>
@@ -529,31 +542,30 @@ const MyAccount = () => {
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${activeTab === "wishlist-tab" ? "block" : "hidden"}`}
             >
-              <h3 className="font-medium text-xl text-dark mb-6">My Wishlist</h3>
-              {sectionLoading ? (
-                <div className="flex justify-center py-10"><div className="h-8 w-8 rounded-full border-4 border-t-dark border-gray-200 animate-spin" /></div>
-              ) : wishlistItems.length === 0 ? (
+              <h3 className="font-playfair text-xl text-dark mb-6">My Wishlist</h3>
+              {wishlistItems.length === 0 ? (
                 <div className="text-center py-10">
-                  <p className="text-dark-4 font-light mb-4">Your wishlist is empty</p>
-                  <a href="/shop-with-sidebar" className="text-sm text-dark border border-gray-3 px-5 py-2 rounded-md hover:border-dark ease-out duration-200 inline-block">Browse Products</a>
+                  <p className="font-playfair text-xl text-dark mb-4">Your wishlist is empty</p>
+                  <a href="/shop-with-sidebar" className="text-xs font-light tracking-[0.2em] uppercase border border-dark text-dark px-8 py-3 hover:bg-dark hover:text-white transition-colors duration-300 inline-block">Browse Products</a>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {wishlistItems.map((item: any) => {
-                    const p = item.products;
-                    if (!p) return null;
-                    const thumb = p.imgs?.previews?.[0];
+                    const pTitle = item.title;
+                    const pSlug = item.itemSlug ?? item.item_id;
+                    const price = item.discountedPrice ?? item.price;
+                    const thumb = item.imageUrl;
                     return (
-                      <a key={item.item_id} href={`/products/${p.slug}`} className="flex items-center gap-4 p-3 border border-gray-3 rounded-lg hover:border-dark ease-out duration-200">
+                      <a key={item.item_id} href={`/products/${pSlug}`} className="flex items-center gap-4 p-3 border border-[#E8E4DF] rounded-lg hover:border-[#0A0A0A] ease-out duration-300">
                         {thumb ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={thumb} alt={p.name} className="w-16 h-16 object-cover rounded-md border border-gray-3" referrerPolicy="no-referrer" />
+                          <img src={thumb} alt={pTitle} className="w-16 h-16 object-cover rounded-md border border-[#E8E4DF]" referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-16 h-16 bg-gray-1 flex items-center justify-center"><span className="text-dark-4 text-xs">No img</span></div>
+                          <div className="w-16 h-16 bg-[#F6F5F2] flex items-center justify-center"><span className="text-[#8A8A8A] text-[10px] uppercase">No img</span></div>
                         )}
                         <div>
-                          <p className="text-sm font-medium text-dark line-clamp-1">{p.name}</p>
-                          <p className="text-sm text-dark-4">${p.price?.toFixed(2)}</p>
+                          <p className="text-sm font-light text-dark line-clamp-1">{pTitle}</p>
+                          <p className="text-sm text-[#8A8A8A]">{price != null ? `$${price.toFixed(2)}` : ''}</p>
                         </div>
                       </a>
                     );
@@ -561,7 +573,7 @@ const MyAccount = () => {
                 </div>
               )}
               <div className="mt-6 text-center">
-                <a href="/wishlist" className="text-sm text-blue hover:underline">View Full Wishlist →</a>
+                <a href="/wishlist" className="text-[10px] uppercase tracking-[0.2em] text-[#8A8A8A] hover:text-[#0A0A0A] transition-colors">View Full Wishlist →</a>
               </div>
             </div>
 
@@ -711,7 +723,7 @@ const MyAccount = () => {
 
                     return (
                       <div key={item.product_id} className="relative group overflow-hidden rounded-lg hover:shadow-2 ease-out duration-200">
-                        <a href={`/shop/${product.slug}`} className="block relative aspect-[3/4] bg-[#F3F4F6] overflow-hidden">
+                        <a href={`/products/${product.slug}`} className="block relative aspect-[3/4] bg-[#F3F4F6] overflow-hidden">
                           {product.imgs && product.imgs.length > 0 && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -723,7 +735,7 @@ const MyAccount = () => {
                           )}
                         </a>
                         <div className="p-3">
-                          <a href={`/shop/${product.slug}`} className="text-sm text-dark font-medium leading-tight line-clamp-2 mb-1 hover:text-blue">{product.name}</a>
+                          <a href={`/products/${product.slug}`} className="text-sm text-dark font-medium leading-tight line-clamp-2 mb-1 hover:text-[#0A0A0A]">{product.name}</a>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-bold text-dark">
                               {numericDiscountType ? (
@@ -745,11 +757,72 @@ const MyAccount = () => {
             </div>
             {/* <!-- recently viewed tab content end --> */}
 
-            {/* <!-- details tab content start --> */}
             <div
               className={`xl:max-w-[770px] w-full ${activeTab === "account-details" ? "block" : "hidden"
                 }`}
             >
+              <div className="bg-white shadow-1 rounded-xl p-4 sm:p-8.5 mb-5">
+                <h3 className="font-medium text-xl text-dark mb-5 border-b border-gray-3 pb-3">Avatar Image</h3>
+                <div className="flex items-center gap-6">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-3 bg-gray-1 flex items-center justify-center flex-shrink-0">
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-light text-dark uppercase">
+                        {displayName.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !user) return;
+                        if (file.size > 2 * 1024 * 1024) { toast.error("Image must be smaller than 2MB."); return; }
+
+                        setUploadingAvatar(true);
+                        const ext = file.name.split('.').pop();
+                        const filename = `${user.id}-${Date.now()}.${ext}`;
+
+                        const { error: uploadError } = await supabase.storage
+                          .from('user-avatars')
+                          .upload(filename, file, { upsert: true });
+
+                        if (uploadError) {
+                          toast.error("Failed to upload image.");
+                          setUploadingAvatar(false);
+                          return;
+                        }
+
+                        const { data: urlData } = supabase.storage.from("user-avatars").getPublicUrl(filename);
+
+                        await supabase.auth.updateUser({
+                          data: { avatar_url: urlData.publicUrl }
+                        });
+
+                        setAvatarUrl(urlData.publicUrl);
+                        toast.success("Avatar updated!");
+                        setUploadingAvatar(false);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="text-xs font-light tracking-[0.1em] uppercase px-5 py-2.5 transition-all duration-300 border border-dark text-dark hover:bg-dark hover:text-white disabled:opacity-50"
+                    >
+                      {uploadingAvatar ? "Uploading..." : "Change Avatar"}
+                    </button>
+                    <p className="text-xs text-dark-5 mt-2 font-light">JPG, GIF or PNG. 2MB max.</p>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={handleProfileUpdate}>
                 <div className="bg-white shadow-1 rounded-xl p-4 sm:p-8.5">
                   <div className="flex flex-col lg:flex-row gap-5 sm:gap-8 mb-5">
@@ -765,7 +838,7 @@ const MyAccount = () => {
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="John"
                         required
-                        className="rounded-md border border-gray-3 bg-gray-1 placeholder:text-dark-5 w-full py-2.5 px-5 outline-none duration-200 focus:border-transparent focus:shadow-input focus:ring-2 focus:ring-blue/20"
+                        className="border border-[#E8E4DF] bg-transparent placeholder:text-[#8A8A8A] w-full py-3.5 px-5 outline-none duration-300 focus:border-[#0A0A0A] text-sm text-[#0A0A0A]"
                       />
                     </div>
 
@@ -781,52 +854,71 @@ const MyAccount = () => {
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
                         required
-                        className="rounded-md border border-gray-3 bg-gray-1 placeholder:text-dark-5 w-full py-2.5 px-5 outline-none duration-200 focus:border-transparent focus:shadow-input focus:ring-2 focus:ring-blue/20"
+                        className="border border-[#E8E4DF] bg-transparent placeholder:text-[#8A8A8A] w-full py-3.5 px-5 outline-none duration-300 focus:border-[#0A0A0A] text-sm text-[#0A0A0A]"
                       />
                     </div>
                   </div>
 
-                  <div className="mb-5">
-                    <label htmlFor="countryName" className="block mb-2.5">
-                      Country/ Region <span className="text-red">*</span>
-                    </label>
+                  <div className="flex flex-col lg:flex-row gap-5 sm:gap-8 mb-5">
+                    <div className="w-full">
+                      <label htmlFor="countryName" className="block mb-2.5 text-sm">
+                        Country / Region
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          className="w-full bg-transparent border border-[#E8E4DF] text-dark-4 py-3.5 pl-5 pr-9 duration-300 outline-none focus:border-[#0A0A0A] text-sm"
+                        >
+                          <option value="">Select a country</option>
+                          <option value="United States">United States</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Australia">Australia</option>
+                          <option value="Saudi Arabia">Saudi Arabia</option>
+                          <option value="United Arab Emirates">United Arab Emirates</option>
+                        </select>
+                      </div>
+                    </div>
 
+                    <div className="w-full">
+                      <label htmlFor="phoneNumber" className="block mb-2.5 text-sm">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        id="phoneNumber"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+1 234 567 890"
+                        className="border border-[#E8E4DF] bg-transparent placeholder:text-[#8A8A8A] w-full py-3.5 px-5 outline-none duration-300 focus:border-[#0A0A0A] text-sm text-[#0A0A0A]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-5 lg:w-[calc(50%-1rem)]">
+                    <label htmlFor="genderPreference" className="block mb-2.5 text-sm">
+                      Shopping Preference
+                    </label>
                     <div className="relative">
                       <select
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        className="w-full bg-gray-1 rounded-md border border-gray-3 text-dark-4 py-3 pl-5 pr-9 duration-200 appearance-none outline-none focus:border-transparent focus:shadow-input focus:ring-2 focus:ring-blue/20"
+                        value={genderPreference}
+                        onChange={(e) => setGenderPreference(e.target.value)}
+                        className="w-full bg-transparent border border-[#E8E4DF] text-dark-4 py-3.5 pl-5 pr-9 duration-300 outline-none focus:border-[#0A0A0A] text-sm"
                       >
-                        <option value="">Select a country</option>
-                        <option value="Australia">Australia</option>
-                        <option value="America">America</option>
-                        <option value="England">England</option>
+                        <option value="">No Preference</option>
+                        <option value="men">Men's Fashion</option>
+                        <option value="women">Women's Fashion</option>
+                        <option value="kids">Kids</option>
                       </select>
-
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-4">
-                        <svg
-                          className="fill-current"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M2.41469 5.03569L2.41467 5.03571L2.41749 5.03846L7.76749 10.2635L8.0015 10.492L8.23442 10.2623L13.5844 4.98735L13.5844 4.98735L13.5861 4.98569C13.6809 4.89086 13.8199 4.89087 13.9147 4.98569C14.0092 5.08024 14.0095 5.21864 13.9155 5.31345C13.9152 5.31373 13.915 5.31401 13.9147 5.31429L8.16676 10.9622L8.16676 10.9622L8.16469 10.9643C8.06838 11.0606 8.02352 11.0667 8.00039 11.0667C7.94147 11.0667 7.89042 11.0522 7.82064 10.9991L2.08526 5.36345C1.99127 5.26865 1.99154 5.13024 2.08609 5.03569C2.18092 4.94086 2.31986 4.94086 2.41469 5.03569Z"
-                            fill=""
-                            stroke=""
-                            strokeWidth="0.666667"
-                          />
-                        </svg>
-                      </span>
                     </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={profileLoading}
-                    className="inline-flex font-medium text-white bg-blue py-3 px-7 rounded-md ease-out duration-200 hover:bg-blue-dark disabled:opacity-50"
+                    className="inline-flex items-center justify-center text-xs font-light tracking-[0.2em] uppercase bg-[#0A0A0A] text-white px-8 py-3.5 hover:bg-black transition-all duration-300 disabled:opacity-50 mt-2"
                   >
                     {profileLoading ? "Saving..." : "Save Changes"}
                   </button>
@@ -856,7 +948,7 @@ const MyAccount = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      className="rounded-md border border-gray-3 bg-gray-1 placeholder:text-dark-5 w-full py-2.5 px-5 outline-none duration-200 focus:border-transparent focus:shadow-input focus:ring-2 focus:ring-blue/20"
+                      className="border border-[#E8E4DF] bg-transparent placeholder:text-[#8A8A8A] w-full py-3.5 px-5 outline-none duration-300 focus:border-[#0A0A0A] text-sm text-[#0A0A0A]"
                     />
                   </div>
 
@@ -875,14 +967,14 @@ const MyAccount = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="rounded-md border border-gray-3 bg-gray-1 placeholder:text-dark-5 w-full py-2.5 px-5 outline-none duration-200 focus:border-transparent focus:shadow-input focus:ring-2 focus:ring-blue/20"
+                      className="border border-[#E8E4DF] bg-transparent placeholder:text-[#8A8A8A] w-full py-3.5 px-5 outline-none duration-300 focus:border-[#0A0A0A] text-sm text-[#0A0A0A]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={passwordLoading}
-                    className="inline-flex font-medium text-white bg-blue py-3 px-7 rounded-md ease-out duration-200 hover:bg-blue-dark disabled:opacity-50"
+                    className="inline-flex items-center justify-center text-xs font-light tracking-[0.2em] uppercase bg-[#0A0A0A] text-white px-8 py-3.5 hover:bg-black transition-all duration-300 disabled:opacity-50"
                   >
                     {passwordLoading ? "Updating..." : "Change Password"}
                   </button>

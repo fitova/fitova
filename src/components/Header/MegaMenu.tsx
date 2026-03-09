@@ -12,10 +12,10 @@ interface MegaMenuProps {
 }
 
 // ─── Static fallback (shown when DB is empty / loading) ──────────────────────
-type StaticChild = { id: string; name: string; slug: string; piece_type: string };
-type StaticCat = { id: string; name: string; slug: string; gender: string[]; image_url: null; children: StaticChild[] };
+export type StaticChild = { id: string; name: string; slug: string; piece_type: string };
+export type StaticCat = { id: string; name: string; slug: string; gender: string[]; image_url: null; children: StaticChild[] };
 
-const STATIC_CATEGORIES: StaticCat[] = [
+export const STATIC_CATEGORIES: StaticCat[] = [
     {
         id: "static-men", name: "Men", slug: "men", gender: ["men"], image_url: null,
         children: [
@@ -107,10 +107,10 @@ const PIECE_ACCESSORIES = new Set([
     "tote", "accessories", // generic fallback
 ]);
 
-type AnyChild = { id: string | number; name: string; slug?: string | null; piece_type?: string | null };
+export type AnyChild = { id: string | number; name: string; slug?: string | null; piece_type?: string | null };
 
 // Map column label → URL query value for piece_type_group
-const GROUP_TO_SLUG: Record<string, string> = {
+export const GROUP_TO_SLUG: Record<string, string> = {
     "Clothing": "clothing",
     "Footwear": "footwear",
     "Accessories": "accessories",
@@ -153,7 +153,7 @@ const SLUG_TO_TYPE: Record<string, string> = {
     "fragrances": "perfume",
 };
 
-function inferType(c: AnyChild): string {
+export function inferType(c: AnyChild): string {
     // Use piece_type if it exists and isn't "null" string
     const pt = c.piece_type?.toLowerCase();
     if (pt && pt !== "null") return pt;
@@ -170,7 +170,7 @@ function inferType(c: AnyChild): string {
     return "unknown";
 }
 
-function groupChildren(children: AnyChild[]) {
+export function groupChildren(children: AnyChild[]) {
     const clothing: AnyChild[] = [];
     const footwear: AnyChild[] = [];
     const perfumes: AnyChild[] = [];

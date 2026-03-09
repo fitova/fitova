@@ -1,5 +1,6 @@
 "use client";
-import React, { useRef, useEffect } from "react";
+import React from "react";
+import { motion } from "framer-motion";
 import VideoHero from "./VideoHero";
 import BrandMarquee from "./BrandMarquee";
 import Hero from "./Hero";
@@ -11,72 +12,82 @@ import Newsletter from "../Common/Newsletter";
 import LookbookPreview from "./LookbookPreview";
 import ThreeDSection from "./ThreeDSection/client";
 
-/** Apply scroll-reveal to a section wrapper ref */
-function useSr() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("revealed");
-          obs.unobserve(el);
+// Reusable animation variants for page sections
+const fadeInUp = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number], // Custom cubic-bezier for a premium, smooth feel
+    }
+  }
+};
+
+const SectionWrapper = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.05 }} // Triggers slightly before coming fully into view
+      variants={{
+        hidden: fadeInUp.hidden,
+        visible: {
+          ...fadeInUp.visible,
+          transition: { ...fadeInUp.visible.transition, delay }
         }
-      },
-      { threshold: 0.08 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const Home = () => {
-  const catRef = useSr();
-  const newRef = useSr();
-  const bestRef = useSr();
-  const trendRef = useSr();
-  const lookRef = useSr();
-  const threeRef = useSr();
-  const newsRef = useSr();
-
   return (
-    <main className="relative overflow-hidden">
+    <main className="relative overflow-hidden bg-[#F6F5F2]">
       {/* ── Diagonal background ornament ─────────────────────── */}
       <div className="page-ornament" aria-hidden="true" />
 
+      {/* Hero sections (no scroll animation usually, they appear immediately) */}
       <VideoHero />
       <BrandMarquee />
       <Hero />
 
-      <div ref={catRef} className="sr">
-        <Categories />
+      {/* Main Content Sections with consistent spacing and animations */}
+      <div className="flex flex-col gap-16 md:gap-24 lg:gap-32 py-16 md:py-24">
+
+        <SectionWrapper>
+          <Categories />
+        </SectionWrapper>
+
+        <SectionWrapper delay={0.1}>
+          <NewArrival />
+        </SectionWrapper>
+
+        <SectionWrapper delay={0.1}>
+          <BestSeller />
+        </SectionWrapper>
+
+        <SectionWrapper delay={0.2}>
+          <TrendingSection />
+        </SectionWrapper>
+
+        <SectionWrapper>
+          <ThreeDSection />
+        </SectionWrapper>
+
+        <SectionWrapper delay={0.1}>
+          <LookbookPreview />
+        </SectionWrapper>
+
       </div>
 
-      <div ref={newRef} className="sr sr-delay-1">
-        <NewArrival />
-      </div>
-
-      <div ref={bestRef} className="sr sr-delay-1">
-        <BestSeller />
-      </div>
-
-      <div ref={trendRef} className="sr sr-delay-2">
-        <TrendingSection />
-      </div>
-
-      <div ref={threeRef} className="sr">
-        <ThreeDSection />
-      </div>
-
-      <div ref={lookRef} className="sr sr-delay-1">
-        <LookbookPreview />
-      </div>
-
-      <div ref={newsRef} className="sr sr-delay-2">
+      <SectionWrapper delay={0.1} className="pb-16 md:pb-24">
         <Newsletter />
-      </div>
+      </SectionWrapper>
     </main>
   );
 };
