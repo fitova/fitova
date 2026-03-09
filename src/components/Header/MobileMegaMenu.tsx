@@ -15,6 +15,43 @@ export default function MobileMegaMenu({ categories, onClose }: { categories: Ca
 
     return (
         <div className="flex flex-col">
+            {/* Home */}
+            <div className="border-b border-[#F0EDE8] px-5">
+                <Link
+                    href="/"
+                    onClick={onClose}
+                    className="w-full flex items-center justify-between py-3 text-sm font-light text-[#0A0A0A]"
+                >
+                    Home
+                </Link>
+            </div>
+
+            {/* This Week */}
+            <div className="border-b border-[#F0EDE8] px-5">
+                <button
+                    onClick={() => toggle('this_week')}
+                    className="w-full flex items-center justify-between py-3 text-sm font-light text-[#0A0A0A]"
+                >
+                    This Week
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5" className={`transition-transform duration-200 ${openIndex === 'this_week' ? "rotate-90" : ""}`}>
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+                {openIndex === 'this_week' && (
+                    <div className="pb-3 pl-3 flex flex-col gap-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                        <Link href="/this-week" onClick={onClose} className="text-xs font-medium text-dark underline mb-2">View All This Week</Link>
+
+                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#8A8A8A] mt-1">Collections</p>
+                        <Link href="/this-week/trending" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Trending</Link>
+                        <Link href="/this-week/best-sellers" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Best Sellers</Link>
+                        <Link href="/this-week/new-arrivals" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">New Arrivals</Link>
+
+                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#8A8A8A] mt-2">Personal</p>
+                        <Link href="/this-week/recently-viewed" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Recently Viewed</Link>
+                    </div>
+                )}
+            </div>
+
             {source.map((cat, i) => {
                 const isOpen = openIndex === i;
                 const { clothing, footwear, perfumes, accessories } = groupChildren(cat.children as AnyChild[]);
@@ -70,32 +107,6 @@ export default function MobileMegaMenu({ categories, onClose }: { categories: Ca
                     </div>
                 );
             })}
-
-            {/* This Week */}
-            <div className="border-b border-[#F0EDE8] px-5">
-                <button
-                    onClick={() => toggle('this_week')}
-                    className="w-full flex items-center justify-between py-3 text-sm font-light text-[#0A0A0A]"
-                >
-                    This Week
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5" className={`transition-transform duration-200 ${openIndex === 'this_week' ? "rotate-90" : ""}`}>
-                        <path d="M9 18l6-6-6-6" />
-                    </svg>
-                </button>
-                {openIndex === 'this_week' && (
-                    <div className="pb-3 pl-3 flex flex-col gap-2 animate-in slide-in-from-top-1 fade-in duration-200">
-                        <Link href="/this-week" onClick={onClose} className="text-xs font-medium text-dark underline mb-2">View All This Week</Link>
-
-                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#8A8A8A] mt-1">Collections</p>
-                        <Link href="/this-week/trending" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Trending</Link>
-                        <Link href="/this-week/best-sellers" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Best Sellers</Link>
-                        <Link href="/this-week/new-arrivals" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">New Arrivals</Link>
-
-                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#8A8A8A] mt-2">Personal</p>
-                        <Link href="/this-week/recently-viewed" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2">Recently Viewed</Link>
-                    </div>
-                )}
-            </div>
         </div>
     );
 }

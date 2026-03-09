@@ -17,6 +17,10 @@ import { ReactQueryProvider } from "@/lib/react-query";
 import { StyleHubProvider } from "../context/StyleHubContext";
 import StyleHubModal from "@/components/StyleHub";
 import { AuthProvider } from "../context/AuthContext";
+import { CartModalProvider as SlideUpCartModalProvider } from "../context/CartModalContext";
+import { WishlistModalProvider as SlideUpWishlistModalProvider } from "../context/WishlistModalContext";
+import CartModal from "@/components/Cart/CartModal";
+import WishlistModal from "@/components/Wishlist/WishlistModal";
 
 import ScrollToTop from "@/components/Common/ScrollToTop";
 import PreLoader from "@/components/Common/PreLoader";
@@ -66,19 +70,25 @@ export default function RootLayout({
                 <ReduxProvider>
                   <AuthRehydrator />
                   <StyleHubProvider>
-                    <CartModalProvider>
-                      <ModalProvider>
-                        <PreviewSliderProvider>
-                          <Header />
-                          <PageWrapper>{children}</PageWrapper>
+                    <SlideUpCartModalProvider>
+                      <SlideUpWishlistModalProvider>
+                        <CartModalProvider>
+                          <ModalProvider>
+                            <PreviewSliderProvider>
+                              <Header />
+                              <PageWrapper>{children}</PageWrapper>
 
-                          <QuickViewModal />
-                          <CartSidebarModal />
-                          <PreviewSliderModal />
-                          <StyleHubModal />
-                        </PreviewSliderProvider>
-                      </ModalProvider>
-                    </CartModalProvider>
+                              <QuickViewModal />
+                              <CartSidebarModal />
+                              <PreviewSliderModal />
+                              <StyleHubModal />
+                              <CartModal />
+                              <WishlistModal />
+                            </PreviewSliderProvider>
+                          </ModalProvider>
+                        </CartModalProvider>
+                      </SlideUpWishlistModalProvider>
+                    </SlideUpCartModalProvider>
                   </StyleHubProvider>
                 </ReduxProvider>
               </AuthProvider>

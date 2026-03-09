@@ -9,7 +9,8 @@ import MobileMegaMenu from "./MobileMegaMenu";
 import { useAppSelector } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
-import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
+import { useCartModal } from "@/app/context/CartModalContext";
+import { useWishlistModal } from "@/app/context/WishlistModalContext";
 import { useStyleHub } from "@/app/context/StyleHubContext";
 import Image from "next/image";
 import { useCurrentUser } from "@/app/context/AuthContext";
@@ -113,7 +114,8 @@ const Header = () => {
   const [isAtTop, setIsAtTop] = useState(true);
   const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryWithChildren[]>([]);
   const [categoryImages, setCategoryImages] = useState<CategoryImage[]>([]);
-  const { openCartModal } = useCartModalContext();
+  const { openCartModal } = useCartModal();
+  const { openWishlistModal } = useWishlistModal();
   const { openStyleHub } = useStyleHub();
   const { user } = useCurrentUser();
   const pathname = usePathname();
@@ -217,11 +219,11 @@ const Header = () => {
                 </span>
               )}
             </button>
-            <Link href="/wishlist" className="w-9 h-9 flex items-center justify-center" aria-label="Wishlist">
+            <button onClick={openWishlistModal} className="w-9 h-9 flex items-center justify-center" aria-label="Wishlist">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </Link>
+            </button>
             <button onClick={openStyleHub} className="w-9 h-9 flex items-center justify-center mr-[-4px]" aria-label="Style Hub">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" strokeLinecap="round" strokeLinejoin="round" />
@@ -542,12 +544,10 @@ const Header = () => {
                 <div className="px-5 pt-6 pb-2">
                   <p className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#C8C8C8] mb-3">Explore</p>
                   {[
-                    { title: "Home", path: "/" },
                     { title: "Lookbooks", path: "/lookbook" },
-                    { title: "Outfits", path: "/outfits" },
-                    { title: "Style Hub", path: "#", onClick: () => { setNavigationOpen(false); openStyleHub(); } },
                     { title: "Deals", path: "/deals" },
                     { title: "Coupons", path: "/coupons" },
+                    { title: "AI Styling", path: "#", onClick: () => { setNavigationOpen(false); openStyleHub(); } },
                   ].map(({ title, path, onClick }) => onClick ? (
                     <button key={title} onClick={onClick} className="flex w-full items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors text-left">
                       {title}
@@ -615,8 +615,8 @@ const Header = () => {
             <div className="hidden xl:block">
               <ul className="flex items-center gap-5.5">
                 <li className="py-4">
-                  <Link
-                    href="/wishlist"
+                  <button
+                    onClick={openWishlistModal}
                     className={`flex items-center gap-1.5 text-custom-sm font-light tracking-wide transition-colors duration-300 ${isTransparent ? "text-white hover:text-white/70" : "text-dark hover:text-dark-2"
                       }`}
                   >
@@ -634,7 +634,7 @@ const Header = () => {
                       />
                     </svg>
                     Wishlist
-                  </Link>
+                  </button>
                 </li>
 
                 <li className="py-4">

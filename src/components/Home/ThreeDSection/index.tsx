@@ -138,8 +138,8 @@ function Camera({ progress }: { progress: number }) {
 function Scene({ progress, modelScale, isMobile }: { progress: number; modelScale: number; isMobile: boolean }) {
     return (
         <Canvas
-            gl={{ antialias: !isMobile, alpha: true, powerPreference: "high-performance" }}
-            dpr={isMobile ? [1, 1.5] : [1, 1.5]}
+            gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+            dpr={[1, 2]}
             style={{ background: "transparent", width: "100%", height: "100%" }}
             frameloop={isMobile ? "demand" : "always"}
         >
@@ -210,8 +210,8 @@ const ThreeDSection = () => {
             const w = window.innerWidth;
             setIsMobile(w < 768);
             setIsTablet(w >= 768 && w < 1024);
-            if (w < 640) setModelScale(0.85);
-            else if (w < 1024) setModelScale(0.90);
+            if (w < 640) setModelScale(1.15); // Increased from 0.85
+            else if (w < 1024) setModelScale(1.20); // Increased from 0.90
             else setModelScale(1.25);
         };
         update();
@@ -366,8 +366,9 @@ const ThreeDSection = () => {
                 <div
                     className="w-full lg:w-[58%] relative flex-1"
                     style={{
-                        height: isMobile ? "480px" : isTablet ? "480px" : "100%",
-                        minHeight: isMobile ? "480px" : isTablet ? "480px" : undefined,
+                        height: isMobile ? "650px" : isTablet ? "650px" : "100%",
+                        minHeight: isMobile ? "650px" : isTablet ? "650px" : undefined,
+                        marginTop: isMobile ? "-20px" : "0" // Pull up slightly on mobile
                     }}
                 >
                     <Scene progress={progress} modelScale={modelScale} isMobile={isMobile} />
