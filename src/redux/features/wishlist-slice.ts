@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { ItemType } from "@/lib/queries/wishlist";
+import { RootState } from "../store";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 export type WishlistEntry = {
@@ -79,12 +80,12 @@ export const {
 export default wishlistSlice.reducer;
 
 /* ─── Selectors ─────────────────────────────────────────────── */
-export const selectProductWishlist = (state: { wishlistReducer: WishlistState }) =>
+export const selectProductWishlist = (state: RootState) =>
   state.wishlistReducer.items.filter(i => i.item_type === "product");
 
-export const selectLookbookWishlist = (state: { wishlistReducer: WishlistState }) =>
+export const selectLookbookWishlist = (state: RootState) =>
   state.wishlistReducer.items.filter(i => i.item_type === "lookbook");
 
 export const selectIsWishlisted = (item_id: string, item_type: ItemType) =>
-  (state: { wishlistReducer: WishlistState }) =>
+  (state: RootState) =>
     state.wishlistReducer.items.some(i => i.item_id === item_id && i.item_type === item_type);

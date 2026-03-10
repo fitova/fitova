@@ -114,7 +114,7 @@ const WishlistModal = () => {
                                                     {item.title}
                                                 </Link>
                                                 <button
-                                                    onClick={() => dispatch(removeItemFromWishlist(item.id))}
+                                                    onClick={() => dispatch(removeItemFromWishlist({ item_id: item.item_id, item_type: item.item_type }))}
                                                     className="text-white/40 hover:text-white"
                                                     aria-label="Remove"
                                                 >
