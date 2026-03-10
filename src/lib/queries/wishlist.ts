@@ -13,9 +13,9 @@ export type WishlistProduct = {
     product_images?: { url: string; type: string; sort_order: number }[];
 };
 
-export type WishlistCollection = {
+export type WishlistLookbook = {
     id: string;
-    name: string;
+    title: string;
     slug: string;
     cover_image: string | null;
 };
@@ -27,7 +27,7 @@ export type WishlistItem = {
     item_type: ItemType;
     created_at: string;
     product?: WishlistProduct;
-    collection?: WishlistCollection;
+    lookbook?: WishlistLookbook;
 };
 
 // ── Fetch full wishlist for current user ─────────────────────
@@ -54,7 +54,7 @@ export async function getWishlist(): Promise<WishlistItem[]> {
     const productIds = data.filter(r => r.item_type === "product").map(r => r.item_id);
     const lookbookIds = data.filter(r => r.item_type === "lookbook").map(r => r.item_id);
 
-    const [productsRes, collectionsRes] = await Promise.all([
+    const [productsRes, lookbooksRes] = await Promise.all([
         productIds.length > 0
             ? supabase
                 .from("products")
@@ -63,19 +63,19 @@ export async function getWishlist(): Promise<WishlistItem[]> {
             : Promise.resolve({ data: [] }),
         lookbookIds.length > 0
             ? supabase
-                .from("collections")
-                .select("id, name, slug, cover_image")
+                .from("lookbooks")
+                .select("id, title, slug, cover_image")
                 .in("id", lookbookIds)
             : Promise.resolve({ data: [] }),
     ]);
 
     const productMap = new Map((productsRes.data ?? []).map((p: any) => [p.id, p]));
-    const collectionMap = new Map((collectionsRes.data ?? []).map((c: any) => [c.id, c]));
+    const lookbookMap = new Map((lookbooksRes.data ?? []).map((c: any) => [c.id, c]));
 
     return data.map(row => ({
         ...row,
         product: row.item_type === "product" ? productMap.get(row.item_id) : undefined,
-        collection: row.item_type === "lookbook" ? collectionMap.get(row.item_id) : undefined,
+        lookbook: row.item_type === "lookbook" ? lookbookMap.get(row.item_id) : undefined,
     })) as WishlistItem[];
 }
 

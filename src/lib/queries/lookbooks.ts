@@ -36,7 +36,14 @@ export interface Lookbook {
     mood?: string | null;
     occasion?: string | null;
     season?: string | null;
-    tag?: "AI" | "Trending" | "User" | null;
+    tag?: string | null;
+    display_order?: number;
+    gender?: string | null;
+    generated_by_ai?: boolean;
+    is_draft?: boolean;
+    is_featured?: boolean;
+    likes_count?: number;
+    styles?: string[] | null;
     created_at: string;
     profiles?: {
         id: string;
@@ -62,6 +69,19 @@ export interface LookbookProductSlot {
 }
 
 /* ─────────────────────────── Fetch ───────────────────────────────── */
+
+/** Fetch featured lookbooks */
+export async function getFeaturedLookbooks(limit = 4) {
+    const { data, error } = await supabase
+        .from("lookbooks")
+        .select("*, profiles(id, full_name, avatar_url)")
+        .eq("is_featured", true)
+        .order("display_order", { ascending: true })
+        .limit(limit);
+
+    if (error) throw error;
+    return (data ?? []) as Lookbook[];
+}
 
 /** Fetch all lookbooks with creator info */
 export async function getLookbooks(tag?: string) {

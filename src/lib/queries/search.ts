@@ -14,14 +14,6 @@ export type SearchProduct = {
     product_images: { url: string; type: string; sort_order: number }[];
 };
 
-export type SearchCollection = {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    thumbnail_url: string | null;
-};
-
 export type SearchLookbook = {
     id: string;
     title: string;
@@ -43,7 +35,6 @@ export type SearchCoupon = {
 export type GlobalSearchResults = {
     products: SearchProduct[];
     deals: SearchProduct[];        // products where is_deal = true
-    collections: SearchCollection[];
     lookbooks: SearchLookbook[];
     coupons: SearchCoupon[];
 };
@@ -54,13 +45,13 @@ export type GlobalSearchResults = {
  */
 export async function globalSearch(query: string, limit = 5): Promise<GlobalSearchResults> {
     if (!query || query.trim().length < 2) {
-        return { products: [], deals: [], collections: [], lookbooks: [], coupons: [] };
+        return { products: [], deals: [], lookbooks: [], coupons: [] };
     }
 
     const q = `%${query.trim()}%`;
     const supabase = createClient();
 
-    const [productsRes, collectionsRes, lookbooksRes, couponsRes] = await Promise.all([
+    const [productsRes, lookbooksRes, couponsRes] = await Promise.all([
         // Products (non-deal): search by name, brand, or piece_type
         supabase
             .from("products")
@@ -70,13 +61,6 @@ export async function globalSearch(query: string, limit = 5): Promise<GlobalSear
             .or(`name.ilike.${q},brand.ilike.${q},piece_type.ilike.${q}`)
             .order("views_count", { ascending: false })
             .limit(limit),
-
-        // Collections / Lookbooks (collections table)
-        supabase
-            .from("collections")
-            .select("id, name, slug, description, thumbnail_url")
-            .or(`name.ilike.${q},description.ilike.${q}`)
-            .limit(4),
 
         // Lookbooks (lookbooks table)
         supabase
@@ -106,7 +90,6 @@ export async function globalSearch(query: string, limit = 5): Promise<GlobalSear
     return {
         products: (productsRes.data ?? []) as SearchProduct[],
         deals: (dealsRes.data ?? []) as SearchProduct[],
-        collections: (collectionsRes.data ?? []) as SearchCollection[],
         lookbooks: (lookbooksRes.data ?? []) as SearchLookbook[],
         coupons: (couponsRes.data ?? []) as SearchCoupon[],
     };

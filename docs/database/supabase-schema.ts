@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -414,39 +415,71 @@ export type Database = {
           affiliate_link: string | null
           code: string
           created_at: string | null
+          current_uses: number | null
           discount_percent: number
+          discount_type: string | null
+          discount_value: number | null
           end_date: string
           id: number
           image_url: string | null
           is_active: boolean | null
+          max_discount_value: number | null
+          min_order_value: number | null
           start_date: string
           store_name: string
+          title: string | null
+          usage_limit: number | null
+          user_id: string | null
         }
         Insert: {
           affiliate_link?: string | null
           code: string
           created_at?: string | null
+          current_uses?: number | null
           discount_percent: number
+          discount_type?: string | null
+          discount_value?: number | null
           end_date: string
           id?: number
           image_url?: string | null
           is_active?: boolean | null
+          max_discount_value?: number | null
+          min_order_value?: number | null
           start_date: string
           store_name: string
+          title?: string | null
+          usage_limit?: number | null
+          user_id?: string | null
         }
         Update: {
           affiliate_link?: string | null
           code?: string
           created_at?: string | null
+          current_uses?: number | null
           discount_percent?: number
+          discount_type?: string | null
+          discount_value?: number | null
           end_date?: string
           id?: number
           image_url?: string | null
           is_active?: boolean | null
+          max_discount_value?: number | null
+          min_order_value?: number | null
           start_date?: string
           store_name?: string
+          title?: string | null
+          usage_limit?: number | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coupons_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       genders: {
         Row: {
@@ -622,14 +655,22 @@ export type Database = {
           cover_image: string | null
           created_at: string | null
           description: string | null
+          display_order: number
+          gender: string | null
+          generated_by_ai: boolean
           id: string
           is_copy: boolean | null
+          is_draft: boolean
+          is_featured: boolean
+          likes_count: number
           mood: string | null
           occasion: string | null
           original_lookbook_id: string | null
           season: string | null
           slug: string | null
+          styles: string[] | null
           tags: string[] | null
+          tag: string | null
           title: string
           user_id: string | null
         }
@@ -638,14 +679,22 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number
+          gender?: string | null
+          generated_by_ai?: boolean
           id?: string
           is_copy?: boolean | null
+          is_draft?: boolean
+          is_featured?: boolean
+          likes_count?: number
           mood?: string | null
           occasion?: string | null
           original_lookbook_id?: string | null
           season?: string | null
           slug?: string | null
+          styles?: string[] | null
           tags?: string[] | null
+          tag?: string | null
           title: string
           user_id?: string | null
         }
@@ -654,14 +703,22 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number
+          gender?: string | null
+          generated_by_ai?: boolean
           id?: string
           is_copy?: boolean | null
+          is_draft?: boolean
+          is_featured?: boolean
+          likes_count?: number
           mood?: string | null
           occasion?: string | null
           original_lookbook_id?: string | null
           season?: string | null
           slug?: string | null
+          styles?: string[] | null
           tags?: string[] | null
+          tag?: string | null
           title?: string
           user_id?: string | null
         }

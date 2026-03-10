@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         // ── Step 1: Ask AI to analyze the image and return style filters ──
         let aiResult: any = null;
 
-        for (let i = 0; i < Math.min(3, VISION_MODELS.length); i++) {
+        for (let i = 0; i < VISION_MODELS.length; i++) {
             const model = VISION_MODELS[i];
             try {
                 console.log(`[AI Styling] Attempt ${i + 1} — model: ${model}`);

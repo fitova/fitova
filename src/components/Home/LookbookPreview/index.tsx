@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getCollections, Collection } from "@/lib/queries/collections";
+import { getFeaturedLookbooks, Lookbook } from "@/lib/queries/lookbooks";
 import { motion } from "framer-motion";
 
 /* ─── Skeleton card ─────────────────────────────────────────── */
@@ -17,7 +17,7 @@ const SkeletonCard = () => (
 );
 
 /* ─── Creator badge ──────────────────────────────────────────── */
-const CreatorBadge = ({ creator }: { creator: Collection["creator"] }) => {
+const CreatorBadge = ({ creator }: { creator: Lookbook["profiles"] }) => {
     if (!creator?.full_name) return null;
     return (
         <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2 py-1 backdrop-blur-sm"
@@ -44,13 +44,13 @@ const CreatorBadge = ({ creator }: { creator: Collection["creator"] }) => {
 };
 
 const LookbookPreview = () => {
-    const [collections, setCollections] = useState<Collection[]>([]);
+    const [lookbooks, setLookbooks] = useState<Lookbook[]>([]);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
-        getCollections(4)
-            .then((data) => setCollections(data))
-            .catch(() => setCollections([]))
+        getFeaturedLookbooks(4)
+            .then((data) => setLookbooks(data))
+            .catch(() => setLookbooks([]))
             .finally(() => setLoaded(true));
     }, []);
 
@@ -103,7 +103,7 @@ const LookbookPreview = () => {
                 >
                     {!loaded
                         ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-                        : collections.map((col, i) => (
+                        : lookbooks.map((col, i) => (
                             <motion.div
                                 key={col.id}
                                 variants={{
@@ -116,7 +116,7 @@ const LookbookPreview = () => {
                                     className="group relative overflow-hidden block"
                                 >
                                     {/* Creator badge */}
-                                    <CreatorBadge creator={col.creator} />
+                                    <CreatorBadge creator={col.profiles} />
 
                                     {/* Image or gradient bg */}
                                     <div
@@ -135,7 +135,7 @@ const LookbookPreview = () => {
                                         {col.cover_image && (
                                             <Image
                                                 src={col.cover_image}
-                                                alt={col.name}
+                                                alt={col.title}
                                                 fill
                                                 className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
                                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
@@ -160,7 +160,7 @@ const LookbookPreview = () => {
                                             className="font-playfair text-base font-normal group-hover:opacity-80 transition-opacity duration-200"
                                             style={{ color: "#F6F5F2" }}
                                         >
-                                            {col.name}
+                                            {col.title}
                                         </h3>
                                     </div>
 

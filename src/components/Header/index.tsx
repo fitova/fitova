@@ -548,6 +548,7 @@ const Header = () => {
                     { title: "Deals", path: "/deals" },
                     { title: "Coupons", path: "/coupons" },
                     { title: "AI Styling", path: "#", onClick: () => { setNavigationOpen(false); openStyleHub(); } },
+                    { title: "AI Style From Photo", path: "/ai-style-from-photo" },
                   ].map(({ title, path, onClick }) => onClick ? (
                     <button key={title} onClick={onClick} className="flex w-full items-center justify-between py-3 border-b border-[#F0EDE8] text-sm font-light text-[#0A0A0A] hover:text-[#4A4A4A] transition-colors text-left">
                       {title}

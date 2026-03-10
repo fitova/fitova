@@ -31,4 +31,10 @@ export const menuData: Menu[] = [
     newTab: false,
     path: "/ai-styling",
   },
+  {
+    id: 8,
+    title: "AI Style From Photo",
+    newTab: false,
+    path: "/ai-style-from-photo",
+  },
 ];

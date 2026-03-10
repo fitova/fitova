@@ -11,7 +11,7 @@ function useDebounce<T>(value: T, delay: number): T {
     return d;
 }
 
-type FilterType = "all" | "products" | "collections" | "coupons";
+type FilterType = "all" | "products" | "lookbooks" | "coupons";
 
 export default function SearchPageClient() {
     const router = useRouter();
@@ -55,18 +55,18 @@ export default function SearchPageClient() {
     useEffect(() => { syncUrl(query, activeType); }, [query, activeType, syncUrl]);
 
     const totalCount = results
-        ? (results.products?.length ?? 0) + (results.collections?.length ?? 0) + (results.coupons?.length ?? 0)
+        ? (results.products?.length ?? 0) + (results.lookbooks?.length ?? 0) + (results.coupons?.length ?? 0)
         : 0;
 
     const TABS: { key: FilterType; label: string; count: number }[] = [
         { key: "all", label: "All", count: totalCount },
         { key: "products", label: "Products", count: results?.products?.length ?? 0 },
-        { key: "collections", label: "Lookbooks", count: results?.collections?.length ?? 0 },
+        { key: "lookbooks", label: "Lookbooks", count: results?.lookbooks?.length ?? 0 },
         { key: "coupons", label: "Coupons", count: results?.coupons?.length ?? 0 },
     ];
 
     const showProducts = (activeType === "all" || activeType === "products") && results?.products?.length > 0;
-    const showCollections = (activeType === "all" || activeType === "collections") && results?.collections?.length > 0;
+    const showLookbooks = (activeType === "all" || activeType === "lookbooks") && results?.lookbooks?.length > 0;
     const showCoupons = (activeType === "all" || activeType === "coupons") && results?.coupons?.length > 0;
 
     return (
@@ -187,25 +187,30 @@ export default function SearchPageClient() {
                 </section>
             )}
 
-            {/* Collections */}
-            {showCollections && (
+            {/* Lookbooks */}
+            {showLookbooks && (
                 <section className="mb-12">
                     {activeType === "all" && (
-                        <h2 className="text-[10px] font-medium tracking-[0.28em] uppercase text-[#8A8A8A] mb-5">Lookbooks</h2>
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-[10px] font-medium tracking-[0.28em] uppercase text-[#8A8A8A]">Lookbooks</h2>
+                            <button onClick={() => setActiveType("lookbooks")} className="text-[10px] tracking-wide uppercase text-dark hover:opacity-60 transition-opacity">
+                                View All Lookbooks
+                            </button>
+                        </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {results!.collections.map(c => (
-                            <Link key={c.id} href={`/collections/${c.slug}`} className="group flex gap-4 items-center p-4 border border-[#E8E4DF] hover:border-dark transition-colors duration-200 rounded-sm">
+                        {results!.lookbooks.map(lb => (
+                            <Link key={lb.id} href={`/lookbook/${lb.slug}`} className="group flex gap-4 items-center p-4 border border-[#E8E4DF] hover:border-dark transition-colors duration-200 rounded-sm">
                                 <div className="w-16 h-20 flex-shrink-0 bg-[#F0EDE8] rounded-sm overflow-hidden relative">
-                                    {c.thumbnail_url ? (
-                                        <Image src={c.thumbnail_url} alt={c.name} fill className="object-cover" sizes="64px" />
+                                    {lb.cover_image ? (
+                                        <Image src={lb.cover_image} alt={lb.title} fill className="object-cover" sizes="64px" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-xs text-dark-4">LB</div>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="font-medium text-sm text-dark group-hover:opacity-70 transition-opacity">{c.name}</p>
-                                    {c.description && <p className="text-xs text-dark-4 mt-1 line-clamp-2">{c.description}</p>}
+                                    <p className="font-medium text-sm text-dark group-hover:opacity-70 transition-opacity">{lb.title}</p>
+                                    <p className="text-xs text-dark-4 font-light uppercase tracking-wide mt-1">Lookbook</p>
                                 </div>
                             </Link>
                         ))}

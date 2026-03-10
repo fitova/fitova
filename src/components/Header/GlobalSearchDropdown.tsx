@@ -32,9 +32,9 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
 
     const hasResults =
         results &&
-        (results.products.length > 0 || results.deals.length > 0 || results.collections.length > 0 || results.lookbooks.length > 0 || results.coupons.length > 0);
+        (results.products.length > 0 || results.deals.length > 0 || results.lookbooks.length > 0 || results.coupons.length > 0);
 
-    const totalItems = (results?.products.length || 0) + (results?.deals.length || 0) + (results?.collections.length || 0) + (results?.lookbooks.length || 0) + (results?.coupons.length || 0) + (hasResults ? 1 : 0);
+    const totalItems = (results?.products.length || 0) + (results?.deals.length || 0) + (results?.lookbooks.length || 0) + (results?.coupons.length || 0) + (hasResults ? 1 : 0);
 
     // Reset active index when results change
     useEffect(() => setActiveIndex(-1), [results]);
@@ -80,15 +80,19 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
                 setOpen(false);
                 let current = activeIndex;
                 const pLen = results?.products.length || 0;
-                const cLen = results?.collections.length || 0;
+                const dLen = results?.deals.length || 0;
+                const lbLen = results?.lookbooks.length || 0;
                 const cpLen = results?.coupons.length || 0;
 
                 if (current < pLen) {
                     router.push(`/products/${results!.products[current].slug}`);
-                } else if (current < pLen + cLen) {
+                } else if (current < pLen + dLen) {
                     current -= pLen;
-                    router.push(`/collections/${results!.collections[current].slug}`);
-                } else if (current < pLen + cLen + cpLen) {
+                    router.push(`/products/${results!.deals[current].slug}`);
+                } else if (current < pLen + dLen + lbLen) {
+                    current -= (pLen + dLen);
+                    router.push(`/lookbook/${results!.lookbooks[current].slug}`);
+                } else if (current < pLen + dLen + lbLen + cpLen) {
                     router.push(`/coupons`);
                 } else {
                     router.push(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -219,40 +223,6 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
                         </div>
                     )}
 
-                    {/* ── Collections ────────────────────────────── */}
-                    {results && results.collections.length > 0 && (
-                        <div className="border-t border-[#F0EDE8]">
-                            <div className="px-4 pt-3 pb-1">
-                                <span className="text-[9px] font-medium tracking-[0.25em] uppercase text-[#8A8A8A]">Collections</span>
-                            </div>
-                            <ul>
-                                {results.collections.map((c, i) => {
-                                    const itemIndex = results.products.length + results.deals.length + i;
-                                    return (
-                                        <li key={c.id}>
-                                            <Link
-                                                href={`/collections/${c.slug}`}
-                                                onClick={handleClose}
-                                                className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}
-                                            >
-                                                <div className="w-10 h-10 flex-shrink-0 bg-[#F0EDE8] rounded-sm overflow-hidden relative">
-                                                    {c.thumbnail_url ? (
-                                                        <Image src={c.thumbnail_url} alt={c.name} fill className="object-cover" sizes="40px" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[10px] text-dark-4">C</div>
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-[12px] font-medium text-dark truncate">{c.name}</p>
-                                                    {c.description && <p className="text-[11px] text-dark-4 truncate">{c.description}</p>}
-                                                </div>
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    )}
 
                     {/* ── Lookbooks ───────────────────────────────── */}
                     {results && results.lookbooks.length > 0 && (
@@ -262,11 +232,11 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
                             </div>
                             <ul>
                                 {results.lookbooks.map((lb, i) => {
-                                    const itemIndex = results.products.length + results.deals.length + results.collections.length + i;
+                                    const itemIndex = results.products.length + results.deals.length + i;
                                     return (
                                         <li key={lb.id}>
                                             <Link
-                                                href={`/lookbooks/${lb.slug}`}
+                                                href={`/lookbook/${lb.slug}`}
                                                 onClick={handleClose}
                                                 className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}
                                             >
@@ -304,7 +274,7 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
                             </div>
                             <ul>
                                 {results.deals.map((p, i) => {
-                                    const itemIndex = results.products.length + results.collections.length + results.lookbooks.length + i;
+                                    const itemIndex = results.products.length + i;
                                     const thumb = p.product_images?.find(img => img.type === "thumbnail" || img.sort_order === 0)?.url;
                                     const price = p.discounted_price ?? p.price;
                                     return (
@@ -342,7 +312,7 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
                             </div>
                             <ul>
                                 {results.coupons.map((c, i) => {
-                                    const itemIndex = results.products.length + results.deals.length + results.collections.length + results.lookbooks.length + i;
+                                    const itemIndex = results.products.length + results.deals.length + results.lookbooks.length + i;
                                     return (
                                         <li key={c.id}>
                                             <Link
@@ -370,7 +340,7 @@ const GlobalSearchDropdown = ({ isTransparent = false, autoFocus = false }: Glob
 
                     {/* ── See All Results ────────────────────────── */}
                     {hasResults && (() => {
-                        const itemIndex = results.products.length + results.deals.length + results.collections.length + results.lookbooks.length + results.coupons.length;
+                        const itemIndex = results.products.length + results.deals.length + results.lookbooks.length + results.coupons.length;
                         return (
                             <div className={`border-t border-[#F0EDE8] transition-colors duration-150 ${activeIndex === itemIndex ? "bg-[#F9F7F5]" : "hover:bg-[#F9F7F5]"}`}>
                                 <Link
