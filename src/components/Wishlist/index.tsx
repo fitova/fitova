@@ -51,7 +51,7 @@ const EmptyState = ({ tab }: { tab: Tab }) => (
         : "Save a curated look to revisit it anytime."}
     </p>
     <Link
-      href={tab === "products" ? "/shop-with-sidebar" : "/collections"}
+      href={tab === "products" ? "/shop-with-sidebar" : "/lookbook"}
       className="text-xs font-light tracking-[0.2em] uppercase border border-dark text-dark px-8 py-3 hover:bg-dark hover:text-white transition-all duration-300"
     >
       {tab === "products" ? "Browse Products" : "Explore Lookbook"}
@@ -93,7 +93,7 @@ export const Wishlist = () => {
     setLoading(true);
     getWishlist()
       .then((items) => {
-        const validItems = items.filter((i) => i.item_type === "product" ? !!i.product : !!i.collection);
+        const validItems = items.filter((i) => i.item_type === "product" ? !!i.product : !!i.lookbook);
         const entries: WishlistEntry[] = validItems.map(item => ({
           id: item.id,
           item_id: item.item_id,
@@ -112,9 +112,9 @@ export const Wishlist = () => {
           })(),
           affiliateLink: item.product?.affiliate_link ?? undefined,
           // Lookbook fields
-          collectionName: item.collection?.name,
-          collectionSlug: item.collection?.slug,
-          coverImage: item.collection?.cover_image ?? undefined,
+          collectionName: item.lookbook?.title,
+          collectionSlug: item.lookbook?.slug,
+          coverImage: item.lookbook?.cover_image ?? undefined,
         }));
         dispatch(setWishlistItems(entries));
       })

@@ -33,8 +33,8 @@ export const menuData: Menu[] = [
   },
   {
     id: 8,
-    title: "AI Style From Photo",
+    title: "Mirror Style",
     newTab: false,
-    path: "/ai-style-from-photo",
+    path: "/mirror-style",
   },
 ];

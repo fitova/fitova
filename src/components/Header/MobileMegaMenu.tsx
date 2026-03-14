@@ -107,6 +107,28 @@ export default function MobileMegaMenu({ categories, onClose }: { categories: Ca
                     </div>
                 );
             })}
+
+            {/* AI Styling */}
+            <div className="border-b border-[#F0EDE8] px-5">
+                <button
+                    onClick={() => toggle('ai_styling')}
+                    className="w-full flex items-center justify-between py-3 text-sm font-light text-[#0A0A0A]"
+                >
+                    AI Styling
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8C8C8" strokeWidth="1.5" className={`transition-transform duration-200 ${openIndex === 'ai_styling' ? "rotate-90" : ""}`}>
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+                {openIndex === 'ai_styling' && (
+                    <div className="pb-3 pl-3 flex flex-col gap-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#8A8A8A] mt-1">Experiences</p>
+                        <Link href="/mirror-style" onClick={onClose} className="text-xs font-light text-[#4A4A4A] pl-2 flex items-center gap-2">
+                            <span>✨</span>
+                            Mirror Style
+                        </Link>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

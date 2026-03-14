@@ -148,21 +148,42 @@ const HierarchicalShopFilters = ({
     }, []);
 
     /* ── Section open state ──────────────────────────────────── */
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => ({
         gender: true,
         category: true,
-        style: false,
+        style: filters.style.length > 0,
         mood: false,
         occasion: false,
-        season: false,
-        material: false,
-        brand: false,
-        size: false,
-        color: false,
-    });
+        season: filters.season.length > 0,
+        material: filters.material.length > 0,
+        brand: filters.brand.length > 0,
+        size: filters.size.length > 0,
+        color: filters.colors.length > 0,
+    }));
+
+    // Auto-open filter sections when their filter value is active (e.g. from URL params)
+    useEffect(() => {
+        setOpenSections(prev => ({
+            ...prev,
+            style: prev.style || filters.style.length > 0,
+            season: prev.season || filters.season.length > 0,
+            material: prev.material || filters.material.length > 0,
+            brand: prev.brand || filters.brand.length > 0,
+            size: prev.size || filters.size.length > 0,
+            color: prev.color || filters.colors.length > 0,
+        }));
+    }, [
+        filters.style.length,
+        filters.season.length,
+        filters.material.length,
+        filters.brand.length,
+        filters.size.length,
+        filters.colors.length,
+    ]);
 
     const toggleSection = (key: string) =>
         setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
 
     /* ── Helpers ──────────────────────────────────────────────── */
     const opts = (cat: string) => filterOptions.filter((o) => o.category === cat);
